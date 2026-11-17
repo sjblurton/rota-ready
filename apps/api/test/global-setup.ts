@@ -1,14 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import pg from 'pg';
 import type { TestProject } from 'vitest/node';
 
 const TEST_DATABASE = 'rota_ready_test';
 
 export default async function setup(project: TestProject) {
-  const rootEnv = new URL('../../../.env', import.meta.url);
-  if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
-  const adminUrl = process.env.DATABASE_URL;
+  const adminUrl = project.config.env.DATABASE_URL;
   if (!adminUrl) throw new Error('DATABASE_URL is not set (copy .env.example to .env)');
   const testUrl = new URL(adminUrl);
   testUrl.pathname = `/${TEST_DATABASE}`;
