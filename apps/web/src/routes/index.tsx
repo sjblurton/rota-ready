@@ -44,7 +44,7 @@ function HomePage() {
         <CardHeader>
           <CardTitle className="text-2xl">Rota Ready</CardTitle>
           <CardDescription>
-            Weekly staff rotas for UK pubs, bars and restaurants.
+            Weekly staff rotas for UK bars and restaurants.
           </CardDescription>
         </CardHeader>
         <CardContent>
