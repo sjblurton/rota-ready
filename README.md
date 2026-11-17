@@ -1,6 +1,6 @@
 # Rota Ready
 
-**Weekly staff rotas for UK pubs, bars and restaurants.** Owners build the week, and staff confirm their shifts from a private link.
+**Weekly staff rotas for UK bars and restaurants.** Owners build the week, and staff confirm their shifts from a private link.
 
 [![CI](https://github.com/sjblurton/rota-ready/actions/workflows/ci.yml/badge.svg)](https://github.com/sjblurton/rota-ready/actions/workflows/ci.yml)
 ![Live demo: coming soon](https://img.shields.io/badge/live_demo-coming_soon-lightgrey)
@@ -42,7 +42,7 @@ The first version had 100% test coverage and still had serious bugs, because the
 This repo is set up so that bug can't hide:
 
 - **Access is checked in one place.** Every venue route lives under `/api/venues/:venueId/...`, behind a single membership check that returns 404 to anyone who isn't a member ([ADR-0001](docs/adr/0001-venue-membership-and-404-scoping.md)).
-- **Tests run the real code.** The API is built by `createApp({ db, clock, emailSender, authConfig })`, so tests use the same auth and membership checks as production, with no `NODE_ENV` switches.
+- **Tests run the real code.** The API is built by a single `createApp()` factory that tests and production share, with no `NODE_ENV` switches. As the database, clock, email and auth arrive in later tickets, they're passed into `createApp` as dependencies (ADR-0004), so tests use the same auth and membership checks as production.
 - **The rule is enforced in review.** A cross-venue test is required for every venue route, and the PR template checks for it.
 
 ### Skills used
@@ -90,8 +90,8 @@ GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
 | Seam | What it covers | Tooling |
 | --- | --- | --- |
 | HTTP API | Almost all behaviour, including auth failures and cross-venue 404s | Vitest against `createApp`, real Postgres from #3 |
-| Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` |
-| Clock | "Upcoming", "has started", March/October clock changes | Fixed clock passed into `createApp` |
+| Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
+| Clock | "Upcoming", "has started", March/October clock changes | Fixed clock passed into `createApp` from #10 |
 | Shared logic | Week attribution, time validation, token encryption | Vitest unit tests in `packages/shared` |
 | End to end | One growing journey through the real stack | Playwright against local Supabase from #4 |
 
