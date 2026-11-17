@@ -124,6 +124,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 
 - [ ] [#2](https://github.com/sjblurton/rota-ready/issues/2) App shell: monorepo, web app, API health check, CI
 - [ ] [#3](https://github.com/sjblurton/rota-ready/issues/3) Database: Prisma, local Supabase Postgres, integration test harness
+- [ ] [#17](https://github.com/sjblurton/rota-ready/issues/17) i18n foundation (English only)
 - [ ] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
 - [ ] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
 - [ ] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
