@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 const reactHooksRecommended = reactHooks.configs.flat.recommended;
 
 export default defineConfig([
-  globalIgnores(['**/dist', '**/routeTree.gen.ts', '**/coverage']),
+  globalIgnores(['**/dist', '**/routeTree.gen.ts', '**/coverage', '**/generated']),
   js.configs.recommended,
   tseslint.configs.strict,
   {

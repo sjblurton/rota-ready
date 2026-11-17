@@ -8,6 +8,9 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:migrate": "pnpm --filter @rota-ready/api db:migrate",
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "pnpm -r typecheck",
@@ -18,6 +21,7 @@
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "supabase": "3.2.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.73.0",
     "vitest": "^5.1.0"

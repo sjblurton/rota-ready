@@ -13,6 +13,8 @@ jobs:
   check:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v4
 
@@ -21,5 +23,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+
+      - name: Start local Supabase Postgres
+        run: pnpm exec supabase db start
+
+      - name: Apply migrations to a fresh Supabase database
+        run: pnpm db:migrate
+
       - run: pnpm test
       - run: pnpm build

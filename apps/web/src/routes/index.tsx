@@ -21,7 +21,8 @@ type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 const healthStatus = {
   checking: { label: 'Checking API…', variant: 'secondary' },
   unreachable: { label: 'API unreachable', variant: 'destructive' },
-  ok: { label: 'API ok', variant: 'default' },
+  dbDown: { label: 'API ok · DB down', variant: 'destructive' },
+  ok: { label: 'API ok · DB ok', variant: 'default' },
 } as const satisfies Record<string, { label: string; variant: BadgeVariant }>;
 
 function HomePage() {
@@ -36,7 +37,9 @@ function HomePage() {
     ? healthStatus.checking
     : health.isError
       ? healthStatus.unreachable
-      : healthStatus.ok;
+      : health.data.db === 'ok'
+        ? healthStatus.ok
+        : healthStatus.dbDown;
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">
