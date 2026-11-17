@@ -1,7 +1,8 @@
 import { healthResponseSchema } from '@rota-ready/shared';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Badge } from '@/components/ui/badge';
+import type { VariantProps } from 'class-variance-authority';
+import { Badge, type badgeVariants } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -15,6 +16,14 @@ export const Route = createFileRoute('/')({
   component: HomePage,
 });
 
+type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
+
+const healthStatus = {
+  checking: { label: 'Checking API…', variant: 'secondary' },
+  unreachable: { label: 'API unreachable', variant: 'destructive' },
+  ok: { label: 'API ok', variant: 'default' },
+} as const satisfies Record<string, { label: string; variant: BadgeVariant }>;
+
 function HomePage() {
   const health = useQuery({
     queryKey: ['health'],
@@ -24,10 +33,10 @@ function HomePage() {
   });
 
   const status = health.isPending
-    ? { label: 'Checking API…', variant: 'secondary' as const }
+    ? healthStatus.checking
     : health.isError
-      ? { label: 'API unreachable', variant: 'destructive' as const }
-      : { label: 'API ok', variant: 'default' as const };
+      ? healthStatus.unreachable
+      : healthStatus.ok;
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">

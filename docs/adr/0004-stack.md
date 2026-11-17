@@ -12,4 +12,5 @@ The MVP is a pnpm monorepo: `apps/web`, `apps/api` and `packages/shared` (Zod sc
 - **TanStack Start / Next.js:** server-side rendering adds no value behind a login, and spreads access checks across more places. Rejected.
 - **SWC React plugin:** faster, but the React Compiler needs the Babel pipeline. Rejected.
 - **plugin-react's Rust compiler (`compiler: true`):** marked experimental in plugin-react 6. Revisit once it's stable. Rejected for now.
+- **Versioned API paths (`/api/v1/...`):** the web app is the API's only client and they're deployed together, so a version number protects nothing yet. Routes stay under `/api/...`; if an outside client ever needs a stable contract, `/api/v2` (or a versioned client-specific prefix) can be added without breaking anything. Rejected for now.
 - **Resend SDK as the only adapter:** needs a Resend key for local development and Playwright, and email can't be checked against the local inbox. Kept only as the fallback.

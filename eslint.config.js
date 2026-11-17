@@ -18,8 +18,6 @@ export default defineConfig([
     files: ['apps/web/**/*.{ts,tsx}'],
     ...reactHooksRecommended,
     languageOptions: { globals: globals.browser },
-    // ADR-0004: the React Compiler's rule checks (and the hooks rules) are
-    // errors, not warnings. Fix the code instead of disabling a rule.
     rules: Object.fromEntries(
       Object.keys(reactHooksRecommended.rules).map((rule) => [rule, 'error']),
     ),

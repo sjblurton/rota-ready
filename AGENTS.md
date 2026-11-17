@@ -20,3 +20,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 ## Testing
 
 Every Vitest and Playwright test follows `.claude/skills/scenario-tests/SKILL.md`, including its *Rota Ready specifics* section (no fakes of our own system, a cross-venue 404 test for each venue route, real Postgres).
+
+## Code comments
+
+Keep comments rare. Write one only when the *why* isn't obvious from the code (e.g. an ordering constraint that breaks the build). Don't add docstrings that restate the function name, or comments that point to ADRs or describe future tickets.

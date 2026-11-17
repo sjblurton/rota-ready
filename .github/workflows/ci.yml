@@ -16,7 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Installs the Node and pnpm versions pinned in mise.toml.
       - uses: jdx/mise-action@v2
 
       - run: pnpm install --frozen-lockfile
