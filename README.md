@@ -112,7 +112,7 @@ Open http://localhost:5173. The page shows **API ok · DB ok**, fetched live fro
 
 | Command | What it does |
 | --- | --- |
-| `pnpm test` | Unit and integration tests (Vitest) in every package. Needs the local Supabase stack running (`pnpm db:start`). |
+| `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
 | `pnpm lint` | ESLint, including the React Compiler rules, with warnings treated as errors |
 | `pnpm typecheck` | TypeScript in every package |
 | `pnpm build` | Production builds of the web app and the API |

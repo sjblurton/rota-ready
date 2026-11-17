@@ -1,5 +1,5 @@
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { createServer, type AddressInfo, type Socket } from 'node:net';
 import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
 import { createApp } from './app.js';
 import { createDb, type Db } from './db.js';
@@ -37,6 +37,36 @@ describe('GET /api/health', () => {
 
     it('reports both the API and the database as ok', () => {
       expect(body).toEqual({ api: 'ok', db: 'ok' });
+    });
+  });
+
+  describe('when the database accepts connections but never answers', () => {
+    const silentSockets = new Set<Socket>();
+    const silentServer = createServer((socket) => silentSockets.add(socket));
+    let elapsedMs: number;
+
+    beforeEach(async () => {
+      silentServer.listen(0);
+      await new Promise<void>((resolve) => silentServer.once('listening', resolve));
+      const { port } = silentServer.address() as AddressInfo;
+      db = createDb(`postgresql://postgres:postgres@127.0.0.1:${port}/silent`);
+      const startedAt = performance.now();
+      await requestHealth();
+      elapsedMs = performance.now() - startedAt;
+    });
+
+    afterEach(async () => {
+      for (const socket of silentSockets) socket.destroy();
+      silentSockets.clear();
+      await new Promise<void>((resolve) => silentServer.close(() => resolve()));
+    });
+
+    it('reports the database as down', () => {
+      expect(body).toEqual({ api: 'ok', db: 'down' });
+    });
+
+    it('answers before the 2s connection timeout would', () => {
+      expect(elapsedMs).toBeLessThan(1_800);
     });
   });
 

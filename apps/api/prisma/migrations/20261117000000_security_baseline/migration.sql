@@ -1,5 +1,6 @@
 -- Supabase grants its client-facing roles full access to everything the
--- `postgres` role creates in `public`. The API is the only way into the data.
+-- `postgres` role creates in `public`, which would let anyone holding the
+-- public key bypass the API's venue checks.
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM anon, authenticated;

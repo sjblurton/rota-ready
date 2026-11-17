@@ -1,5 +1,5 @@
-import { healthResponseSchema } from '@rota-ready/shared';
-import { useQuery } from '@tanstack/react-query';
+import { healthResponseSchema, type HealthResponse } from '@rota-ready/shared';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import type { VariantProps } from 'class-variance-authority';
 import { Badge, type badgeVariants } from '@/components/ui/badge';
@@ -25,6 +25,12 @@ const healthStatus = {
   ok: { label: 'API ok · DB ok', variant: 'default' },
 } as const satisfies Record<string, { label: string; variant: BadgeVariant }>;
 
+function statusOf(health: UseQueryResult<HealthResponse>) {
+  if (health.isPending) return healthStatus.checking;
+  if (health.isError) return healthStatus.unreachable;
+  return health.data.db === 'ok' ? healthStatus.ok : healthStatus.dbDown;
+}
+
 function HomePage() {
   const health = useQuery({
     queryKey: ['health'],
@@ -33,13 +39,7 @@ function HomePage() {
     retry: false,
   });
 
-  const status = health.isPending
-    ? healthStatus.checking
-    : health.isError
-      ? healthStatus.unreachable
-      : health.data.db === 'ok'
-        ? healthStatus.ok
-        : healthStatus.dbDown;
+  const status = statusOf(health);
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">

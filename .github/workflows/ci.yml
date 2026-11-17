@@ -13,8 +13,6 @@ jobs:
   check:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +24,12 @@ jobs:
 
       - name: Start local Supabase Postgres
         run: pnpm exec supabase db start
+
+      - name: Export DATABASE_URL from the local stack
+        run: |
+          url=$(pnpm exec supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')
+          if [ -z "$url" ]; then echo "::error::Could not read DB_URL from supabase status"; exit 1; fi
+          echo "DATABASE_URL=$url" >> "$GITHUB_ENV"
 
       - name: Apply migrations to a fresh Supabase database
         run: pnpm db:migrate

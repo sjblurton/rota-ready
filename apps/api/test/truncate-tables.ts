@@ -12,6 +12,8 @@ beforeEach(async () => {
      WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`,
   );
   if (rows.length === 0) return;
-  const tables = rows.map(({ tablename }) => `public."${tablename}"`).join(', ');
+  const tables = rows
+    .map(({ tablename }) => `public.${client.escapeIdentifier(tablename)}`)
+    .join(', ');
   await client.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
 });

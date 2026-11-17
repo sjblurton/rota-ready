@@ -18,7 +18,7 @@ describe('database security baseline', () => {
     const { rows } = await client.query<{ relname: string }>(
       `SELECT c.relname FROM pg_class c
        JOIN pg_namespace n ON n.oid = c.relnamespace
-       WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity`,
+       WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND NOT c.relrowsecurity`,
     );
     return rows.map(({ relname }) => relname);
   }
@@ -33,6 +33,20 @@ describe('database security baseline', () => {
     return rows.map(({ grant }) => grant);
   }
 
+  async function clientRoleSequenceAndFunctionGrants() {
+    const { rows } = await client.query<{ grant: string }>(
+      `SELECT grantee || ' USAGE ' || object_name AS grant
+       FROM information_schema.role_usage_grants
+       WHERE object_schema = 'public' AND object_type = 'SEQUENCE' AND grantee = ANY($1)
+       UNION ALL
+       SELECT grantee || ' ' || privilege_type || ' ' || routine_name
+       FROM information_schema.role_routine_grants
+       WHERE routine_schema = 'public' AND grantee = ANY($1)`,
+      [CLIENT_ROLES],
+    );
+    return rows.map(({ grant }) => grant);
+  }
+
   describe('when the migrations have run', () => {
     it('enables RLS on every table in public', async () => {
       expect(await publicTablesWithoutRls()).toEqual([]);
@@ -40,6 +54,10 @@ describe('database security baseline', () => {
 
     it('grants nothing on public tables to anon or authenticated', async () => {
       expect(await clientRoleTableGrants()).toEqual([]);
+    });
+
+    it('grants nothing on public sequences or functions to anon or authenticated', async () => {
+      expect(await clientRoleSequenceAndFunctionGrants()).toEqual([]);
     });
 
     it('leaves anon and authenticated no default privileges on new public objects', async () => {
@@ -56,9 +74,19 @@ describe('database security baseline', () => {
   });
 
   describe('when a later migration creates a table', () => {
-    beforeEach(() => client.query('CREATE TABLE public.later_table (id int)'));
+    beforeEach(async () => {
+      await client.query(
+        'CREATE TABLE public.later_table (id int PRIMARY KEY, seq int GENERATED ALWAYS AS IDENTITY)',
+      );
+      await client.query(
+        'CREATE FUNCTION public.later_function() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$',
+      );
+    });
 
-    afterEach(() => client.query('DROP TABLE public.later_table'));
+    afterEach(async () => {
+      await client.query('DROP FUNCTION public.later_function()');
+      await client.query('DROP TABLE public.later_table');
+    });
 
     it('enables RLS on it automatically', async () => {
       expect(await publicTablesWithoutRls()).toEqual([]);
@@ -66,6 +94,10 @@ describe('database security baseline', () => {
 
     it('grants nothing on it to anon or authenticated', async () => {
       expect(await clientRoleTableGrants()).toEqual([]);
+    });
+
+    it('grants nothing on its sequence or the new function to anon or authenticated', async () => {
+      expect(await clientRoleSequenceAndFunctionGrants()).toEqual([]);
     });
 
     describe('when the API writes to it and reads it back through Prisma', () => {
