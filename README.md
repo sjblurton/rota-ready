@@ -146,6 +146,6 @@ Stretch goals:
 
 ## Author
 
-**Simon Blurton**: [LinkedIn](#) _(link coming soon)_ · [Portfolio](#) _(link coming soon)_
+**Simon Blurton**: [LinkedIn](https://www.linkedin.com/in/simon-blurton)
 
 © Simon Blurton. All rights reserved. The code is public for portfolio purposes only. No licence is granted to use, copy, modify or distribute it.
