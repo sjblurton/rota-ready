@@ -21,11 +21,11 @@ export const Route = createFileRoute('/')({
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 
 const healthStatus = {
-  checking: { label: 'health.checking', variant: 'secondary' },
-  unreachable: { label: 'health.unreachable', variant: 'destructive' },
-  dbDown: { label: 'health.dbDown', variant: 'destructive' },
-  ok: { label: 'health.ok', variant: 'default' },
-} as const satisfies Record<string, { label: ParseKeys; variant: BadgeVariant }>;
+  checking: { labelKey: 'health.checking', variant: 'secondary' },
+  unreachable: { labelKey: 'health.unreachable', variant: 'destructive' },
+  dbDown: { labelKey: 'health.dbDown', variant: 'destructive' },
+  ok: { labelKey: 'health.ok', variant: 'default' },
+} as const satisfies Record<string, { labelKey: ParseKeys; variant: BadgeVariant }>;
 
 function statusOf(health: UseQueryResult<HealthResponse>) {
   if (health.isPending) return healthStatus.checking;
@@ -53,7 +53,7 @@ function HomePage() {
         </CardHeader>
         <CardContent>
           <Badge role="status" variant={status.variant}>
-            {t(status.label)}
+            {t(status.labelKey)}
           </Badge>
         </CardContent>
       </Card>

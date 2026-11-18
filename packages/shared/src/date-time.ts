@@ -1,14 +1,13 @@
 export interface DateTimeFormatOptions {
+  timeZone: string;
   locale?: string;
-  timeZone?: string;
 }
 
 const DEFAULT_LOCALE = 'en-GB';
-const DEFAULT_TIME_ZONE = 'Europe/London';
 
 export function formatTime(
   instant: Date,
-  { locale = DEFAULT_LOCALE, timeZone = DEFAULT_TIME_ZONE }: DateTimeFormatOptions = {},
+  { timeZone, locale = DEFAULT_LOCALE }: DateTimeFormatOptions,
 ): string {
   return new Intl.DateTimeFormat(locale, {
     timeZone,
@@ -20,7 +19,7 @@ export function formatTime(
 
 export function formatDate(
   instant: Date,
-  { locale = DEFAULT_LOCALE, timeZone = DEFAULT_TIME_ZONE }: DateTimeFormatOptions = {},
+  { timeZone, locale = DEFAULT_LOCALE }: DateTimeFormatOptions,
 ): string {
   return new Intl.DateTimeFormat(locale, {
     timeZone,
@@ -45,11 +44,11 @@ function calendarDayNumber(instant: Date, timeZone: string): number {
 export function formatShiftTimes(
   startsAt: Date,
   endsAt: Date,
-  options: DateTimeFormatOptions = {},
+  options: DateTimeFormatOptions,
 ): string {
-  const timeZone = options.timeZone ?? DEFAULT_TIME_ZONE;
   const extraDays =
-    calendarDayNumber(endsAt, timeZone) - calendarDayNumber(startsAt, timeZone);
+    calendarDayNumber(endsAt, options.timeZone) -
+    calendarDayNumber(startsAt, options.timeZone);
   const range = `${formatTime(startsAt, options)}–${formatTime(endsAt, options)}`;
   return extraDays > 0 ? `${range} (+${extraDays})` : range;
 }
