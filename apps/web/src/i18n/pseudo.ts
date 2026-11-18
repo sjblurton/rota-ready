@@ -10,14 +10,21 @@ const accented: Record<string, string> = {
 // Interpolation placeholders and markup must survive untouched or i18next can't fill them.
 const untouchable = /(\{\{[^}]*\}\}|<[^>]*>|\$t\([^)]*\))/;
 
+// Other languages often run about 30% longer than English, so padding shows where layouts will overflow.
+const EXPANSION = 0.3;
+
 function pseudoString(text: string): string {
-  const body = text
-    .split(untouchable)
+  const chunks = text.split(untouchable);
+  const visibleLength = chunks
+    .filter((_chunk, index) => index % 2 === 0)
+    .join('').length;
+  const body = chunks
     .map((chunk, index) =>
       index % 2 === 1 ? chunk : chunk.replace(/[a-zA-Z]/g, (c) => accented[c] ?? c),
     )
     .join('');
-  return `[${body}]`;
+  const padding = '~'.repeat(Math.ceil(visibleLength * EXPANSION));
+  return `[${body} ${padding}]`;
 }
 
 type Resource = { [key: string]: string | Resource };
