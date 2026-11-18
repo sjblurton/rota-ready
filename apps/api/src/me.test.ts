@@ -202,5 +202,22 @@ describe('/api/me', () => {
         });
       });
     });
+
+    describe('when the User already exists with an older email address', () => {
+      beforeEach(async () => {
+        await db.user.create({ data: { id: USER_ID, email: 'old@example.com' } });
+        response = await request('PUT', await signToken());
+      });
+
+      it('returns the email address from the token', async () => {
+        expect(await response.json()).toEqual({ id: USER_ID, email: EMAIL });
+      });
+
+      it('stores the email address from the token', async () => {
+        expect(await db.user.findUnique({ where: { id: USER_ID } })).toMatchObject({
+          email: EMAIL,
+        });
+      });
+    });
   });
 });

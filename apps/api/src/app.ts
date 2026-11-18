@@ -41,7 +41,7 @@ export function createApp({ db, authConfig }: AppDependencies): Express {
       const user = await db.user.upsert({
         where: { id: userId },
         create: { id: userId, email },
-        update: {},
+        update: { email },
       });
       res.json(toCurrentUser(user));
     }),
