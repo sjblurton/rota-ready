@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ApiError } from '@/lib/api';
 import { apiErrorMessage } from './api-error-message';
-import { i18n } from './index';
+import { i18n } from './i18n';
 
 describe('apiErrorMessage', () => {
   let message: string;
