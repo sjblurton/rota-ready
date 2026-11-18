@@ -2,7 +2,7 @@
 
 The MVP ships in English only, but adding translation later means finding every hard-coded string, date format and server message across the app. So from the start, every string the user sees in `apps/web` comes from `t()` with **react-i18next**. Keys are typed from `en.json`, so a missing or misspelt key fails `pnpm typecheck`, and `eslint-plugin-i18next`'s `no-literal-string` rule fails `pnpm lint` on plain text or attribute strings in JSX. Dates and times are formatted by the helpers in `packages/shared` (`formatTime`, `formatDate`, `formatShiftTimes`), built on `Intl.DateTimeFormat` with `en-GB` and a 24-hour clock by default, and they take an explicit IANA timezone so that Shifts follow ADR-0003. The API never sends user-facing English. Error responses are `{ code }`, using a shared Zod schema, and the web app maps each code to a translated message, falling back to a generic one for any code it doesn't recognise.
 
-A dev-only pseudo-locale (`?lng=pseudo`) shows every string accented and in brackets, so untranslated text stands out in the browser. It sits behind `import.meta.env.DEV` and a dynamic import, so the production bundle doesn't include it.
+A dev-only pseudo-locale (`?lng=pseudo`) shows every string accented and in brackets, so untranslated text stands out in the browser. It sits behind `import.meta.env.DEV`, so tree-shaking leaves it out of the production bundle.
 
 ## Considered Options
 
