@@ -3,9 +3,11 @@ import type { ParseKeys, TFunction } from 'i18next';
 import { ApiError } from '@/lib/api';
 
 const messageKeys = {
+  invalid_request: 'errors.invalidRequest',
   unauthorized: 'errors.unauthorized',
   forbidden: 'errors.forbidden',
   not_found: 'errors.notFound',
+  venue_already_exists: 'errors.venueAlreadyExists',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

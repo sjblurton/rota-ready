@@ -3,7 +3,8 @@ import { currentUserSchema, healthResponseSchema } from '@rota-ready/shared';
 import { withIdentity, withUser, type AuthConfig } from './auth.js';
 import type { Db } from './db.js';
 import type { User } from './generated/prisma/client.js';
-import { sendError } from './http-errors.js';
+import { handleMalformedJson, sendError } from './http-errors.js';
+import { venueRoutes } from './venues.js';
 
 export interface AppDependencies {
   db: Db;
@@ -30,6 +31,7 @@ function toCurrentUser({ id, email }: User) {
 export function createApp({ db, authConfig }: AppDependencies): Express {
   const app = express();
   app.disable('x-powered-by');
+  app.use(express.json());
 
   app.get('/api/health', async (_req, res) => {
     res.json(healthResponseSchema.parse({ api: 'ok', db: await checkDb(db) }));
@@ -54,7 +56,10 @@ export function createApp({ db, authConfig }: AppDependencies): Express {
     }),
   );
 
+  app.use('/api/venues', venueRoutes(db, authConfig));
+
   app.use((_req, res) => sendError(res, 'not_found'));
+  app.use(handleMalformedJson);
 
   return app;
 }
