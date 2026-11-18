@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: rota-ready-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install -g pnpm@12.21.0 && pnpm install --frozen-lockfile && pnpm --filter @rota-ready/api build
+    startCommand: pnpm --filter @rota-ready/api start
+    healthCheckPath: /api/health
+    # GitHub Actions deploys through the deploy hook once migrations have run.
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "26"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+
+  - type: web
+    name: rota-ready
+    runtime: static
+    buildCommand: npm install -g pnpm@12.21.0 && pnpm install --frozen-lockfile && pnpm --filter @rota-ready/web build
+    staticPublishPath: apps/web/dist
+    autoDeployTrigger: off
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://rota-ready-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "26"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false

@@ -3,7 +3,7 @@
 **Weekly staff rotas for UK bars and restaurants.** Owners build the week, and staff confirm their shifts from a private link.
 
 [![CI](https://github.com/sjblurton/rota-ready/actions/workflows/ci.yml/badge.svg)](https://github.com/sjblurton/rota-ready/actions/workflows/ci.yml)
-![Live demo: coming soon](https://img.shields.io/badge/live_demo-coming_soon-lightgrey)
+[![Live demo](https://img.shields.io/badge/live_demo-rota--ready.onrender.com-brightgreen)](https://rota-ready.onrender.com)
 [![Projects board](https://img.shields.io/badge/board-Rota_Ready_MVP-blue)](https://github.com/users/sjblurton/projects/1)
 [![PRD](https://img.shields.io/badge/PRD-%231-informational)](https://github.com/sjblurton/rota-ready/issues/1)
 
@@ -85,6 +85,7 @@ GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
 - [ADR-0003](docs/adr/0003-shift-times-utc-week-by-start-in-venue-timezone.md): shifts store UTC instants; the day and week come from the start time in the venue's timezone.
 - [ADR-0004](docs/adr/0004-stack.md): stack choices, including the Vite single-page app, React Compiler and email over SMTP.
 - [ADR-0005](docs/adr/0005-i18n-english-only-with-typed-keys.md): all UI text goes through typed i18next keys, dates through shared `Intl` helpers, and API errors carry a code instead of a message.
+- [ADR-0006](docs/adr/0006-hosting-on-render-with-migrations-from-github-actions.md): the web app and API run on Render from one origin, and GitHub Actions runs migrations before each deploy.
 
 ### Testing approach
 
@@ -124,6 +125,29 @@ Open http://localhost:5173 and you'll land on the login page. Create an account 
 
 Integration tests create a fresh `rota_ready_test` database each run, apply the migrations once, and truncate every table before each test. They check tokens against a key pair generated in the test, through the same verifier production uses.
 
+### Production
+
+**Live:** https://rota-ready.onrender.com. The API sleeps after 15 minutes without traffic, so the first request after a quiet spell takes about a minute.
+
+Merging to `main` runs CI, then the `deploy` job: it applies Prisma migrations to the production database and then triggers Render deploys of the API and the web app at that exact commit ([ADR-0006](docs/adr/0006-hosting-on-render-with-migrations-from-github-actions.md)). Migrations run before the new API is live, so each one must also work with the API that's already running.
+
+Secrets live in the hosts' secret stores, never in the repo:
+
+| Where | Name | What it is |
+| --- | --- | --- |
+| GitHub `production` environment | `DATABASE_URL` | Supabase session pooler connection string (port 5432), used for migrations |
+| GitHub `production` environment | `RENDER_API_DEPLOY_HOOK` | Deploy hook URL of the `rota-ready-api` service |
+| GitHub `production` environment | `RENDER_WEB_DEPLOY_HOOK` | Deploy hook URL of the `rota-ready` static site |
+| Render `rota-ready-api` | `DATABASE_URL` | Same session pooler connection string |
+| Render `rota-ready-api` | `SUPABASE_URL` | `https://<project-ref>.supabase.co`; the API checks tokens against its JWKS |
+| Render `rota-ready` | `VITE_SUPABASE_URL` | Same Supabase URL, built into the web app |
+| Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
+| Later | SMTP credentials (#11), Staff Link encryption key (#10) | Added to Render `rota-ready-api` when those tickets land |
+
+The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11.
+
+To check the live setup from outside, put `WEB_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `DATABASE_URL` in a git-ignored `.env.production` at the repo root and run `pnpm --filter @rota-ready/api check:production`. It checks that `/api` reaches a healthy API and database, that the Data API returns no table data to the publishable key, that tokens are signed with an asymmetric key, and that every table has RLS and no client-role grants.
+
 ### Roadmap
 
 MVP, in order. Each ticket ends with a check you can click in the browser:
@@ -132,7 +156,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#3](https://github.com/sjblurton/rota-ready/issues/3) Database: Prisma, local Supabase Postgres, integration test harness
 - [x] [#17](https://github.com/sjblurton/rota-ready/issues/17) i18n foundation (English only)
 - [x] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
-- [ ] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
+- [x] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
 - [ ] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
 - [ ] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members
 - [ ] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
