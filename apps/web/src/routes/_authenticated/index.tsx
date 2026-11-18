@@ -1,62 +1,10 @@
-import { healthResponseSchema, type HealthResponse } from '@rota-ready/shared';
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import type { VariantProps } from 'class-variance-authority';
-import type { ParseKeys } from 'i18next';
-import { useTranslation } from 'react-i18next';
-import { Badge, type badgeVariants } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { apiGet } from '@/lib/api';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { myVenuesQuery } from '@/lib/venues';
 
 export const Route = createFileRoute('/_authenticated/')({
-  component: HomePage,
+  beforeLoad: async ({ context }) => {
+    const [venue] = await context.queryClient.query(myVenuesQuery);
+    if (!venue) throw redirect({ to: '/onboarding' });
+    throw redirect({ to: '/venues/$venueId', params: { venueId: venue.id } });
+  },
 });
-
-type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
-
-const healthStatus = {
-  checking: { labelKey: 'health.checking', variant: 'secondary' },
-  unreachable: { labelKey: 'health.unreachable', variant: 'destructive' },
-  dbDown: { labelKey: 'health.dbDown', variant: 'destructive' },
-  ok: { labelKey: 'health.ok', variant: 'default' },
-} as const satisfies Record<string, { labelKey: ParseKeys; variant: BadgeVariant }>;
-
-function statusOf(health: UseQueryResult<HealthResponse>) {
-  if (health.isPending) return healthStatus.checking;
-  if (health.isError) return healthStatus.unreachable;
-  return health.data.db === 'ok' ? healthStatus.ok : healthStatus.dbDown;
-}
-
-function HomePage() {
-  const { t } = useTranslation();
-  const health = useQuery({
-    queryKey: ['health'],
-    queryFn: () => apiGet('/api/health', healthResponseSchema),
-    refetchInterval: 5_000,
-    retry: false,
-  });
-
-  const status = statusOf(health);
-
-  return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">{t('app.name')}</CardTitle>
-          <CardDescription>{t('app.tagline')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Badge role="status" variant={status.variant}>
-            {t(status.labelKey)}
-          </Badge>
-        </CardContent>
-      </Card>
-    </main>
-  );
-}

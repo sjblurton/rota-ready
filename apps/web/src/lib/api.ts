@@ -23,15 +23,20 @@ async function errorCodeOf(response: Response): Promise<ApiErrorCode | undefined
 }
 
 async function apiRequest<Schema extends z.ZodType>(
-  method: 'GET' | 'PUT',
+  method: 'GET' | 'PUT' | 'POST' | 'PATCH',
   path: string,
   schema: Schema,
+  body?: unknown,
 ): Promise<z.infer<Schema>> {
   const token = await accessToken();
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    method,
-    headers: token ? { authorization: `Bearer ${token}` } : {},
-  });
+  const headers: Record<string, string> = {};
+  if (token) headers.authorization = `Bearer ${token}`;
+  const init: RequestInit = { method, headers };
+  if (body !== undefined) {
+    headers['content-type'] = 'application/json';
+    init.body = JSON.stringify(body);
+  }
+  const response = await fetch(`${apiBaseUrl}${path}`, init);
   if (!response.ok) {
     throw new ApiError(response.status, await errorCodeOf(response));
   }
@@ -44,4 +49,12 @@ export function apiGet<Schema extends z.ZodType>(path: string, schema: Schema) {
 
 export function apiPut<Schema extends z.ZodType>(path: string, schema: Schema) {
   return apiRequest('PUT', path, schema);
+}
+
+export function apiPost<Schema extends z.ZodType>(path: string, body: unknown, schema: Schema) {
+  return apiRequest('POST', path, schema, body);
+}
+
+export function apiPatch<Schema extends z.ZodType>(path: string, body: unknown, schema: Schema) {
+  return apiRequest('PATCH', path, schema, body);
 }

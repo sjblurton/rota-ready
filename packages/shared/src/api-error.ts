@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
 export const apiErrorCodeSchema = z.enum([
+  'invalid_request',
   'unauthorized',
   'forbidden',
   'not_found',
+  'venue_already_exists',
   'internal_error',
 ]);
 

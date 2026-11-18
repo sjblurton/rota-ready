@@ -8,9 +8,40 @@ datasource db {
 }
 
 model User {
-  id        String   @id @db.Uuid
-  email     String
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id          String        @id @db.Uuid
+  email       String
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  memberships VenueMember[]
 
   @@map("users")
+}
+
+model Venue {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String
+  timeZone  String        @map("time_zone")
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  members   VenueMember[]
+
+  @@map("venues")
+}
+
+enum MemberRole {
+  owner
+
+  @@map("member_role")
+}
+
+model VenueMember {
+  userId    String     @map("user_id") @db.Uuid
+  venueId   String     @map("venue_id") @db.Uuid
+  role      MemberRole
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue     Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([userId, venueId])
+  @@unique([userId])
+  @@index([venueId])
+  @@map("venue_members")
 }

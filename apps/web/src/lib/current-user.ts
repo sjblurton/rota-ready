@@ -5,4 +5,5 @@ import { apiPut } from './api';
 export const bootstrapCurrentUserQuery = queryOptions({
   queryKey: ['currentUser'],
   queryFn: () => apiPut('/api/me', currentUserSchema),
+  staleTime: 'static',
 });

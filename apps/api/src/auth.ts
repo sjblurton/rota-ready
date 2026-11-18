@@ -1,7 +1,8 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { createRemoteJWKSet, errors, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import { z } from 'zod';
 import type { Db } from './db.js';
-import type { User } from './generated/prisma/client.js';
+import type { User, Venue } from './generated/prisma/client.js';
 import { sendError } from './http-errors.js';
 
 export interface AuthConfig {
@@ -64,14 +65,63 @@ export function withIdentity(
   };
 }
 
+async function authenticatedUser(
+  req: Request,
+  res: Response,
+  config: AuthConfig,
+  db: Db,
+): Promise<User | undefined> {
+  const identity = await identify(req, config);
+  if (!identity) {
+    sendError(res, 'unauthorized');
+    return undefined;
+  }
+  const user = await db.user.findUnique({ where: { id: identity.userId } });
+  if (!user) {
+    sendError(res, 'forbidden');
+    return undefined;
+  }
+  return user;
+}
+
 export function withUser(
   config: AuthConfig,
   db: Db,
   handler: HandlerWith<User>,
 ): RequestHandler {
-  return withIdentity(config, async (req, res, { userId }) => {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) return sendError(res, 'forbidden');
-    await handler(req, res, user);
-  });
+  return async (req, res) => {
+    const user = await authenticatedUser(req, res, config, db);
+    if (user) await handler(req, res, user);
+  };
+}
+
+export interface VenueMemberLocals {
+  venue: Venue;
+}
+
+export type VenueRequestHandler = RequestHandler<
+  { venueId: string },
+  unknown,
+  unknown,
+  Request['query'],
+  VenueMemberLocals
+>;
+
+const venueIdSchema = z.uuid();
+
+export function requireVenueMember(config: AuthConfig, db: Db): VenueRequestHandler {
+  return async (req, res, next) => {
+    const user = await authenticatedUser(req, res, config, db);
+    if (!user) return;
+    const venueId = venueIdSchema.safeParse(req.params.venueId);
+    const membership = venueId.success
+      ? await db.venueMember.findUnique({
+          where: { userId_venueId: { userId: user.id, venueId: venueId.data } },
+          include: { venue: true },
+        })
+      : null;
+    if (!membership) return sendError(res, 'not_found');
+    res.locals.venue = membership.venue;
+    next();
+  };
 }

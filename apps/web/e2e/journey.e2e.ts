@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
+const venueName = 'The Crown';
+const renamedVenue = 'The Rose & Crown';
 
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -40,6 +42,32 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('banner')).toContainText(email);
   });
 
+  test('sends a new User with no Venue to onboarding', async () => {
+    await expect(page.getByRole('heading', { name: 'Set up your venue' })).toBeVisible();
+  });
+
+  test('defaults the Venue timezone to Europe/London', async () => {
+    await expect(page.getByLabel('Timezone')).toHaveValue('Europe/London');
+  });
+
+  test('creates the Venue and shows its name', async () => {
+    await page.getByLabel('Venue name').fill(venueName);
+    await page.getByRole('button', { name: 'Create venue' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(venueName);
+    await expect(page.getByText('Timezone: Europe/London')).toBeVisible();
+  });
+
+  test('renames the Venue', async () => {
+    await page.getByLabel('Venue name').fill(renamedVenue);
+    await page.getByRole('button', { name: 'Save name' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  });
+
+  test('keeps a User with a Venue out of onboarding', async () => {
+    await page.goto('/onboarding');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  });
+
   test('shows the live API status once logged in', async () => {
     await expect(page.getByRole('status')).toHaveText('API ok · DB ok');
   });
@@ -69,15 +97,19 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('banner')).toContainText(email);
   });
 
-  test('shows every string as pseudo-text with ?lng=pseudo, apart from the email address', async () => {
+  test('lands on the renamed Venue after logging back in', async () => {
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  });
+
+  test('shows every string as pseudo-text with ?lng=pseudo, apart from the email address and Venue name', async () => {
     await page.goto('/?lng=pseudo');
-    await expect(page.getByRole('banner')).toContainText(email);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
     await expect(page.getByRole('status')).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([email]);
+    expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
   });
 
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
-    await page.getByRole('button', { name: /^\[/ }).click();
+    await page.getByRole('banner').getByRole('button').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
     expect(await textLeftInPlainEnglish(page)).toEqual([]);
   });

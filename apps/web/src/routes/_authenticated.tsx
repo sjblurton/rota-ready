@@ -1,18 +1,19 @@
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { HealthStatus } from '@/components/health-status';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
 import { bootstrapCurrentUserQuery } from '@/lib/current-user';
 import { accessToken, supabase } from '@/lib/supabase';
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: async () => {
+  // Child routes call user-scoped endpoints, which 403 until this bootstrap has stored the User.
+  beforeLoad: async ({ context }) => {
     if (!(await accessToken())) throw redirect({ to: '/login' });
-  },
-  loader: async ({ context }) => {
     try {
-      return await context.queryClient.ensureQueryData(bootstrapCurrentUserQuery);
+      const currentUser = await context.queryClient.query(bootstrapCurrentUserQuery);
+      return { currentUser };
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         await endSession(context.queryClient);
@@ -31,7 +32,7 @@ async function endSession(queryClient: QueryClient) {
 
 function AuthenticatedLayout() {
   const { t } = useTranslation();
-  const user = Route.useLoaderData();
+  const { currentUser } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -46,7 +47,7 @@ function AuthenticatedLayout() {
         <div className="mx-auto flex max-w-xl items-center justify-between gap-4 px-6 py-3">
           <span className="font-medium">{t('app.name')}</span>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
+            <span className="text-sm text-muted-foreground">{currentUser.email}</span>
             <Button variant="outline" size="sm" onClick={logOut}>
               {t('auth.logOut')}
             </Button>
@@ -54,6 +55,9 @@ function AuthenticatedLayout() {
         </div>
       </header>
       <Outlet />
+      <footer className="mx-auto flex max-w-xl px-6 pb-6">
+        <HealthStatus />
+      </footer>
     </>
   );
 }
