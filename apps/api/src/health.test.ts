@@ -1,8 +1,19 @@
 import type { Server } from 'node:http';
 import { createServer, type AddressInfo, type Socket } from 'node:net';
 import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
+import { createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
 import { createApp } from './app.js';
+import type { AuthConfig } from './auth.js';
 import { createDb, type Db } from './db.js';
+
+async function unusedAuthConfig(): Promise<AuthConfig> {
+  const { publicKey } = await generateKeyPair('ES256');
+  return {
+    keys: createLocalJWKSet({ keys: [await exportJWK(publicKey)] }),
+    issuer: 'http://auth.test/auth/v1',
+    audience: 'authenticated',
+  };
+}
 
 describe('GET /api/health', () => {
   let db: Db;
@@ -11,7 +22,7 @@ describe('GET /api/health', () => {
   let body: unknown;
 
   async function requestHealth() {
-    server = createApp({ db }).listen(0);
+    server = createApp({ db, authConfig: await unusedAuthConfig() }).listen(0);
     await new Promise<void>((resolve) => server.once('listening', resolve));
     const { port } = server.address() as AddressInfo;
     response = await fetch(`http://localhost:${port}/api/health`);

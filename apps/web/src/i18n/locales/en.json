@@ -12,6 +12,33 @@
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "notFound": "We couldn't find what you were looking for.",
-    "internal": "Something went wrong on our side. Please try again."
+    "internal": "Something went wrong on our side. Please try again.",
+    "unauthorized": "Your session has ended. Please log in again.",
+    "forbidden": "You don't have access to this."
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "logOut": "Log out",
+    "logIn": {
+      "title": "Log in",
+      "submit": "Log in",
+      "noAccount": "New to Rota Ready?",
+      "signUpLink": "Create an account"
+    },
+    "signUp": {
+      "title": "Create your account",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "logInLink": "Log in",
+      "checkEmail": "Check your email to confirm your account, then log in."
+    },
+    "errors": {
+      "invalidCredentials": "That email and password don't match an account.",
+      "userAlreadyExists": "An account with that email already exists. Try logging in.",
+      "weakPassword": "Choose a longer password.",
+      "invalidEmail": "Enter a valid email address.",
+      "tooManyRequests": "Too many attempts. Wait a moment and try again."
+    }
   }
 }

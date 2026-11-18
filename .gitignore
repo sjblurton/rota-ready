@@ -4,3 +4,7 @@ dist
 .env.*
 !.env.example
 *.tsbuildinfo
+
+# Playwright
+playwright-report/
+test-results/
