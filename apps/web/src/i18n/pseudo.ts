@@ -7,24 +7,26 @@ const accented: Record<string, string> = {
   S: 'Š', T: 'Ţ', U: 'Ú', V: 'Ṽ', W: 'Ŵ', X: 'Ẋ', Y: 'Ý', Z: 'Ž',
 };
 
-// Interpolation placeholders and markup must survive untouched or i18next can't fill them.
-const untouchable = /(\{\{[^}]*\}\}|<[^>]*>|\$t\([^)]*\))/;
+const placeholdersAndMarkup = /(\{\{[^}]*\}\}|<[^>]*>|\$t\([^)]*\))/;
 
-// Other languages often run about 30% longer than English, so padding shows where layouts will overflow.
-const EXPANSION = 0.3;
+const TYPICAL_GROWTH_OVER_ENGLISH = 0.3;
+
+function accent(text: string): string {
+  return text.replace(/[a-zA-Z]/g, (c) => accented[c] ?? c);
+}
+
+function padToTypicalTranslationLength(visibleText: string): string {
+  return '~'.repeat(Math.ceil(visibleText.length * TYPICAL_GROWTH_OVER_ENGLISH));
+}
 
 function pseudoString(text: string): string {
-  const chunks = text.split(untouchable);
-  const visibleLength = chunks
-    .filter((_chunk, index) => index % 2 === 0)
-    .join('').length;
-  const body = chunks
-    .map((chunk, index) =>
-      index % 2 === 1 ? chunk : chunk.replace(/[a-zA-Z]/g, (c) => accented[c] ?? c),
-    )
+  const parts = text.split(placeholdersAndMarkup);
+  const isPlaceholderOrMarkup = (index: number) => index % 2 === 1;
+  const visibleText = parts.filter((_part, index) => !isPlaceholderOrMarkup(index)).join('');
+  const body = parts
+    .map((part, index) => (isPlaceholderOrMarkup(index) ? part : accent(part)))
     .join('');
-  const padding = '~'.repeat(Math.ceil(visibleLength * EXPANSION));
-  return `[${body} ${padding}]`;
+  return `[${body} ${padToTypicalTranslationLength(visibleText)}]`;
 }
 
 type Resource = { [key: string]: string | Resource };
