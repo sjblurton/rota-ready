@@ -15,6 +15,8 @@ const supabaseUrl = requiredEnv('SUPABASE_URL');
 const publishableKey = requiredEnv('SUPABASE_PUBLISHABLE_KEY');
 const databaseUrl = requiredEnv('DATABASE_URL');
 
+const client = new pg.Client({ connectionString: databaseUrl });
+
 const jwksSchema = z.object({ keys: z.array(z.object({ alg: z.string().optional() })) });
 
 type Check = () => Promise<string | undefined>;
@@ -57,7 +59,7 @@ const checks: Record<string, Check> = {
   },
 
   async 'every public table has RLS enabled'() {
-    const { rows } = await query<{ relname: string }>(
+    const { rows } = await client.query<{ relname: string }>(
       `SELECT c.relname FROM pg_class c
        JOIN pg_namespace n ON n.oid = c.relnamespace
        WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND NOT c.relrowsecurity`,
@@ -66,7 +68,7 @@ const checks: Record<string, Check> = {
   },
 
   async 'anon and authenticated have no grants on public tables'() {
-    const { rows } = await query<{ grant: string }>(
+    const { rows } = await client.query<{ grant: string }>(
       `SELECT grantee || ' ' || privilege_type || ' ' || table_name AS grant
        FROM information_schema.role_table_grants
        WHERE table_schema = 'public' AND grantee = ANY($1)`,
@@ -75,20 +77,28 @@ const checks: Record<string, Check> = {
     return rows.length === 0 ? undefined : `grants: ${rows.map((r) => r.grant)}`;
   },
 
+  async 'anon and authenticated have no grants on public sequences or functions'() {
+    const { rows } = await client.query<{ grant: string }>(
+      `SELECT grantee || ' USAGE ' || object_name AS grant
+       FROM information_schema.role_usage_grants
+       WHERE object_schema = 'public' AND object_type = 'SEQUENCE' AND grantee = ANY($1)
+       UNION ALL
+       SELECT grantee || ' ' || privilege_type || ' ' || routine_name
+       FROM information_schema.role_routine_grants
+       WHERE routine_schema = 'public' AND grantee = ANY($1)`,
+      [CLIENT_ROLES],
+    );
+    return rows.length === 0 ? undefined : `grants: ${rows.map((r) => r.grant)}`;
+  },
+
   async 'the event trigger that enables RLS on new tables is installed'() {
-    const { rows } = await query<{ evtenabled: string }>(
+    const { rows } = await client.query<{ evtenabled: string }>(
       `SELECT evtenabled FROM pg_event_trigger
        WHERE evtname = 'enable_rls_on_new_public_tables'`,
     );
     return rows[0]?.evtenabled === 'O' ? undefined : `found ${JSON.stringify(rows)}`;
   },
 };
-
-const client = new pg.Client({ connectionString: databaseUrl });
-
-function query<Row extends pg.QueryResultRow>(text: string, values?: unknown[]) {
-  return client.query<Row>(text, values);
-}
 
 await client.connect();
 let failures = 0;

@@ -129,7 +129,7 @@ Integration tests create a fresh `rota_ready_test` database each run, apply the 
 
 **Live:** https://rota-ready.onrender.com. The API sleeps after 15 minutes without traffic, so the first request after a quiet spell takes about a minute.
 
-Merging to `main` runs CI, then the `deploy` job: it applies Prisma migrations to the production database and then triggers Render deploys of the API and the web app at that exact commit ([ADR-0006](docs/adr/0006-hosting-on-render-with-migrations-from-github-actions.md)). Migrations run before the new API is live, so each one must also work with the API that's already running.
+Merging to `main` runs CI, then the `deploy` job: it applies Prisma migrations to the production database, deploys the API at that exact commit and waits until it's live, then does the same for the web app. The job fails if a Render deploy fails ([ADR-0006](docs/adr/0006-hosting-on-render-with-migrations-from-github-actions.md)). Each layer goes live before the one above it, so every migration must work with the API that's already running, and every API change with the web app that's already running.
 
 Secrets live in the hosts' secret stores, never in the repo:
 
@@ -138,15 +138,17 @@ Secrets live in the hosts' secret stores, never in the repo:
 | GitHub `production` environment | `DATABASE_URL` | Supabase session pooler connection string (port 5432), used for migrations |
 | GitHub `production` environment | `RENDER_API_DEPLOY_HOOK` | Deploy hook URL of the `rota-ready-api` service |
 | GitHub `production` environment | `RENDER_WEB_DEPLOY_HOOK` | Deploy hook URL of the `rota-ready` static site |
+| GitHub `production` environment | `RENDER_API_KEY` | Render API key with read access to deploys, used to wait for each deploy to go live |
+| GitHub `production` environment (variable, not secret) | `RENDER_API_SERVICE_ID`, `RENDER_WEB_SERVICE_ID` | The `srv-…` IDs of `rota-ready-api` and `rota-ready` |
 | Render `rota-ready-api` | `DATABASE_URL` | Same session pooler connection string |
 | Render `rota-ready-api` | `SUPABASE_URL` | `https://<project-ref>.supabase.co`; the API checks tokens against its JWKS |
 | Render `rota-ready` | `VITE_SUPABASE_URL` | Same Supabase URL, built into the web app |
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
 | Later | SMTP credentials (#11), Staff Link encryption key (#10) | Added to Render `rota-ready-api` when those tickets land |
 
-The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11.
+The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it, and `check:production` confirms the trigger is installed. Both Render services track `main`.
 
-To check the live setup from outside, put `WEB_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `DATABASE_URL` in a git-ignored `.env.production` at the repo root and run `pnpm --filter @rota-ready/api check:production`. It checks that `/api` reaches a healthy API and database, that the Data API returns no table data to the publishable key, that tokens are signed with an asymmetric key, and that every table has RLS and no client-role grants.
+To check the live setup from outside, put `WEB_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `DATABASE_URL` in a git-ignored `.env.production` at the repo root and run `pnpm --filter @rota-ready/api check:production`. It checks that `/api` reaches a healthy API and database, that the Data API returns no table data to the publishable key, that tokens are signed with an asymmetric key, and that every table has RLS and no client-role grants on tables, sequences or functions.
 
 ### Roadmap
 
@@ -157,7 +159,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#17](https://github.com/sjblurton/rota-ready/issues/17) i18n foundation (English only)
 - [x] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
 - [x] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
-- [ ] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
+- [x] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
 - [ ] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members
 - [ ] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
 - [ ] [#9](https://github.com/sjblurton/rota-ready/issues/9) Edit and delete shifts
