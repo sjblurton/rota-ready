@@ -1,9 +1,9 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
-import { currentUserQuery } from '@/lib/current-user';
+import { bootstrapCurrentUserQuery } from '@/lib/current-user';
 import { accessToken, supabase } from '@/lib/supabase';
 
 export const Route = createFileRoute('/_authenticated')({
@@ -12,10 +12,10 @@ export const Route = createFileRoute('/_authenticated')({
   },
   loader: async ({ context }) => {
     try {
-      return await context.queryClient.ensureQueryData(currentUserQuery);
+      return await context.queryClient.ensureQueryData(bootstrapCurrentUserQuery);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        await supabase.auth.signOut();
+        await endSession(context.queryClient);
         throw redirect({ to: '/login' });
       }
       throw error;
@@ -24,6 +24,11 @@ export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
 });
 
+async function endSession(queryClient: QueryClient) {
+  await supabase.auth.signOut();
+  queryClient.clear();
+}
+
 function AuthenticatedLayout() {
   const { t } = useTranslation();
   const user = Route.useLoaderData();
@@ -31,8 +36,7 @@ function AuthenticatedLayout() {
   const queryClient = useQueryClient();
 
   async function logOut() {
-    await supabase.auth.signOut();
-    queryClient.clear();
+    await endSession(queryClient);
     await navigate({ to: '/login' });
   }
 

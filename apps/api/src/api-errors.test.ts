@@ -6,7 +6,6 @@ import { createApp } from './app.js';
 import type { AuthConfig } from './auth.js';
 import { createDb, type Db } from './db.js';
 
-
 async function unusedAuthConfig(): Promise<AuthConfig> {
   const { publicKey } = await generateKeyPair('ES256');
   return {

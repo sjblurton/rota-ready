@@ -19,7 +19,7 @@ export function supabaseAuthConfig(supabaseUrl: string): AuthConfig {
   };
 }
 
-export interface Identity {
+interface Identity {
   userId: string;
   email: string;
 }
@@ -41,6 +41,7 @@ async function identify(req: Request, config: AuthConfig): Promise<Identity | un
     const { payload } = await jwtVerify(token, config.keys, {
       issuer: config.issuer,
       audience: config.audience,
+      algorithms: ['ES256', 'RS256'],
     });
     if (!payload.sub || typeof payload.email !== 'string') return undefined;
     return { userId: payload.sub, email: payload.email };

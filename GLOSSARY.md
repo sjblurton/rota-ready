@@ -8,9 +8,13 @@ Weekly staff scheduling for UK bars and restaurants: an owner builds a week of s
 A single bar or restaurant, with its own timezone, staff and rotas. The boundary nothing crosses: every other thing belongs to exactly one Venue.
 _Avoid_: Business, site, location, tenant (in UI copy)
 
+**User**:
+A person with a login, keyed by their Supabase user ID. A User becomes a Venue Member when linked to a Venue; until then they can't see any Venue's data.
+_Avoid_: Account, login (as a noun)
+
 **Venue Member**:
 A person who logs in and manages a Venue. Each has a Member Role; the MVP has only the `owner` Member Role.
-_Avoid_: User (too generic), admin, account
+_Avoid_: User (when you mean someone linked to a Venue), admin, account
 
 **Owner**:
 A Venue Member whose Member Role is `owner`.
