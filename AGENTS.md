@@ -17,6 +17,10 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 - The React Compiler is on (ADR-0004). Don't add `useMemo`, `useCallback` or `React.memo` by default. Only add one with a comment explaining why the compiler isn't enough.
 - Follow the Rules of React: components and hooks are pure, so never mutate props, state or values used in render while rendering. `eslint-plugin-react-hooks` enforces this as errors; fix the code rather than disabling the rule.
 
+## i18n
+
+All UI text through `t()`; dates through the shared format helpers in `packages/shared`. API errors return `{ code }`, never an English message.
+
 ## Testing
 
 Every Vitest and Playwright test follows `.claude/skills/scenario-tests/SKILL.md`, including its *Rota Ready specifics* section (no fakes of our own system, a cross-venue 404 test for each venue route, real Postgres).

@@ -1,5 +1,8 @@
 import express, { type Express } from 'express';
-import { healthResponseSchema } from '@rota-ready/shared';
+import {
+  healthResponseSchema,
+  type ApiErrorResponse,
+} from '@rota-ready/shared';
 import type { Db } from './db.js';
 
 export interface AppDependencies {
@@ -25,6 +28,10 @@ export function createApp({ db }: AppDependencies): Express {
 
   app.get('/api/health', async (_req, res) => {
     res.json(healthResponseSchema.parse({ api: 'ok', db: await checkDb(db) }));
+  });
+
+  app.use((_req, res) => {
+    res.status(404).json({ code: 'not_found' } satisfies ApiErrorResponse);
   });
 
   return app;

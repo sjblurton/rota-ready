@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import i18next from 'eslint-plugin-i18next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
@@ -11,6 +12,18 @@ export default defineConfig([
   js.configs.recommended,
   tseslint.configs.strict,
   {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/api/**/*.ts', 'packages/**/*.ts', '*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
   },
@@ -21,5 +34,31 @@ export default defineConfig([
     rules: Object.fromEntries(
       Object.keys(reactHooksRecommended.rules).map((rule) => [rule, 'error']),
     ),
+  },
+  {
+    files: ['apps/web/src/**/*.tsx'],
+    ignores: ['apps/web/src/components/ui/**'],
+    plugins: { i18next },
+    rules: {
+      'i18next/no-literal-string': [
+        'error',
+        {
+          mode: 'jsx-only',
+          'jsx-attributes': {
+            include: [
+              'alt',
+              'title',
+              'placeholder',
+              'label',
+              'aria-label',
+              'aria-description',
+              'aria-placeholder',
+              'aria-roledescription',
+              'aria-valuetext',
+            ],
+          },
+        },
+      ],
+    },
   },
 ]);
