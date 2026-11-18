@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const email = `owner-${Date.now()}@example.com`;
+const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
 
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
