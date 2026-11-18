@@ -1,5 +1,6 @@
 import { apiErrorResponseSchema, type ApiErrorCode } from '@rota-ready/shared';
 import type { z } from 'zod';
+import { accessToken } from './supabase';
 
 const apiBaseUrl: string = import.meta.env.VITE_API_URL ?? '';
 
@@ -21,13 +22,26 @@ async function errorCodeOf(response: Response): Promise<ApiErrorCode | undefined
   return parsed.success ? parsed.data.code : undefined;
 }
 
-export async function apiGet<Schema extends z.ZodType>(
+async function apiRequest<Schema extends z.ZodType>(
+  method: 'GET' | 'PUT',
   path: string,
   schema: Schema,
 ): Promise<z.infer<Schema>> {
-  const response = await fetch(`${apiBaseUrl}${path}`);
+  const token = await accessToken();
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method,
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
   if (!response.ok) {
     throw new ApiError(response.status, await errorCodeOf(response));
   }
   return schema.parse(await response.json());
+}
+
+export function apiGet<Schema extends z.ZodType>(path: string, schema: Schema) {
+  return apiRequest('GET', path, schema);
+}
+
+export function apiPut<Schema extends z.ZodType>(path: string, schema: Schema) {
+  return apiRequest('PUT', path, schema);
 }

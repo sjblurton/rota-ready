@@ -61,9 +61,9 @@ This repo is set up so that bug can't hide:
 | Web | Vite, React 19 with React Compiler, TanStack Router + Query, Tailwind, shadcn/ui |
 | API | Express 5, Zod (shared with the web app) |
 | Data | Prisma 7 on Supabase Postgres (local stack via the Supabase CLI) |
-| Auth | Supabase Auth _(from #4)_ |
+| Auth | Supabase Auth (email and password), JWTs checked by the API against Supabase's signing keys |
 | Email | nodemailer over SMTP: local Supabase inbox in dev, Resend in production _(from #11)_ |
-| Tests | Vitest, Playwright _(from #4)_ |
+| Tests | Vitest, Playwright |
 | Tooling | pnpm workspaces, TypeScript strict, ESLint, mise (Node 26), GitHub Actions |
 
 ```
@@ -94,7 +94,7 @@ GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
 | Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
 | Clock | "Upcoming", "has started", March/October clock changes | Fixed clock passed into `createApp` from #10 |
 | Shared logic | Week attribution, time validation, token encryption | Vitest unit tests in `packages/shared` |
-| End to end | One growing journey through the real stack | Playwright against local Supabase from #4 |
+| End to end | One growing journey through the real stack | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`) |
 
 ### Getting started
 
@@ -104,16 +104,17 @@ GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
 mise trust && mise install   # Node 26 + pnpm, pinned in mise.toml
 pnpm install                 # also generates the Prisma client
 cp .env.example .env         # values match the local Supabase stack
-pnpm db:start                # local Supabase in Docker (first run downloads images)
+pnpm db:start                # local Supabase (Postgres + Auth) in Docker; first run downloads images
 pnpm db:migrate              # apply Prisma migrations to the local database
 pnpm dev                     # web on http://localhost:5173, API on http://localhost:3000
 ```
 
-Open http://localhost:5173. The page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
+Open http://localhost:5173 and you'll land on the login page. Create an account (local sign-ups need no email confirmation); your email address appears in the header, and the page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
 
 | Command | What it does |
 | --- | --- |
 | `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
+| `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts the API and web dev servers itself (or reuses running ones); needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
 | `pnpm lint` | ESLint, including the React Compiler rules, with warnings treated as errors |
 | `pnpm typecheck` | TypeScript in every package |
 | `pnpm build` | Production builds of the web app and the API |
@@ -121,7 +122,7 @@ Open http://localhost:5173. The page shows **API ok · DB ok**, fetched live fro
 | `pnpm db:stop` | Stops the local Supabase stack |
 | `pnpm --filter @rota-ready/api db:migration --name <name>` | Creates a new migration from changes to `apps/api/prisma/schema.prisma` |
 
-Integration tests create a fresh `rota_ready_test` database each run, apply the migrations once, and truncate every table before each test. Playwright arrives with #4.
+Integration tests create a fresh `rota_ready_test` database each run, apply the migrations once, and truncate every table before each test. They check tokens against a key pair generated in the test, through the same verifier production uses.
 
 ### Roadmap
 
@@ -130,7 +131,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#2](https://github.com/sjblurton/rota-ready/issues/2) App shell: monorepo, web app, API health check, CI
 - [x] [#3](https://github.com/sjblurton/rota-ready/issues/3) Database: Prisma, local Supabase Postgres, integration test harness
 - [x] [#17](https://github.com/sjblurton/rota-ready/issues/17) i18n foundation (English only)
-- [ ] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
+- [x] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
 - [ ] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
 - [ ] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
 - [ ] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members

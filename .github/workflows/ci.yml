@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   check:
-    name: Lint, typecheck, test, build
+    name: Lint, typecheck, test, build, e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,17 +22,42 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
 
-      - name: Start local Supabase Postgres
-        run: pnpm exec supabase db start
+      - name: Start local Supabase (Postgres and Auth)
+        run: pnpm exec supabase start -x studio
 
-      - name: Export DATABASE_URL from the local stack
+      - name: Export the local Supabase settings
         run: |
-          url=$(pnpm exec supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')
-          if [ -z "$url" ]; then echo "::error::Could not read DB_URL from supabase status"; exit 1; fi
-          echo "DATABASE_URL=$url" >> "$GITHUB_ENV"
+          status=$(pnpm exec supabase status -o env)
+          read_var() { echo "$status" | sed -n "s/^$1=\"\(.*\)\"$/\1/p"; }
+          db_url=$(read_var DB_URL)
+          api_url=$(read_var API_URL)
+          publishable_key=$(read_var PUBLISHABLE_KEY)
+          if [ -z "$db_url" ] || [ -z "$api_url" ] || [ -z "$publishable_key" ]; then
+            echo "::error::Could not read DB_URL, API_URL or PUBLISHABLE_KEY from supabase status"; exit 1
+          fi
+          {
+            echo "DATABASE_URL=$db_url"
+            echo "SUPABASE_URL=$api_url"
+            echo "VITE_SUPABASE_URL=$api_url"
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY=$publishable_key"
+          } >> "$GITHUB_ENV"
 
       - name: Apply migrations to a fresh Supabase database
         run: pnpm db:migrate
 
       - run: pnpm test
       - run: pnpm build
+
+      - name: Install Playwright's Chromium
+        run: pnpm --filter @rota-ready/web exec playwright install --with-deps chromium
+
+      - name: Run the Playwright journey against the real stack
+        run: pnpm --filter @rota-ready/web e2e
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
