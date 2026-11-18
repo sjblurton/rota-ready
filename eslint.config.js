@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import i18next from 'eslint-plugin-i18next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
@@ -21,5 +22,37 @@ export default defineConfig([
     rules: Object.fromEntries(
       Object.keys(reactHooksRecommended.rules).map((rule) => [rule, 'error']),
     ),
+  },
+  {
+    files: ['apps/web/src/**/*.tsx'],
+    ignores: ['apps/web/src/components/ui/**'],
+    plugins: { i18next },
+    rules: {
+      'i18next/no-literal-string': [
+        'error',
+        {
+          mode: 'jsx-only',
+          'jsx-attributes': {
+            exclude: [
+              'className',
+              'style',
+              'type',
+              'key',
+              'id',
+              'role',
+              'variant',
+              'size',
+              'to',
+              'href',
+              'rel',
+              'target',
+              'autoComplete',
+              'inputMode',
+              'data-.*',
+            ],
+          },
+        },
+      ],
+    },
   },
 ]);

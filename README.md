@@ -84,6 +84,7 @@ GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
 - [ADR-0002](docs/adr/0002-staff-link-tokens-hashed-and-encrypted.md): staff link tokens are stored as a SHA-256 hash for lookup plus an AES-256-GCM encrypted copy.
 - [ADR-0003](docs/adr/0003-shift-times-utc-week-by-start-in-venue-timezone.md): shifts store UTC instants; the day and week come from the start time in the venue's timezone.
 - [ADR-0004](docs/adr/0004-stack.md): stack choices, including the Vite single-page app, React Compiler and email over SMTP.
+- [ADR-0005](docs/adr/0005-i18n-english-only-with-typed-keys.md): all UI text goes through typed i18next keys, dates through shared `Intl` helpers, and API errors carry a code instead of a message.
 
 ### Testing approach
 
@@ -108,7 +109,7 @@ pnpm db:migrate              # apply Prisma migrations to the local database
 pnpm dev                     # web on http://localhost:5173, API on http://localhost:3000
 ```
 
-Open http://localhost:5173. The page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**.
+Open http://localhost:5173. The page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
 
 | Command | What it does |
 | --- | --- |
@@ -128,7 +129,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 
 - [x] [#2](https://github.com/sjblurton/rota-ready/issues/2) App shell: monorepo, web app, API health check, CI
 - [x] [#3](https://github.com/sjblurton/rota-ready/issues/3) Database: Prisma, local Supabase Postgres, integration test harness
-- [ ] [#17](https://github.com/sjblurton/rota-ready/issues/17) i18n foundation (English only)
+- [x] [#17](https://github.com/sjblurton/rota-ready/issues/17) i18n foundation (English only)
 - [ ] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
 - [ ] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
 - [ ] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production

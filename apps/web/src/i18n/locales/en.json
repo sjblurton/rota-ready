@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Rota Ready",
+    "tagline": "Weekly staff rotas for UK bars and restaurants."
+  },
+  "health": {
+    "checking": "Checking API…",
+    "unreachable": "API unreachable",
+    "dbDown": "API ok · DB down",
+    "ok": "API ok · DB ok"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "We couldn't find what you were looking for.",
+    "internal": "Something went wrong on our side. Please try again."
+  }
+}
