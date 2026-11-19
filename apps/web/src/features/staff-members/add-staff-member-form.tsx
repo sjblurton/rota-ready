@@ -8,12 +8,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { StaffMemberFields } from '@/components/staff-member-fields';
+import { StaffMemberFields } from '@/features/staff-members/staff-member-fields';
 import { Button } from '@/components/ui/button';
 import { FieldError, FieldGroup } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost, hasErrorCode } from '@/lib/api';
-import { staffMembersPath, updateStaffMembers } from '@/lib/staff-members';
+import { staffMembersPath, updateStaffMembers } from '@/features/staff-members/staff-member-queries';
 
 const emptyStaffMember = { name: '', role: '', email: '', phone: '' };
 

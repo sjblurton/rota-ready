@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { HealthStatus } from '@/components/health-status';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
-import { bootstrapCurrentUserQuery } from '@/lib/current-user';
+import { bootstrapCurrentUserQuery } from '@/features/users/current-user';
 import { accessToken, supabase } from '@/lib/supabase';
 
 export const Route = createFileRoute('/_authenticated')({

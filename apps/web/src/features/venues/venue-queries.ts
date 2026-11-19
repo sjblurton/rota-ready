@@ -1,6 +1,6 @@
 import { venueListSchema, venueSchema } from '@rota-ready/shared';
 import { queryOptions } from '@tanstack/react-query';
-import { apiGet } from './api';
+import { apiGet } from '@/lib/api';
 
 export const myVenuesQuery = queryOptions({
   queryKey: ['venues'],

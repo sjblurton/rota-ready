@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
-import { staffMemberPath, updateStaffMembers } from '@/lib/staff-members';
+import { staffMemberPath, updateStaffMembers } from '@/features/staff-members/staff-member-queries';
 
 interface ArchiveStaffMemberDialogProps {
   venueId: string;

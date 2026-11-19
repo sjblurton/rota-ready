@@ -1,11 +1,40 @@
 # Building UI
 
-The web app's components are based on [shadcn/ui](https://ui.shadcn.com) and built on [Radix](https://www.radix-ui.com). This page explains where components go, when to wrap them, and how to change how they look.
+The web app's components are based on [shadcn/ui](https://ui.shadcn.com) and built on [Radix](https://www.radix-ui.com). This page explains where files go, when to wrap components, and how to change how they look.
 
-## Where components go
+## Where files go
 
-- **shadcn components**, in `apps/web/src/components/ui`: primitives such as a button, an input or a field. Add them with the shadcn CLI (`pnpm dlx shadcn@latest add <name>` from `apps/web`), never by hand.
-- **Product components**, in `apps/web/src/components`: shadcn components composed into a product concept, such as a delete dialog or the application header. Name each one for what it does.
+Code is grouped by glossary term into feature folders (ADR-0008):
+
+```
+apps/web/src/
+├── components/            app-wide UI with no glossary concept
+│   ├── ui/                shadcn components
+│   ├── health-status.tsx
+│   └── page-loading.tsx
+├── features/
+│   ├── venues/            Venue, Venue Member, Owner, Member Role
+│   │   ├── venue-queries.ts
+│   │   ├── venue-name-field.tsx
+│   │   ├── create-venue-form.tsx
+│   │   └── rename-venue-form.tsx
+│   ├── staff-members/     Staff Member, Role, Archive
+│   ├── rota/              Week, Rota, Shift, Overnight Shift, Draft, Published,
+│   │                      Publish, Copy Last Week, Changed Shift, Removed Shift,
+│   │                      Send Updates
+│   ├── staff-links/       the Staff Link page, Shift Response, Decline Reason
+│   └── users/             logging in, signing up and the current User
+├── i18n/                  translations, shared by every feature
+├── lib/                   infrastructure: the API client, Supabase, cn
+└── routes/                route config and page layout only
+```
+
+- **shadcn components**, in `components/ui/`: primitives such as a button, an input or a field. Add them with the shadcn CLI (`pnpm dlx shadcn@latest add <name>` from `apps/web`), never by hand.
+- **Product components** compose shadcn components into a product concept, such as a delete dialog or the application header. Name each one for what it does. If it names a glossary concept, it goes in that feature's folder, however many features use it. If it doesn't, it goes in `components/`.
+- **Queries and mutations** go in the feature they belong to (`venue-queries.ts`). A form takes its mutation and cache updates with it.
+- **Routes** hold their config (`beforeLoad`, `loader`, `errorComponent`) and a page component that lays out feature components. A route file has no `useForm` or `useMutation`.
+
+Feature folders are flat, with tests next to the file they cover. A feature can import any file from another feature directly, without barrel files. ESLint stops `components/` and `lib/` importing from `features/`, and stops anything importing from `routes/`.
 
 Give a product component a closed API. Its props describe the product concept, such as what is being deleted and what happens on confirm. The component decides everything else itself: which shadcn components to use, how to lay them out and which Radix options to set. Consumers cannot reach inside it.
 
