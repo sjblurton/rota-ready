@@ -75,8 +75,22 @@
     },
     "nav": {
       "label": "Venue",
+      "rota": "Rota",
       "settings": "Settings",
       "staff": "Staff"
+    }
+  },
+  "rota": {
+    "title": "Rota",
+    "weekOf": "Week of {{date}}",
+    "previousWeek": "Previous Week",
+    "nextWeek": "Next Week",
+    "goToThisWeek": "Go to this Week",
+    "staffMember": "Staff Member",
+    "noStaff": "Add Staff Members to start building the Rota.",
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
     }
   },
   "staff": {

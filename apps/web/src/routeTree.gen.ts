@@ -17,6 +17,8 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedVenuesVenueIdRouteRouteImport } from './routes/_authenticated/venues/$venueId/route'
 import { Route as AuthenticatedVenuesVenueIdIndexRouteImport } from './routes/_authenticated/venues/$venueId/index'
 import { Route as AuthenticatedVenuesVenueIdStaffRouteImport } from './routes/_authenticated/venues/$venueId/staff'
+import { Route as AuthenticatedVenuesVenueIdRotaIndexRouteImport } from './routes/_authenticated/venues/$venueId/rota/index'
+import { Route as AuthenticatedVenuesVenueIdRotaWeekStartRouteImport } from './routes/_authenticated/venues/$venueId/rota/$weekStart'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -60,6 +62,18 @@ const AuthenticatedVenuesVenueIdStaffRoute =
     path: '/staff',
     getParentRoute: () => AuthenticatedVenuesVenueIdRouteRoute,
   } as any)
+const AuthenticatedVenuesVenueIdRotaIndexRoute =
+  AuthenticatedVenuesVenueIdRotaIndexRouteImport.update({
+    id: '/rota/',
+    path: '/rota/',
+    getParentRoute: () => AuthenticatedVenuesVenueIdRouteRoute,
+  } as any)
+const AuthenticatedVenuesVenueIdRotaWeekStartRoute =
+  AuthenticatedVenuesVenueIdRotaWeekStartRouteImport.update({
+    id: '/rota/$weekStart',
+    path: '/rota/$weekStart',
+    getParentRoute: () => AuthenticatedVenuesVenueIdRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -69,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
   '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/venues/$venueId/': typeof AuthenticatedVenuesVenueIdIndexRoute
+  '/venues/$venueId/rota/$weekStart': typeof AuthenticatedVenuesVenueIdRotaWeekStartRoute
+  '/venues/$venueId/rota/': typeof AuthenticatedVenuesVenueIdRotaIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -77,6 +93,8 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/venues/$venueId': typeof AuthenticatedVenuesVenueIdIndexRoute
+  '/venues/$venueId/rota/$weekStart': typeof AuthenticatedVenuesVenueIdRotaWeekStartRoute
+  '/venues/$venueId/rota': typeof AuthenticatedVenuesVenueIdRotaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +106,8 @@ export interface FileRoutesById {
   '/_authenticated/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
   '/_authenticated/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/_authenticated/venues/$venueId/': typeof AuthenticatedVenuesVenueIdIndexRoute
+  '/_authenticated/venues/$venueId/rota/$weekStart': typeof AuthenticatedVenuesVenueIdRotaWeekStartRoute
+  '/_authenticated/venues/$venueId/rota/': typeof AuthenticatedVenuesVenueIdRotaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,6 +119,8 @@ export interface FileRouteTypes {
     | '/venues/$venueId'
     | '/venues/$venueId/staff'
     | '/venues/$venueId/'
+    | '/venues/$venueId/rota/$weekStart'
+    | '/venues/$venueId/rota/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -107,6 +129,8 @@ export interface FileRouteTypes {
     | '/'
     | '/venues/$venueId/staff'
     | '/venues/$venueId'
+    | '/venues/$venueId/rota/$weekStart'
+    | '/venues/$venueId/rota'
   id:
     | '__root__'
     | '/_authenticated'
@@ -117,6 +141,8 @@ export interface FileRouteTypes {
     | '/_authenticated/venues/$venueId'
     | '/_authenticated/venues/$venueId/staff'
     | '/_authenticated/venues/$venueId/'
+    | '/_authenticated/venues/$venueId/rota/$weekStart'
+    | '/_authenticated/venues/$venueId/rota/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,18 +209,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVenuesVenueIdStaffRouteImport
       parentRoute: typeof AuthenticatedVenuesVenueIdRouteRoute
     }
+    '/_authenticated/venues/$venueId/rota/': {
+      id: '/_authenticated/venues/$venueId/rota/'
+      path: '/rota'
+      fullPath: '/venues/$venueId/rota/'
+      preLoaderRoute: typeof AuthenticatedVenuesVenueIdRotaIndexRouteImport
+      parentRoute: typeof AuthenticatedVenuesVenueIdRouteRoute
+    }
+    '/_authenticated/venues/$venueId/rota/$weekStart': {
+      id: '/_authenticated/venues/$venueId/rota/$weekStart'
+      path: '/rota/$weekStart'
+      fullPath: '/venues/$venueId/rota/$weekStart'
+      preLoaderRoute: typeof AuthenticatedVenuesVenueIdRotaWeekStartRouteImport
+      parentRoute: typeof AuthenticatedVenuesVenueIdRouteRoute
+    }
   }
 }
 
 interface AuthenticatedVenuesVenueIdRouteRouteChildren {
   AuthenticatedVenuesVenueIdStaffRoute: typeof AuthenticatedVenuesVenueIdStaffRoute
   AuthenticatedVenuesVenueIdIndexRoute: typeof AuthenticatedVenuesVenueIdIndexRoute
+  AuthenticatedVenuesVenueIdRotaWeekStartRoute: typeof AuthenticatedVenuesVenueIdRotaWeekStartRoute
+  AuthenticatedVenuesVenueIdRotaIndexRoute: typeof AuthenticatedVenuesVenueIdRotaIndexRoute
 }
 
 const AuthenticatedVenuesVenueIdRouteRouteChildren: AuthenticatedVenuesVenueIdRouteRouteChildren =
   {
     AuthenticatedVenuesVenueIdStaffRoute: AuthenticatedVenuesVenueIdStaffRoute,
     AuthenticatedVenuesVenueIdIndexRoute: AuthenticatedVenuesVenueIdIndexRoute,
+    AuthenticatedVenuesVenueIdRotaWeekStartRoute:
+      AuthenticatedVenuesVenueIdRotaWeekStartRoute,
+    AuthenticatedVenuesVenueIdRotaIndexRoute:
+      AuthenticatedVenuesVenueIdRotaIndexRoute,
   }
 
 const AuthenticatedVenuesVenueIdRouteRouteWithChildren =

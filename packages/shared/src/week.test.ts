@@ -66,6 +66,24 @@ describe('weekStartOf', () => {
 describe('weekDays', () => {
   let days: string[];
 
+  describe('when a Week ends on the day the clocks go forward', () => {
+    beforeEach(() => {
+      days = weekDays('2026-03-23');
+    });
+
+    it('still lists seven consecutive days', () => {
+      expect(days).toEqual([
+        '2026-03-23',
+        '2026-03-24',
+        '2026-03-25',
+        '2026-03-26',
+        '2026-03-27',
+        '2026-03-28',
+        '2026-03-29',
+      ]);
+    });
+  });
+
   describe('when a Week crosses the end of a month', () => {
     beforeEach(() => {
       days = weekDays('2026-03-30');

@@ -23,6 +23,7 @@ model Venue {
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
   members      VenueMember[]
   staffMembers StaffMember[]
+  rotas        Rota[]
 
   @@map("venues")
 }
@@ -60,4 +61,23 @@ model StaffMember {
 
   @@unique([venueId, email])
   @@map("staff_members")
+}
+
+enum RotaStatus {
+  draft
+  published
+
+  @@map("rota_status")
+}
+
+model Rota {
+  id        String     @id @default(uuid()) @db.Uuid
+  venueId   String     @map("venue_id") @db.Uuid
+  weekStart DateTime   @map("week_start") @db.Date
+  status    RotaStatus @default(draft)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  venue     Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, weekStart])
+  @@map("rotas")
 }
