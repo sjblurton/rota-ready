@@ -17,11 +17,12 @@ model User {
 }
 
 model Venue {
-  id        String        @id @default(uuid()) @db.Uuid
-  name      String
-  timeZone  String        @map("time_zone")
-  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  members   VenueMember[]
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  timeZone     String        @map("time_zone")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  members      VenueMember[]
+  staffMembers StaffMember[]
 
   @@map("venues")
 }
@@ -44,4 +45,19 @@ model VenueMember {
   @@unique([userId])
   @@index([venueId])
   @@map("venue_members")
+}
+
+model StaffMember {
+  id         String    @id @default(uuid()) @db.Uuid
+  venueId    String    @map("venue_id") @db.Uuid
+  name       String
+  role       String
+  email      String?
+  phone      String?
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  venue      Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, email])
+  @@map("staff_members")
 }

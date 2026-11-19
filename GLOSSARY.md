@@ -24,6 +24,10 @@ _Avoid_: Manager (reserved for a future Member Role), boss
 A person who works shifts at a Venue. Staff Members never log in; they reach their shifts through their Staff Link. The same human working at two Venues is two Staff Members.
 _Avoid_: Employee, worker, user, team member
 
+**Archive**:
+What the Owner does when a Staff Member stops working at the Venue. An archived Staff Member drops off the staff list and future Rotas, and their email address is removed, so the same person can be added again later.
+_Avoid_: Delete, remove, deactivate
+
 **Role**:
 The job a Staff Member does, e.g. Bar, Floor, Kitchen. Not to be confused with Member Role.
 _Avoid_: Position, job title, Member Role

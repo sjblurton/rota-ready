@@ -99,8 +99,8 @@ export interface VenueMemberLocals {
   venue: Venue;
 }
 
-export type VenueRequestHandler = RequestHandler<
-  { venueId: string },
+export type VenueRequestHandler<Params = { venueId: string }> = RequestHandler<
+  Params,
   unknown,
   unknown,
   Request['query'],

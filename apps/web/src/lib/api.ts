@@ -16,6 +16,10 @@ export class ApiError extends Error {
   }
 }
 
+export function hasErrorCode(error: unknown, code: ApiErrorCode) {
+  return error instanceof ApiError && error.code === code;
+}
+
 async function errorCodeOf(response: Response): Promise<ApiErrorCode | undefined> {
   const body: unknown = await response.json().catch(() => undefined);
   const parsed = apiErrorResponseSchema.safeParse(body);
@@ -40,7 +44,7 @@ async function apiRequest<Schema extends z.ZodType>(
   if (!response.ok) {
     throw new ApiError(response.status, await errorCodeOf(response));
   }
-  return schema.parse(await response.json());
+  return schema.parse(response.status === 204 ? undefined : await response.json());
 }
 
 export function apiGet<Schema extends z.ZodType>(path: string, schema: Schema) {

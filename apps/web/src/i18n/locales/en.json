@@ -25,7 +25,13 @@
     "required": "This field is required.",
     "invalid": "Check this field and try again.",
     "invalidEmail": "Enter a valid email address.",
-    "venueNameTooLong": "Use {{venueNameMaxLength}} characters or fewer."
+    "tooLong_one": "Use {{count}} character or fewer.",
+    "tooLong_other": "Use {{count}} characters or fewer.",
+    "venueNameTooLong": "$t(validation.tooLong, {\"count\": {{venueNameMaxLength}} })",
+    "staffMemberNameTooLong": "$t(validation.tooLong, {\"count\": {{staffMemberNameMaxLength}} })",
+    "staffMemberRoleTooLong": "$t(validation.tooLong, {\"count\": {{staffMemberRoleMaxLength}} })",
+    "invalidPhone": "Enter a valid phone number.",
+    "staffMemberEmailTaken": "Another Staff Member already uses this email."
   },
   "auth": {
     "email": "Email",
@@ -64,6 +70,39 @@
     "rename": {
       "title": "Rename venue",
       "submit": "Save name"
+    },
+    "nav": {
+      "label": "Venue",
+      "settings": "Settings",
+      "staff": "Staff"
+    }
+  },
+  "staff": {
+    "title": "Staff",
+    "empty": "No Staff Members yet. Add the first one below.",
+    "name": "Name",
+    "role": "Role",
+    "email": "Email",
+    "phone": "Phone (optional)",
+    "contact": "Contact",
+    "actions": "Actions",
+    "add": {
+      "title": "Add a staff member",
+      "submit": "Add staff member"
+    },
+    "edit": {
+      "button": "Edit",
+      "label": "Edit {{name}}",
+      "submit": "Save changes",
+      "cancel": "Cancel"
+    },
+    "archive": {
+      "button": "Archive",
+      "label": "Archive {{name}}",
+      "title": "Archive {{name}}?",
+      "description": "They'll drop off the staff list and the rota.",
+      "confirm": "Archive",
+      "cancel": "Cancel"
     }
   }
 }
