@@ -31,6 +31,12 @@ test.describe.serial('MVP journey', () => {
     return page.getByRole('table', { name: 'Staff' });
   }
 
+  function weekHeading(weekStart: string) {
+    return page.getByRole('heading', {
+      name: `Week of ${formatLocalDate(weekStart, { withYear: true })}`,
+    });
+  }
+
   function rotaGrid() {
     return page.getByRole('table', { name: 'Rota' });
   }
@@ -174,9 +180,7 @@ test.describe.serial('MVP journey', () => {
     await page.getByRole('tab', { name: 'Rota' }).click();
     await page.waitForURL(/\/rota\/\d{4}-\d{2}-\d{2}$/);
     thisWeek = page.url().slice(-10);
-    await expect(
-      page.getByRole('heading', { name: `Week of ${formatLocalDate(thisWeek)}` }),
-    ).toBeVisible();
+    await expect(weekHeading(thisWeek)).toBeVisible();
     await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
     await expect(
       rotaGrid().getByRole('row').filter({ has: page.getByRole('cell') }),
@@ -192,16 +196,12 @@ test.describe.serial('MVP journey', () => {
 
   test('moves to the next Week', async () => {
     await page.getByRole('link', { name: 'Next Week' }).click();
-    await expect(
-      page.getByRole('heading', { name: `Week of ${formatLocalDate(addDays(thisWeek, 7))}` }),
-    ).toBeVisible();
+    await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
   });
 
   test('moves back to the previous Week', async () => {
     await page.getByRole('link', { name: 'Previous Week' }).click();
-    await expect(
-      page.getByRole('heading', { name: `Week of ${formatLocalDate(thisWeek)}` }),
-    ).toBeVisible();
+    await expect(weekHeading(thisWeek)).toBeVisible();
   });
 
   test('offers a way back to this Week from a Week address that is not a Monday', async () => {
@@ -210,9 +210,7 @@ test.describe.serial('MVP journey', () => {
       "We couldn't find what you were looking for.",
     );
     await page.getByRole('link', { name: 'Go to this Week' }).click();
-    await expect(
-      page.getByRole('heading', { name: `Week of ${formatLocalDate(thisWeek)}` }),
-    ).toBeVisible();
+    await expect(weekHeading(thisWeek)).toBeVisible();
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

@@ -185,4 +185,14 @@ describe('formatLocalDate', () => {
       expect(formatted).toBe('Mon 16 Nov');
     });
   });
+
+  describe('when asked for the year too', () => {
+    beforeEach(() => {
+      formatted = formatLocalDate('2026-11-16', { withYear: true });
+    });
+
+    it('adds the year', () => {
+      expect(formatted).toBe('Mon, 16 Nov 2026');
+    });
+  });
 });

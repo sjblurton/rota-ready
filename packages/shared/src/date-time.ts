@@ -44,6 +44,12 @@ export function formatShiftTimes(
   return extraDays > 0 ? `${range} (+${extraDays})` : range;
 }
 
-export function formatLocalDate(localDate: string): string {
-  return formatDate(new Date(`${localDate}T12:00:00Z`), { timeZone: 'UTC' });
+export function formatLocalDate(localDate: string, { withYear = false } = {}): string {
+  return new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(withYear && { year: 'numeric' }),
+  }).format(new Date(`${localDate}T12:00:00Z`));
 }
