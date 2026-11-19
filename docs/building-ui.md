@@ -29,7 +29,7 @@ apps/web/src/
 └── routes/                route config and page layout only
 ```
 
-- **shadcn components**, in `components/ui/`: primitives such as a button, an input or a field. Add them with the shadcn CLI (`pnpm dlx shadcn@latest add <name>` from `apps/web`), never by hand.
+- **shadcn components**, in `components/ui/`: primitives such as a button, an input or a field. Add them with the shadcn CLI (`pnpm dlx shadcn@latest add <name>` from `apps/web`), never by hand. They're typechecked through `apps/web/tsconfig.ui.json`, which turns off `exactOptionalPropertyTypes`, so they compile as the CLI writes them. App code sees them through that project's declarations and stays strict.
 - **Product components** compose shadcn components into a product concept, such as a delete dialog or the application header. Name each one for what it does. If it names a glossary concept, it goes in that feature's folder, however many features use it. If it doesn't, it goes in `components/`.
 - **Queries and mutations** go in the feature they belong to (`venue-queries.ts`). A form takes its mutation and cache updates with it.
 - **Routes** hold their config (`beforeLoad`, `loader`, `errorComponent`) and a page component that lays out feature components. A route file has no `useForm` or `useMutation`.

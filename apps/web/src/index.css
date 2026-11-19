@@ -128,3 +128,6 @@
     @apply font-sans;
     }
 }
+[data-sonner-toast][data-type='error'] [data-icon] {
+  color: var(--destructive);
+}

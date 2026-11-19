@@ -130,6 +130,7 @@ test.describe.serial('MVP journey', () => {
     await expect(toast()).toHaveText('Something went wrong. Please try again.');
     await expect(page.locator('form').getByRole('alert')).toHaveCount(0);
     await page.unroute('**/api/venues/*');
+    await expect(toast()).toHaveCount(0, { timeout: 10_000 });
   });
 
   test('opens the Staff page with no Staff Members yet', async () => {
@@ -198,6 +199,7 @@ test.describe.serial('MVP journey', () => {
       await toast().evaluate((element) => element.closest('[aria-hidden="true"], [inert]') === null),
     ).toBe(true);
     await page.unroute('**/archive');
+    await expect(toast()).toHaveCount(0, { timeout: 10_000 });
   });
 
   test('archives a Staff Member and hides them from the list', async () => {
@@ -391,6 +393,7 @@ test.describe.serial('MVP journey', () => {
     await page.locator('form').getByRole('button').click();
     await expect(toast()).toHaveText(/^\[.*\]$/);
     await page.unroute('**/api/venues/*');
+    await expect(toast()).toHaveCount(0, { timeout: 10_000 });
   });
 
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
