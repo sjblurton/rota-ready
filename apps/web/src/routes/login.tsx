@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import type { Credentials } from '@rota-ready/shared';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { AuthForm, type Credentials } from '@/components/auth-form';
+import { AuthForm } from '@/components/auth-form';
 import { authErrorMessage } from '@/i18n/auth-error-message';
 import { redirectIfLoggedIn } from '@/lib/redirect-if-logged-in';
 import { supabase } from '@/lib/supabase';
@@ -22,19 +23,6 @@ function LoginPage() {
   }
 
   return (
-    <AuthForm
-      title={t('auth.logIn.title')}
-      submitLabel={t('auth.logIn.submit')}
-      passwordAutoComplete="current-password"
-      onSubmit={logIn}
-      footer={
-        <>
-          {t('auth.logIn.noAccount')}
-          <Link to="/signup" className="text-foreground underline underline-offset-4">
-            {t('auth.logIn.signUpLink')}
-          </Link>
-        </>
-      }
-    />
+    <AuthForm mode="logIn" authenticate={logIn} />
   );
 }

@@ -21,6 +21,12 @@
     "forbidden": "You don't have access to this.",
     "venueAlreadyExists": "You already have a venue. Reload the page to open it."
   },
+  "validation": {
+    "required": "This field is required.",
+    "invalid": "Check this field and try again.",
+    "invalidEmail": "Enter a valid email address.",
+    "venueNameTooLong": "Use {{venueNameMaxLength}} characters or fewer."
+  },
   "auth": {
     "email": "Email",
     "password": "Password",

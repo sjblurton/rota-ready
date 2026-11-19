@@ -44,6 +44,7 @@ export default defineConfig([
         'error',
         {
           mode: 'jsx-only',
+          callees: { exclude: ['t', 'register'] },
           'jsx-attributes': {
             include: [
               'alt',

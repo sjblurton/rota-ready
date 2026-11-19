@@ -50,6 +50,21 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByLabel('Timezone')).toHaveValue('Europe/London');
   });
 
+  test('describes an empty Venue name with a translated error', async () => {
+    await page.getByRole('button', { name: 'Create venue' }).click();
+    await expect(page.getByLabel('Venue name')).toHaveAccessibleDescription(
+      'This field is required.',
+    );
+  });
+
+  test('describes a Venue name over the limit with the limit from the shared schema', async () => {
+    await page.getByLabel('Venue name').fill('x'.repeat(101));
+    await page.getByRole('button', { name: 'Create venue' }).click();
+    await expect(page.getByLabel('Venue name')).toHaveAccessibleDescription(
+      'Use 100 characters or fewer.',
+    );
+  });
+
   test('creates the Venue and shows its name', async () => {
     await page.getByLabel('Venue name').fill(venueName);
     await page.getByRole('button', { name: 'Create venue' }).click();

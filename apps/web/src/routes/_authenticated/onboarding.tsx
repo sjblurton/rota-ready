@@ -1,13 +1,15 @@
 import {
+  createVenueRequestSchema,
   DEFAULT_TIME_ZONE,
-  VENUE_NAME_MAX_LENGTH,
   venueSchema,
   type CreateVenueRequest,
 } from '@rota-ready/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
-import type { FormEvent } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { VenueNameField } from '@/components/venue-name-field';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,8 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
 import { myVenuesQuery, venueQuery } from '@/lib/venues';
@@ -36,6 +38,11 @@ function OnboardingPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const form = useForm({
+    resolver: zodResolver(createVenueRequestSchema),
+    defaultValues: { name: '', timeZone: DEFAULT_TIME_ZONE },
+  });
+  const { errors } = form.formState;
   const createVenue = useMutation({
     mutationFn: (request: CreateVenueRequest) => apiPost('/api/venues', request, venueSchema),
     onSuccess: async (venue) => {
@@ -45,13 +52,8 @@ function OnboardingPage() {
     },
   });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    createVenue.mutate({
-      name: String(form.get('name')),
-      timeZone: String(form.get('timeZone')),
-    });
+  function onSubmit(request: CreateVenueRequest) {
+    createVenue.mutate(request);
   }
 
   return (
@@ -64,35 +66,36 @@ function OnboardingPage() {
           <CardDescription>{t('onboarding.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">{t('venue.name')}</Label>
-              <Input id="name" name="name" maxLength={VENUE_NAME_MAX_LENGTH} required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="timeZone">{t('venue.timeZone')}</Label>
-              <select
-                id="timeZone"
-                name="timeZone"
-                defaultValue={DEFAULT_TIME_ZONE}
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
-              >
-                {timeZones.map((timeZone) => (
-                  <option key={timeZone} value={timeZone}>
-                    {timeZone}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {createVenue.isError && (
-              <p role="alert" className="text-sm text-destructive">
-                {apiErrorMessage(t, createVenue.error)}
-              </p>
-            )}
-            <Button type="submit" disabled={createVenue.isPending}>
-              {t('onboarding.submit')}
-            </Button>
-          </form>
+          <FormProvider {...form}>
+            <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <FieldGroup>
+                <VenueNameField />
+                <Field data-invalid={!!errors.timeZone}>
+                  <FieldLabel htmlFor="timeZone">{t('venue.timeZone')}</FieldLabel>
+                  <NativeSelect
+                    id="timeZone"
+                    className="w-full"
+                    aria-invalid={!!errors.timeZone}
+                    aria-describedby="timeZone-error"
+                    {...form.register('timeZone')}
+                  >
+                    {timeZones.map((timeZone) => (
+                      <NativeSelectOption key={timeZone} value={timeZone}>
+                        {timeZone}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                  <FieldError id="timeZone-error" errors={[errors.timeZone]} />
+                </Field>
+                <FieldError>
+                  {createVenue.isError && apiErrorMessage(t, createVenue.error)}
+                </FieldError>
+              </FieldGroup>
+              <Button type="submit" disabled={createVenue.isPending}>
+                {t('onboarding.submit')}
+              </Button>
+            </form>
+          </FormProvider>
         </CardContent>
       </Card>
     </main>
