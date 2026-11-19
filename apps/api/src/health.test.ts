@@ -1,49 +1,22 @@
-import type { Server } from 'node:http';
 import { createServer, type AddressInfo, type Socket } from 'node:net';
-import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
-import { createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
-import { pino } from 'pino';
-import { createApp } from './app.js';
-import type { AuthConfig } from './auth.js';
-import { createDb, type Db } from './db.js';
-
-async function unusedAuthConfig(): Promise<AuthConfig> {
-  const { publicKey } = await generateKeyPair('ES256');
-  return {
-    keys: createLocalJWKSet({ keys: [await exportJWK(publicKey)] }),
-    issuer: 'http://auth.test/auth/v1',
-    audience: 'authenticated',
-  };
-}
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { startTestApp, type TestApp } from '../test/test-app.js';
 
 describe('GET /api/health', () => {
-  let db: Db;
-  let server: Server;
+  let app: TestApp;
   let response: Response;
   let body: unknown;
 
-  async function requestHealth() {
-    server = createApp({
-      db,
-      authConfig: await unusedAuthConfig(),
-      logger: pino({ level: 'silent' }),
-    }).listen(0);
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    const { port } = server.address() as AddressInfo;
-    response = await fetch(`http://localhost:${port}/api/health`);
+  async function requestHealth(databaseUrl?: string) {
+    app = await startTestApp(databaseUrl ? { databaseUrl } : {});
+    response = await app.request('GET', '/api/health');
     body = await response.json();
   }
 
-  afterEach(async () => {
-    await new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve())),
-    );
-    await db.$disconnect();
-  });
+  afterEach(() => app.close());
 
   describe('when the database is reachable', () => {
     beforeEach(async () => {
-      db = createDb(inject('databaseUrl'));
       await requestHealth();
     });
 
@@ -65,9 +38,8 @@ describe('GET /api/health', () => {
       silentServer.listen(0);
       await new Promise<void>((resolve) => silentServer.once('listening', resolve));
       const { port } = silentServer.address() as AddressInfo;
-      db = createDb(`postgresql://postgres:postgres@127.0.0.1:${port}/silent`);
       const startedAt = performance.now();
-      await requestHealth();
+      await requestHealth(`postgresql://postgres:postgres@127.0.0.1:${port}/silent`);
       elapsedMs = performance.now() - startedAt;
     });
 
@@ -88,8 +60,7 @@ describe('GET /api/health', () => {
 
   describe('when the database is unreachable', () => {
     beforeEach(async () => {
-      db = createDb('postgresql://postgres:postgres@127.0.0.1:1/unreachable');
-      await requestHealth();
+      await requestHealth('postgresql://postgres:postgres@127.0.0.1:1/unreachable');
     });
 
     it('still responds with 200', () => {

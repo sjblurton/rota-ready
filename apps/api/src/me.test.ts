@@ -1,80 +1,21 @@
-import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import {
-  createLocalJWKSet,
-  exportJWK,
-  generateKeyPair,
-  SignJWT,
-  type CryptoKey,
-} from 'jose';
-import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
-import { pino } from 'pino';
-import { createApp } from './app.js';
-import { createDb, type Db } from './db.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createUser } from '../test/seed.js';
+import { startTestApp, type TestApp } from '../test/test-app.js';
 
-const ISSUER = 'http://auth.test/auth/v1';
-const KEY_ID = 'test-key';
-const USER_ID = '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a';
-const EMAIL = 'owner@example.com';
+const USER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 
 describe('/api/me', () => {
-  let db: Db;
-  let server: Server;
-  let baseUrl: string;
-  let signingKey: CryptoKey;
+  let app: TestApp;
   let response: Response;
 
   beforeEach(async () => {
-    const { publicKey, privateKey } = await generateKeyPair('ES256');
-    signingKey = privateKey;
-    const publicJwk = { ...(await exportJWK(publicKey)), kid: KEY_ID, alg: 'ES256' };
-    db = createDb(inject('databaseUrl'));
-    server = createApp({
-      db,
-      logger: pino({ level: 'silent' }),
-      authConfig: {
-        keys: createLocalJWKSet({ keys: [publicJwk] }),
-        issuer: ISSUER,
-        audience: 'authenticated',
-      },
-    }).listen(0);
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    const { port } = server.address() as AddressInfo;
-    baseUrl = `http://localhost:${port}`;
+    app = await startTestApp();
   });
 
-  afterEach(async () => {
-    await new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve())),
-    );
-    await db.$disconnect();
-  });
-
-  function signToken({
-    key = signingKey,
-    issuer = ISSUER,
-    expiresAt = '1h',
-  }: { key?: CryptoKey; issuer?: string; expiresAt?: string | number } = {}) {
-    return new SignJWT({ email: EMAIL, role: 'authenticated' })
-      .setProtectedHeader({ alg: 'ES256', kid: KEY_ID })
-      .setSubject(USER_ID)
-      .setIssuer(issuer)
-      .setAudience('authenticated')
-      .setIssuedAt()
-      .setExpirationTime(expiresAt)
-      .sign(key);
-  }
+  afterEach(() => app.close());
 
   function request(method: 'GET' | 'PUT', token?: string) {
-    return fetch(`${baseUrl}/api/me`, {
-      method,
-      headers: token ? { authorization: `Bearer ${token}` } : {},
-    });
-  }
-
-  async function signTokenWithAnotherKey() {
-    const { privateKey } = await generateKeyPair('ES256');
-    return signToken({ key: privateKey });
+    return app.request(method, '/api/me', token ? { token } : {});
   }
 
   describe('GET', () => {
@@ -94,7 +35,7 @@ describe('/api/me', () => {
 
     describe('when the token is signed with the wrong key', () => {
       beforeEach(async () => {
-        response = await request('GET', await signTokenWithAnotherKey());
+        response = await request('GET', await app.signTokenWithAnotherKey(USER));
       });
 
       it('responds with 401', () => {
@@ -104,8 +45,7 @@ describe('/api/me', () => {
 
     describe('when the token has expired', () => {
       beforeEach(async () => {
-        const oneMinuteAgo = Math.floor(Date.now() / 1000) - 60;
-        response = await request('GET', await signToken({ expiresAt: oneMinuteAgo }));
+        response = await request('GET', await app.signExpiredToken(USER));
       });
 
       it('responds with 401', () => {
@@ -117,7 +57,7 @@ describe('/api/me', () => {
       beforeEach(async () => {
         response = await request(
           'GET',
-          await signToken({ issuer: 'http://elsewhere.test/auth/v1' }),
+          await app.signToken(USER, { issuer: 'http://elsewhere.test/auth/v1' }),
         );
       });
 
@@ -128,7 +68,7 @@ describe('/api/me', () => {
 
     describe('when the token is valid but no User row exists', () => {
       beforeEach(async () => {
-        response = await request('GET', await signToken());
+        response = await request('GET', await app.signToken(USER));
       });
 
       it('responds with 403', () => {
@@ -142,8 +82,8 @@ describe('/api/me', () => {
 
     describe('when the token is valid and the User exists', () => {
       beforeEach(async () => {
-        await db.user.create({ data: { id: USER_ID, email: EMAIL } });
-        response = await request('GET', await signToken());
+        await createUser(app.db, USER);
+        response = await request('GET', await app.signToken(USER));
       });
 
       it('responds with 200', () => {
@@ -151,7 +91,7 @@ describe('/api/me', () => {
       });
 
       it('returns the User', async () => {
-        expect(await response.json()).toEqual({ id: USER_ID, email: EMAIL });
+        expect(await response.json()).toEqual(USER);
       });
     });
   });
@@ -159,7 +99,7 @@ describe('/api/me', () => {
   describe('PUT', () => {
     describe('when the token is signed with the wrong key', () => {
       beforeEach(async () => {
-        response = await request('PUT', await signTokenWithAnotherKey());
+        response = await request('PUT', await app.signTokenWithAnotherKey(USER));
       });
 
       it('responds with 401', () => {
@@ -167,13 +107,13 @@ describe('/api/me', () => {
       });
 
       it('creates no User', async () => {
-        expect(await db.user.count()).toBe(0);
+        expect(await app.db.user.count()).toBe(0);
       });
     });
 
     describe('when the token is valid and no User row exists', () => {
       beforeEach(async () => {
-        response = await request('PUT', await signToken());
+        response = await request('PUT', await app.signToken(USER));
       });
 
       it('responds with 200', () => {
@@ -181,43 +121,43 @@ describe('/api/me', () => {
       });
 
       it('returns the new User', async () => {
-        expect(await response.json()).toEqual({ id: USER_ID, email: EMAIL });
+        expect(await response.json()).toEqual(USER);
       });
 
       it('stores the User keyed by the token subject', async () => {
-        expect(await db.user.findMany({ select: { id: true, email: true } })).toEqual([
-          { id: USER_ID, email: EMAIL },
+        expect(await app.db.user.findMany({ select: { id: true, email: true } })).toEqual([
+          USER,
         ]);
       });
 
       describe('when it is called again', () => {
         beforeEach(async () => {
-          response = await request('PUT', await signToken());
+          response = await request('PUT', await app.signToken(USER));
         });
 
         it('returns the same User', async () => {
-          expect(await response.json()).toEqual({ id: USER_ID, email: EMAIL });
+          expect(await response.json()).toEqual(USER);
         });
 
         it('still stores only one User', async () => {
-          expect(await db.user.count()).toBe(1);
+          expect(await app.db.user.count()).toBe(1);
         });
       });
     });
 
     describe('when the User already exists with an older email address', () => {
       beforeEach(async () => {
-        await db.user.create({ data: { id: USER_ID, email: 'old@example.com' } });
-        response = await request('PUT', await signToken());
+        await createUser(app.db, { id: USER.id, email: 'old@example.com' });
+        response = await request('PUT', await app.signToken(USER));
       });
 
       it('returns the email address from the token', async () => {
-        expect(await response.json()).toEqual({ id: USER_ID, email: EMAIL });
+        expect(await response.json()).toEqual(USER);
       });
 
       it('stores the email address from the token', async () => {
-        expect(await db.user.findUnique({ where: { id: USER_ID } })).toMatchObject({
-          email: EMAIL,
+        expect(await app.db.user.findUnique({ where: { id: USER.id } })).toMatchObject({
+          email: USER.email,
         });
       });
     });
