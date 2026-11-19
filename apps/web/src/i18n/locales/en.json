@@ -2,6 +2,10 @@
   "app": {
     "name": "Rota Ready"
   },
+  "loading": {
+    "title": "Loading…",
+    "slow": "Still waking up. After a quiet spell this can take up to a minute."
+  },
   "health": {
     "checking": "Checking API…",
     "unreachable": "API unreachable",
