@@ -9,6 +9,7 @@ const statusByCode = {
   not_found: 404,
   venue_already_exists: 409,
   staff_member_email_taken: 409,
+  shift_overlaps: 409,
   internal_error: 500,
 } as const satisfies Record<ApiErrorCode, number>;
 

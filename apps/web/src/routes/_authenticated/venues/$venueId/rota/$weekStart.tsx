@@ -77,6 +77,7 @@ function RotaPage() {
               timeZone={venue.timeZone}
               weekStart={rota.weekStart}
               staffMembers={staffMembers}
+              shifts={rota.shifts}
             />
           </CardContent>
         </Card>

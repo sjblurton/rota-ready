@@ -9,6 +9,8 @@ export const validationMessage = {
   staffMemberEmailTaken: 'validation.staffMemberEmailTaken',
   shiftEndsBeforeStart: 'validation.shiftEndsBeforeStart',
   shiftTooLong: 'validation.shiftTooLong',
+  shiftQuarterHour: 'validation.shiftQuarterHour',
+  shiftOverlaps: 'validation.shiftOverlaps',
 } as const;
 
 export type ValidationMessageKey = (typeof validationMessage)[keyof typeof validationMessage];

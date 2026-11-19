@@ -397,6 +397,10 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
       body: { startsAt: '2026-11-15T09:00:00.000Z', endsAt: '2026-11-15T17:00:00.000Z' },
     },
     {
+      scenario: 'the start is not on a 15-minute step',
+      body: { startsAt: '2026-11-16T09:10:00.000Z', endsAt: '2026-11-16T17:00:00.000Z' },
+    },
+    {
       scenario: 'the start is not a date and time',
       body: { startsAt: 'Monday 9am', endsAt: '2026-11-16T17:00:00.000Z' },
     },
@@ -417,6 +421,129 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
 
     it('stores no Shift', async () => {
       expect(await app.db.shift.count()).toBe(0);
+    });
+  });
+
+  describe('when the Staff Member already has a Shift from 09:00 to 17:00 on Monday', () => {
+    let existing: { id: string };
+    let rota: { id: string; venueId: string };
+
+    beforeEach(async () => {
+      rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      existing = await createShift(app.db, rota, sam, {
+        startsAt: '2026-11-16T09:00:00.000Z',
+        endsAt: '2026-11-16T17:00:00.000Z',
+      });
+    });
+
+    describe('when a Shift from 16:00 to 20:00 is added for them', () => {
+      beforeEach(async () => {
+        response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-16T16:00:00.000Z',
+            endsAt: '2026-11-16T20:00:00.000Z',
+          },
+        });
+      });
+
+      it('responds with 409 and the shift_overlaps code', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          409,
+          { code: 'shift_overlaps' },
+        ]);
+      });
+
+      it('keeps only the existing Shift', async () => {
+        expect(await app.db.shift.findMany({ select: { id: true } })).toEqual([
+          { id: existing.id },
+        ]);
+      });
+    });
+
+    describe('when a Shift starting at 17:00 is added for them', () => {
+      beforeEach(async () => {
+        response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-16T17:00:00.000Z',
+            endsAt: '2026-11-16T22:00:00.000Z',
+          },
+        });
+      });
+
+      it('responds with 201', () => {
+        expect(response.status).toBe(201);
+      });
+    });
+
+    describe('when a Shift at the same time is added for another Staff Member', () => {
+      beforeEach(async () => {
+        const jo = await createActiveStaffMember(app.db, ownVenue, JO);
+        response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+          as: OWNER,
+          body: {
+            staffMemberId: jo.id,
+            startsAt: '2026-11-16T09:00:00.000Z',
+            endsAt: '2026-11-16T17:00:00.000Z',
+          },
+        });
+      });
+
+      it('responds with 201', () => {
+        expect(response.status).toBe(201);
+      });
+    });
+
+    describe('when four Shifts overlapping each other are added for them at once', () => {
+      let responses: Response[];
+
+      beforeEach(async () => {
+        responses = await Promise.all(
+          ['09', '10', '11', '12'].map((hour) =>
+            app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+              as: OWNER,
+              body: {
+                staffMemberId: sam.id,
+                startsAt: `2026-11-17T${hour}:00:00.000Z`,
+                endsAt: '2026-11-17T17:00:00.000Z',
+              },
+            }),
+          ),
+        );
+      });
+
+      it('accepts one and responds to the others with 409', () => {
+        expect(responses.map((each) => each.status).sort()).toEqual([201, 409, 409, 409]);
+      });
+
+      it('stores only one of them beside the existing Shift', async () => {
+        expect(await app.db.shift.count({ where: { rotaId: rota.id } })).toBe(2);
+      });
+    });
+  });
+
+  describe("when the Staff Member's Overnight Shift from the previous Week runs into Monday", () => {
+    beforeEach(async () => {
+      const previousRota = await createRotaFor(app.db, ownVenue, '2026-11-09');
+      await createShift(app.db, previousRota, sam, {
+        startsAt: '2026-11-15T20:00:00.000Z',
+        endsAt: '2026-11-16T02:00:00.000Z',
+      });
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-16T01:00:00.000Z',
+          endsAt: '2026-11-16T05:00:00.000Z',
+        },
+      });
+    });
+
+    it('responds with 409', () => {
+      expect(response.status).toBe(409);
     });
   });
 

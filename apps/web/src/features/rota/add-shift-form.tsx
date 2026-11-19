@@ -1,9 +1,12 @@
 import {
   addShiftFormSchema,
   formatLocalDate,
+  QUARTER_HOUR_MINUTES,
   shiftSchema,
+  validationMessage,
   weekDays,
   type CreateShiftRequest,
+  type Shift,
   type StaffMember,
 } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,21 +20,30 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { addShiftToRota, shiftsPath } from '@/features/rota/rota-queries';
 import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost } from '@/lib/api';
+import { apiPost, hasErrorCode } from '@/lib/api';
 
 interface AddShiftFormProps {
   venueId: string;
   timeZone: string;
   weekStart: string;
   staffMembers: StaffMember[];
+  shifts: Shift[];
 }
 
-export function AddShiftForm({ venueId, timeZone, weekStart, staffMembers }: AddShiftFormProps) {
+const TIME_STEP_SECONDS = QUARTER_HOUR_MINUTES * 60;
+
+export function AddShiftForm({
+  venueId,
+  timeZone,
+  weekStart,
+  staffMembers,
+  shifts,
+}: AddShiftFormProps) {
   const { t } = useTranslation();
   const id = useId();
   const queryClient = useQueryClient();
   const form = useForm({
-    resolver: zodResolver(addShiftFormSchema(timeZone)),
+    resolver: zodResolver(addShiftFormSchema(timeZone, shifts)),
     defaultValues: { staffMemberId: '', date: weekStart, startTime: '', endTime: '' },
   });
   const { errors } = form.formState;
@@ -40,13 +52,23 @@ export function AddShiftForm({ venueId, timeZone, weekStart, staffMembers }: Add
       apiPost(shiftsPath(venueId, weekStart), request, shiftSchema),
     onSuccess: (shift) => {
       addShiftToRota(queryClient, venueId, weekStart, shift);
-      form.reset({ ...form.getValues(), startTime: '', endTime: '' }, { keepFieldsRef: true });
-      form.setFocus('startTime');
+      form.setFocus('staffMemberId');
+    },
+    onError: (error) => {
+      if (hasErrorCode(error, 'shift_overlaps')) {
+        form.setError('root', { message: validationMessage.shiftOverlaps });
+      }
     },
   });
+  const overlapRejected = hasErrorCode(add.error, 'shift_overlaps');
 
   function onSubmit(request: CreateShiftRequest) {
     add.mutate(request);
+  }
+
+  function clearFormError() {
+    form.clearErrors('root');
+    add.reset();
   }
 
   return (
@@ -60,7 +82,7 @@ export function AddShiftForm({ venueId, timeZone, weekStart, staffMembers }: Add
               className="w-full"
               aria-invalid={!!errors.staffMemberId}
               aria-describedby={`${id}-staffMember-error`}
-              {...form.register('staffMemberId')}
+              {...form.register('staffMemberId', { onChange: clearFormError })}
             >
               <NativeSelectOption value="">{t('rota.addShift.chooseStaffMember')}</NativeSelectOption>
               {staffMembers.map((staffMember) => (
@@ -78,7 +100,7 @@ export function AddShiftForm({ venueId, timeZone, weekStart, staffMembers }: Add
               className="w-full"
               aria-invalid={!!errors.date}
               aria-describedby={`${id}-date-error`}
-              {...form.register('date')}
+              {...form.register('date', { onChange: clearFormError })}
             >
               {weekDays(weekStart).map((day) => (
                 <NativeSelectOption key={day} value={day}>
@@ -93,9 +115,10 @@ export function AddShiftForm({ venueId, timeZone, weekStart, staffMembers }: Add
             <Input
               id={`${id}-startTime`}
               type="time"
+              step={TIME_STEP_SECONDS}
               aria-invalid={!!errors.startTime}
               aria-describedby={`${id}-startTime-error`}
-              {...form.register('startTime')}
+              {...form.register('startTime', { onChange: clearFormError })}
             />
             <FieldError id={`${id}-startTime-error`} errors={[errors.startTime]} />
           </Field>
@@ -104,14 +127,17 @@ export function AddShiftForm({ venueId, timeZone, weekStart, staffMembers }: Add
             <Input
               id={`${id}-endTime`}
               type="time"
+              step={TIME_STEP_SECONDS}
               aria-invalid={!!errors.endTime}
               aria-describedby={`${id}-endTime-error`}
-              {...form.register('endTime')}
+              {...form.register('endTime', { onChange: clearFormError })}
             />
             <FieldError id={`${id}-endTime-error`} errors={[errors.endTime]} />
           </Field>
         </div>
-        <FieldError>{add.isError && apiErrorMessage(t, add.error)}</FieldError>
+        <FieldError errors={[errors.root]}>
+          {add.isError && !overlapRejected && apiErrorMessage(t, add.error)}
+        </FieldError>
       </FieldGroup>
       <Button type="submit" className="self-start" disabled={add.isPending}>
         {t('rota.addShift.submit')}

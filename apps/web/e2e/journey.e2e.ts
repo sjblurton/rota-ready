@@ -258,6 +258,48 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText('09:00–17:00');
   });
 
+  test('keeps the details after adding a Shift, with focus back on Staff Member', async () => {
+    await expect(page.getByLabel('Staff Member')).toBeFocused();
+    await expect(page.getByLabel('Start')).toHaveValue('09:00');
+    await expect(page.getByLabel('End')).toHaveValue('17:00');
+  });
+
+  test('rejects a Shift that overlaps one the Staff Member already has', async () => {
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeVisible();
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 7), addDays(thisWeek, 7))).toHaveText(
+      '09:00–17:00',
+    );
+  });
+
+  test('adds the same times for another Staff Member by changing only the person', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('09:00–17:00');
+  });
+
+  test('rejects a start time that is not on a 15-minute step', async () => {
+    await page.getByLabel('Start').fill('09:10');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(page.getByLabel('Start')).toHaveAccessibleDescription(
+      'Use a time on the hour, quarter past, half past or quarter to.',
+    );
+  });
+
+  test("rejects a Shift that overlaps last Week's Overnight Shift running into Monday", async () => {
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Start').fill('01:00');
+    await page.getByLabel('End').fill('05:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeVisible();
+  });
+
+  test('clears the overlap message once the Staff Member changes', async () => {
+    await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
+    await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeHidden();
+  });
+
   test('keeps a User with a Venue out of onboarding', async () => {
     await page.goto('/onboarding');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);

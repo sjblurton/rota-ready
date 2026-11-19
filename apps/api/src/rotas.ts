@@ -8,7 +8,7 @@ import {
 import { Router } from 'express';
 import type { VenueRequestHandler } from './auth.js';
 import type { Db } from './db.js';
-import type { Shift, Venue } from './generated/prisma/client.js';
+import type { Prisma, Shift, Venue } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
 
 type RotaRequestHandler = VenueRequestHandler<{ weekStart: string }>;
@@ -24,6 +24,10 @@ function toShift({ id, staffMemberId, startsAt, endsAt }: Shift) {
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
   });
+}
+
+async function lockStaffMemberUntilCommit(tx: Prisma.TransactionClient, staffMemberId: string) {
+  await tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`;
 }
 
 export function rotaRoutes(db: Db): Router {
@@ -57,16 +61,29 @@ export function rotaRoutes(db: Db): Router {
       where: { id: request.staffMemberId, venueId: venue.id, archivedAt: null },
     });
     if (!staffMember) return sendError(res, 'not_found');
+    const endsAt = new Date(request.endsAt);
     const rota = await findOrCreateRota(venue, weekStart);
-    const shift = await db.shift.create({
-      data: {
-        venueId: venue.id,
-        rotaId: rota.id,
-        staffMemberId: staffMember.id,
-        startsAt,
-        endsAt: new Date(request.endsAt),
-      },
+    const shift = await db.$transaction(async (tx) => {
+      await lockStaffMemberUntilCommit(tx, staffMember.id);
+      const overlapping = await tx.shift.findFirst({
+        where: {
+          staffMemberId: staffMember.id,
+          startsAt: { lt: endsAt },
+          endsAt: { gt: startsAt },
+        },
+      });
+      if (overlapping) return null;
+      return tx.shift.create({
+        data: {
+          venueId: venue.id,
+          rotaId: rota.id,
+          staffMemberId: staffMember.id,
+          startsAt,
+          endsAt,
+        },
+      });
     });
+    if (!shift) return sendError(res, 'shift_overlaps');
     res.status(201).json(toShift(shift));
   };
 
