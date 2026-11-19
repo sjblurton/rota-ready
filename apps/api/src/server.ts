@@ -10,7 +10,10 @@ const supabaseUrl = process.env.SUPABASE_URL;
 if (!supabaseUrl) throw new Error('SUPABASE_URL is not set');
 
 const port = Number(process.env.PORT ?? 3000);
-const logger = pino();
+const logger = pino({
+  redact: ['req.headers.authorization', 'req.headers.cookie'],
+  ...(process.env.NODE_ENV === 'development' && { transport: { target: 'pino-pretty' } }),
+});
 
 createApp({
   db: createDb(databaseUrl),

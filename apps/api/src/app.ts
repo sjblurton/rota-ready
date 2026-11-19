@@ -1,11 +1,11 @@
 import express, { type Express } from 'express';
 import type { Logger } from 'pino';
+import { pinoHttp } from 'pino-http';
 import { currentUserSchema, healthResponseSchema } from '@rota-ready/shared';
 import { withIdentity, withUser, type AuthConfig } from './auth.js';
 import type { Db } from './db.js';
 import type { User } from './generated/prisma/client.js';
-import { handleMalformedJson, sendError } from './http-errors.js';
-import { handleUnexpectedError, requestLogging } from './request-logging.js';
+import { handleMalformedJson, handleUnexpectedError, sendError } from './http-errors.js';
 import { venueRoutes } from './venues.js';
 
 export interface AppDependencies {
@@ -34,7 +34,7 @@ function toCurrentUser({ id, email }: User) {
 export function createApp({ db, authConfig, logger }: AppDependencies): Express {
   const app = express();
   app.disable('x-powered-by');
-  app.use(requestLogging(logger));
+  app.use(pinoHttp({ logger }));
   app.use(express.json());
 
   app.get('/api/health', async (_req, res) => {
