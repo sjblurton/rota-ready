@@ -5,6 +5,7 @@ import {
 } from '@rota-ready/shared';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,7 +15,6 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPatch } from '@/lib/api';
-import { formResolver } from '@/lib/form-resolver';
 import { myVenuesQuery, venueQuery } from '@/lib/venues';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId')({
@@ -41,7 +41,7 @@ function VenuePage() {
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
   const queryClient = useQueryClient();
   const form = useForm({
-    resolver: formResolver(renameVenueRequestSchema),
+    resolver: zodResolver(renameVenueRequestSchema),
     defaultValues: { name: venue.name },
   });
   const { errors } = form.formState;
@@ -87,12 +87,8 @@ function VenuePage() {
                 />
                 <FieldError id="name-error" errors={[errors.name]} />
               </Field>
+              <FieldError>{rename.isError && apiErrorMessage(t, rename.error)}</FieldError>
             </FieldGroup>
-            {rename.isError && (
-              <Alert variant="destructive">
-                <AlertDescription>{apiErrorMessage(t, rename.error)}</AlertDescription>
-              </Alert>
-            )}
             <Button type="submit" disabled={rename.isPending}>
               {t('venue.rename.submit')}
             </Button>

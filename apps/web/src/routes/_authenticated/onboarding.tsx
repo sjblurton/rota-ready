@@ -6,9 +6,9 @@ import {
 } from '@rota-ready/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,7 +22,6 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
-import { formResolver } from '@/lib/form-resolver';
 import { myVenuesQuery, venueQuery } from '@/lib/venues';
 
 export const Route = createFileRoute('/_authenticated/onboarding')({
@@ -40,7 +39,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const form = useForm({
-    resolver: formResolver(createVenueRequestSchema),
+    resolver: zodResolver(createVenueRequestSchema),
     defaultValues: { name: '', timeZone: DEFAULT_TIME_ZONE },
   });
   const { errors } = form.formState;
@@ -96,12 +95,8 @@ function OnboardingPage() {
                 </NativeSelect>
                 <FieldError id="timeZone-error" errors={[errors.timeZone]} />
               </Field>
+              <FieldError>{createVenue.isError && apiErrorMessage(t, createVenue.error)}</FieldError>
             </FieldGroup>
-            {createVenue.isError && (
-              <Alert variant="destructive">
-                <AlertDescription>{apiErrorMessage(t, createVenue.error)}</AlertDescription>
-              </Alert>
-            )}
             <Button type="submit" disabled={createVenue.isPending}>
               {t('onboarding.submit')}
             </Button>

@@ -14,13 +14,17 @@ function canonicalTimeZone(timeZone: string): string | undefined {
 export const timeZoneSchema = z.string().transform((timeZone, context) => {
   const canonical = canonicalTimeZone(timeZone);
   if (!canonical) {
-    context.addIssue({ code: 'custom', message: 'Unknown time zone' });
+    context.addIssue({ code: 'custom', message: 'validation.invalid' });
     return z.NEVER;
   }
   return canonical;
 });
 
-export const venueNameSchema = z.string().trim().min(1).max(VENUE_NAME_MAX_LENGTH);
+export const venueNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'validation.required')
+  .max(VENUE_NAME_MAX_LENGTH, 'validation.venueNameTooLong');
 
 export const venueSchema = z.object({
   id: z.uuid(),

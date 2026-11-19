@@ -25,10 +25,7 @@
     "required": "This field is required.",
     "invalid": "Check this field and try again.",
     "invalidEmail": "Enter a valid email address.",
-    "tooShort_one": "Use at least {{count}} character.",
-    "tooShort_other": "Use at least {{count}} characters.",
-    "tooLong_one": "Use {{count}} character or fewer.",
-    "tooLong_other": "Use {{count}} characters or fewer."
+    "venueNameTooLong": "Use {{venueNameMaxLength}} characters or fewer."
   },
   "auth": {
     "email": "Email",

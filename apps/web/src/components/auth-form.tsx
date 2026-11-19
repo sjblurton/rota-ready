@@ -1,13 +1,12 @@
 import { credentialsSchema, type Credentials } from '@rota-ready/shared';
 import type { ReactNode } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { formResolver } from '@/lib/form-resolver';
 
 interface AuthFormProps {
   title: string;
@@ -26,7 +25,7 @@ export function AuthForm({
 }: AuthFormProps) {
   const { t } = useTranslation();
   const form = useForm({
-    resolver: formResolver(credentialsSchema),
+    resolver: zodResolver(credentialsSchema),
     defaultValues: { email: '', password: '' },
   });
   const { errors, isSubmitting } = form.formState;
@@ -71,12 +70,8 @@ export function AuthForm({
                 />
                 <FieldError id="password-error" errors={[errors.password]} />
               </Field>
+              <FieldError>{errors.root?.message}</FieldError>
             </FieldGroup>
-            {errors.root && (
-              <Alert variant="destructive">
-                <AlertDescription>{errors.root.message}</AlertDescription>
-              </Alert>
-            )}
             <Button type="submit" disabled={isSubmitting}>
               {submitLabel}
             </Button>
