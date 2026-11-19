@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addDays, formatLocalDate } from '@rota-ready/shared';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
@@ -24,9 +25,20 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
 
 test.describe.serial('MVP journey', () => {
   let page: Page;
+  let thisWeek: string;
 
   function staffTable() {
     return page.getByRole('table', { name: 'Staff' });
+  }
+
+  function weekHeading(weekStart: string) {
+    return page.getByRole('heading', {
+      name: `Week of ${formatLocalDate(weekStart, { withYear: true })}`,
+    });
+  }
+
+  function rotaGrid() {
+    return page.getByRole('table', { name: 'Rota' });
   }
 
   function staffRows() {
@@ -162,6 +174,43 @@ test.describe.serial('MVP journey', () => {
   test('keeps the archived Staff Member hidden after a reload', async () => {
     await page.reload();
     await expect(staffRows()).toHaveText([/Alex Smith/, /Sam Jones/]);
+  });
+
+  test("opens this Week's Draft Rota with a row per active Staff Member", async () => {
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await page.waitForURL(/\/rota\/\d{4}-\d{2}-\d{2}$/);
+    thisWeek = page.url().slice(-10);
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
+    await expect(
+      rotaGrid().getByRole('row').filter({ has: page.getByRole('cell') }),
+    ).toHaveText([/Alex Smith/, /Sam Jones/]);
+  });
+
+  test('shows Monday to Sunday as the Rota columns', async () => {
+    await expect(rotaGrid().getByRole('columnheader')).toHaveText([
+      'Staff Member',
+      ...[0, 1, 2, 3, 4, 5, 6].map((day) => formatLocalDate(addDays(thisWeek, day))),
+    ]);
+  });
+
+  test('moves to the next Week', async () => {
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
+  });
+
+  test('moves back to the previous Week', async () => {
+    await page.getByRole('link', { name: 'Previous Week' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+  });
+
+  test('offers a way back to this Week from a Week address that is not a Monday', async () => {
+    await page.goto(page.url().replace(thisWeek, addDays(thisWeek, 1)));
+    await expect(page.getByRole('alert')).toHaveText(
+      "We couldn't find what you were looking for.",
+    );
+    await page.getByRole('link', { name: 'Go to this Week' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

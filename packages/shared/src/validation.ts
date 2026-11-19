@@ -7,6 +7,8 @@ export const validationMessage = {
   staffMemberRoleTooLong: 'validation.staffMemberRoleTooLong',
   invalidPhone: 'validation.invalidPhone',
   staffMemberEmailTaken: 'validation.staffMemberEmailTaken',
+  shiftEndsBeforeStart: 'validation.shiftEndsBeforeStart',
+  shiftTooLong: 'validation.shiftTooLong',
 } as const;
 
 export type ValidationMessageKey = (typeof validationMessage)[keyof typeof validationMessage];

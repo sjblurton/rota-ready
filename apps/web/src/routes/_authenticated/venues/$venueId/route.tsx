@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { venueQuery } from '@/lib/venues';
 
@@ -34,11 +35,18 @@ function VenueLayout() {
   const { venueId } = Route.useParams();
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
   const matchRoute = useMatchRoute();
+  const onRotaPage = matchRoute({
+    to: '/venues/$venueId/rota',
+    params: { venueId },
+    fuzzy: true,
+  });
   const onStaffPage = matchRoute({ to: '/venues/$venueId/staff', params: { venueId } });
-  const tab = onStaffPage ? 'staff' : 'settings';
+  const tab = onRotaPage ? 'rota' : onStaffPage ? 'staff' : 'settings';
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">
+    <main
+      className={cn('mx-auto flex flex-col gap-6 p-6 sm:p-10', onRotaPage ? 'max-w-5xl' : 'max-w-xl')}
+    >
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">{venue.name}</h1>
         <p className="text-sm text-muted-foreground">
@@ -47,6 +55,11 @@ function VenueLayout() {
       </div>
       <Tabs value={tab} activationMode="manual">
         <TabsList aria-label={t('venue.nav.label')}>
+          <TabsTrigger value="rota" asChild>
+            <Link to="/venues/$venueId/rota" params={{ venueId }}>
+              {t('venue.nav.rota')}
+            </Link>
+          </TabsTrigger>
           <TabsTrigger value="settings" asChild>
             <Link to="/venues/$venueId" params={{ venueId }}>
               {t('venue.nav.settings')}

@@ -1,0 +1,231 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  addShiftFormSchema,
+  createShiftRequestSchema,
+  rotaSchema,
+  shiftEndsAt,
+  shiftTimesIssue,
+} from './shift.js';
+import { zonedTimeToUtc } from './week.js';
+
+const LONDON = 'Europe/London';
+const HOUR_MS = 3_600_000;
+const STAFF_MEMBER_ID = '6b3f1c2e-8d4a-4f5b-9c7e-1a2b3c4d5e6f';
+
+describe('shiftEndsAt', () => {
+  let startsAt: Date;
+  let endsAt: Date;
+
+  describe.each([
+    {
+      scenario: 'the end time is later the same day',
+      date: '2026-07-15',
+      start: '09:00',
+      end: '17:00',
+      hours: 8,
+    },
+    {
+      scenario: 'the end time is earlier than the start time',
+      date: '2026-07-15',
+      start: '20:00',
+      end: '02:00',
+      hours: 6,
+    },
+    {
+      scenario: 'the end time equals the start time',
+      date: '2026-07-15',
+      start: '09:00',
+      end: '09:00',
+      hours: 24,
+    },
+  ])('when $scenario', ({ date, start, end, hours }) => {
+    beforeEach(() => {
+      startsAt = zonedTimeToUtc(date, start, LONDON);
+      endsAt = shiftEndsAt(date, start, end, LONDON);
+    });
+
+    it(`lasts ${hours} hours`, () => {
+      expect(endsAt.getTime() - startsAt.getTime()).toBe(hours * HOUR_MS);
+    });
+  });
+
+  describe.each([
+    {
+      change: 'the clocks go forward (last Sunday of March)',
+      date: '2026-03-28',
+      start: '20:00',
+      end: '02:00',
+      hours: 5,
+    },
+    {
+      change: 'the clocks go back (last Sunday of October)',
+      date: '2026-10-24',
+      start: '22:00',
+      end: '03:00',
+      hours: 6,
+    },
+    {
+      change: 'the repeated October hour, ending at the second 01:15',
+      date: '2026-10-25',
+      start: '01:30',
+      end: '01:15',
+      hours: 0.75,
+    },
+  ])('when an Overnight Shift spans $change', ({ date, start, end, hours }) => {
+    beforeEach(() => {
+      startsAt = zonedTimeToUtc(date, start, LONDON);
+      endsAt = shiftEndsAt(date, start, end, LONDON);
+    });
+
+    it(`lasts ${hours} hours of real time`, () => {
+      expect(endsAt.getTime() - startsAt.getTime()).toBe(hours * HOUR_MS);
+    });
+  });
+});
+
+describe('shiftTimesIssue', () => {
+  const startsAt = new Date('2026-07-15T08:00:00Z');
+  let issue: string | null;
+
+  describe.each([
+    { scenario: 'the end is before the start', hours: -1, expected: 'validation.shiftEndsBeforeStart' },
+    { scenario: 'the end equals the start', hours: 0, expected: 'validation.shiftEndsBeforeStart' },
+    { scenario: 'the Shift lasts exactly 16 hours', hours: 16, expected: null },
+    { scenario: 'the Shift lasts 17 hours', hours: 17, expected: 'validation.shiftTooLong' },
+  ])('when $scenario', ({ hours, expected }) => {
+    beforeEach(() => {
+      issue = shiftTimesIssue(startsAt, new Date(startsAt.getTime() + hours * HOUR_MS));
+    });
+
+    it(`returns ${expected ?? 'no issue'}`, () => {
+      expect(issue).toBe(expected);
+    });
+  });
+});
+
+describe('createShiftRequestSchema', () => {
+  const staffMemberId = STAFF_MEMBER_ID;
+  let result: ReturnType<typeof createShiftRequestSchema.safeParse>;
+
+  describe('when the times come from toISOString and last 8 hours', () => {
+    beforeEach(() => {
+      result = createShiftRequestSchema.safeParse({
+        staffMemberId,
+        startsAt: new Date('2026-07-15T08:00:00Z').toISOString(),
+        endsAt: new Date('2026-07-15T16:00:00Z').toISOString(),
+      });
+    });
+
+    it('accepts them', () => {
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('when the Shift lasts 17 hours', () => {
+    beforeEach(() => {
+      result = createShiftRequestSchema.safeParse({
+        staffMemberId,
+        startsAt: '2026-07-15T06:00:00Z',
+        endsAt: '2026-07-15T23:00:00Z',
+      });
+    });
+
+    it('rejects it with the too-long key on endsAt', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['endsAt'], message: 'validation.shiftTooLong' }),
+      ]);
+    });
+  });
+});
+
+describe('addShiftFormSchema', () => {
+  const staffMemberId = STAFF_MEMBER_ID;
+  const schema = addShiftFormSchema(LONDON);
+  let result: ReturnType<typeof schema.safeParse>;
+
+  describe('when the form has a 20:00–02:00 Shift on a summer day', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '20:00',
+        endTime: '02:00',
+      });
+    });
+
+    it('gives the request body in UTC, ending the next morning', () => {
+      expect(result.data).toEqual({
+        staffMemberId,
+        startsAt: '2026-07-15T19:00:00.000Z',
+        endsAt: '2026-07-16T01:00:00.000Z',
+      });
+    });
+  });
+
+  describe('when the form has a 17-hour Shift', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '06:00',
+        endTime: '23:00',
+      });
+    });
+
+    it('rejects it with the too-long key on the end time', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['endTime'], message: 'validation.shiftTooLong' }),
+      ]);
+    });
+  });
+
+  describe('when the end time equals the start time', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '09:00',
+        endTime: '09:00',
+      });
+    });
+
+    it('treats it as 24 hours and rejects it as too long', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['endTime'], message: 'validation.shiftTooLong' }),
+      ]);
+    });
+  });
+
+  describe('when no Staff Member or start time is chosen', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId: '',
+        date: '2026-07-15',
+        startTime: '',
+        endTime: '17:00',
+      });
+    });
+
+    it('marks both as required', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['staffMemberId'], message: 'validation.required' }),
+        expect.objectContaining({ path: ['startTime'], message: 'validation.required' }),
+      ]);
+    });
+  });
+});
+
+describe('rotaSchema', () => {
+  let success: boolean;
+
+  describe('when weekStart is a Tuesday', () => {
+    beforeEach(() => {
+      success = rotaSchema.safeParse({ weekStart: '2026-11-17', status: 'draft', shifts: [] })
+        .success;
+    });
+
+    it('rejects it', () => {
+      expect(success).toBe(false);
+    });
+  });
+});
