@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthForm } from '@/features/users/auth-form';
-import { authErrorMessage } from '@/features/users/auth-error-message';
+import { formMessageOrToast } from '@/features/users/auth-error-message';
 import { redirectIfLoggedIn } from '@/features/users/redirect-if-logged-in';
 import { supabase } from '@/lib/supabase';
 
@@ -20,7 +20,7 @@ function SignupPage() {
 
   async function signUp(credentials: Credentials) {
     const { data, error } = await supabase.auth.signUp(credentials);
-    if (error) return authErrorMessage(t, error.code);
+    if (error) return formMessageOrToast(t, error.code);
     if (data.session) await navigate({ to: '/' });
     else setAwaitingConfirmation(true);
     return null;

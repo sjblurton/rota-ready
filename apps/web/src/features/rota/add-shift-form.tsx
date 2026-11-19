@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -56,10 +57,11 @@ export function AddShiftForm({
     onError: (error) => {
       if (hasErrorCode(error, 'shift_overlaps')) {
         form.setError('root', { message: validationMessage.shiftOverlaps });
+      } else {
+        toast.error(apiErrorMessage(t, error));
       }
     },
   });
-  const overlapRejected = hasErrorCode(add.error, 'shift_overlaps');
 
   function onSubmit(request: CreateShiftRequest) {
     add.mutate(request);
@@ -67,7 +69,6 @@ export function AddShiftForm({
 
   function clearFormError() {
     form.clearErrors('root');
-    add.reset();
   }
 
   return (
@@ -146,9 +147,7 @@ export function AddShiftForm({
             <FieldError id={`${id}-endTime-error`} errors={[errors.endTime]} />
           </Field>
         </div>
-        <FieldError errors={[errors.root]}>
-          {add.isError && !overlapRejected && apiErrorMessage(t, add.error)}
-        </FieldError>
+        <FieldError errors={[errors.root]} />
       </FieldGroup>
       <Button type="submit" className="self-start" disabled={add.isPending}>
         {t('rota.addShift.submit')}

@@ -126,6 +126,10 @@ type PasswordFieldProps = {
 
 If one form needs a different label or a description, compose `Field` there instead of adding a prop.
 
+## Showing errors
+
+Each mutation handles its own errors in `onError` (ADR-0009). Put a code the form can fix on its field or on `root` with `setError`. Send everything else to a toast with `toast.error(apiErrorMessage(t, error))` from `sonner`. Don't render a catch-all API error inside the form. `<Toaster />` is rendered once, in `routes/__root.tsx`.
+
 ## Customising a component
 
 Use the first option that works. Each one costs more at upgrade time than the one before.

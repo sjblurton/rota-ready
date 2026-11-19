@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -34,6 +35,9 @@ export function CreateVenueForm() {
       queryClient.setQueryData(venueQuery(venue.id).queryKey, venue);
       queryClient.setQueryData(myVenuesQuery.queryKey, (venues = []) => [...venues, venue]);
       await navigate({ to: '/venues/$venueId', params: { venueId: venue.id } });
+    },
+    onError: (error) => {
+      toast.error(apiErrorMessage(t, error));
     },
   });
 
@@ -63,7 +67,6 @@ export function CreateVenueForm() {
             </NativeSelect>
             <FieldError id="timeZone-error" errors={[errors.timeZone]} />
           </Field>
-          <FieldError>{createVenue.isError && apiErrorMessage(t, createVenue.error)}</FieldError>
         </FieldGroup>
         <Button type="submit" disabled={createVenue.isPending}>
           {t('onboarding.submit')}

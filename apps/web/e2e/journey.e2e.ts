@@ -37,6 +37,16 @@ test.describe.serial('MVP journey', () => {
     });
   }
 
+  function toast() {
+    return page.locator('[data-sonner-toast]');
+  }
+
+  async function failRenameRequests() {
+    await page.route('**/api/venues/*', (route) =>
+      route.request().method() === 'PATCH' ? route.abort('internetdisconnected') : route.continue(),
+    );
+  }
+
   function rotaGrid() {
     return page.getByRole('table', { name: 'Rota' });
   }
@@ -114,6 +124,14 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
   });
 
+  test('shows a toast, not a form error, when saving the name fails before reaching the API', async () => {
+    await failRenameRequests();
+    await page.getByRole('button', { name: 'Save name' }).click();
+    await expect(toast()).toHaveText('Something went wrong. Please try again.');
+    await expect(page.locator('form').getByRole('alert')).toHaveCount(0);
+    await page.unroute('**/api/venues/*');
+  });
+
   test('opens the Staff page with no Staff Members yet', async () => {
     await page.getByRole('tab', { name: 'Staff' }).click();
     await expect(page.getByText('No Staff Members yet. Add the first one below.')).toBeVisible();
@@ -169,6 +187,17 @@ test.describe.serial('MVP journey', () => {
   test('asks for confirmation before archiving a Staff Member', async () => {
     await page.getByRole('button', { name: 'Archive Jo Bloggs' }).click();
     await expect(page.getByRole('alertdialog')).toContainText('Archive Jo Bloggs?');
+  });
+
+  test('shows an announced toast and keeps the dialog open when archiving fails before reaching the API', async () => {
+    await page.route('**/archive', (route) => route.abort('internetdisconnected'));
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
+    await expect(toast()).toHaveText('Something went wrong. Please try again.');
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    expect(
+      await toast().evaluate((element) => element.closest('[aria-hidden="true"], [inert]') === null),
+    ).toBe(true);
+    await page.unroute('**/archive');
   });
 
   test('archives a Staff Member and hides them from the list', async () => {
@@ -355,6 +384,13 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
     await expect(page.getByRole('status')).toHaveText(/^\[.*\]$/);
     expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
+  });
+
+  test('shows toasts as pseudo-text with ?lng=pseudo', async () => {
+    await failRenameRequests();
+    await page.locator('form').getByRole('button').click();
+    await expect(toast()).toHaveText(/^\[.*\]$/);
+    await page.unroute('**/api/venues/*');
   });
 
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
