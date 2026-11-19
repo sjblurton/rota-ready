@@ -1,14 +1,17 @@
 import express, { type Express } from 'express';
+import type { Logger } from 'pino';
 import { currentUserSchema, healthResponseSchema } from '@rota-ready/shared';
 import { withIdentity, withUser, type AuthConfig } from './auth.js';
 import type { Db } from './db.js';
 import type { User } from './generated/prisma/client.js';
 import { handleMalformedJson, sendError } from './http-errors.js';
+import { handleUnexpectedError, requestLogging } from './request-logging.js';
 import { venueRoutes } from './venues.js';
 
 export interface AppDependencies {
   db: Db;
   authConfig: AuthConfig;
+  logger: Logger;
 }
 
 const DB_HEALTH_TIMEOUT_MS = 1_000;
@@ -28,9 +31,10 @@ function toCurrentUser({ id, email }: User) {
   return currentUserSchema.parse({ id, email });
 }
 
-export function createApp({ db, authConfig }: AppDependencies): Express {
+export function createApp({ db, authConfig, logger }: AppDependencies): Express {
   const app = express();
   app.disable('x-powered-by');
+  app.use(requestLogging(logger));
   app.use(express.json());
 
   app.get('/api/health', async (_req, res) => {
@@ -60,6 +64,7 @@ export function createApp({ db, authConfig }: AppDependencies): Express {
 
   app.use((_req, res) => sendError(res, 'not_found'));
   app.use(handleMalformedJson);
+  app.use(handleUnexpectedError);
 
   return app;
 }

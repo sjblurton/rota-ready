@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
 import { createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
+import { pino } from 'pino';
 import { createApp } from './app.js';
 import type { AuthConfig } from './auth.js';
 import { createDb, type Db } from './db.js';
@@ -22,7 +23,11 @@ describe('API error responses', () => {
 
   beforeEach(async () => {
     db = createDb(inject('databaseUrl'));
-    server = createApp({ db, authConfig: await unusedAuthConfig() }).listen(0);
+    server = createApp({
+      db,
+      authConfig: await unusedAuthConfig(),
+      logger: pino({ level: 'silent' }),
+    }).listen(0);
     await new Promise<void>((resolve) => server.once('listening', resolve));
     const { port } = server.address() as AddressInfo;
     baseUrl = `http://localhost:${port}`;
