@@ -48,7 +48,6 @@ export default defineConfig([
     files: ['apps/web/src/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': ['error', { patterns: [noRoutesImport] }] },
   },
-  // A later block's no-restricted-imports replaces an earlier one, so the next two repeat noRoutesImport.
   {
     files: ['apps/web/src/routes/**/*.{ts,tsx}'],
     rules: {
