@@ -1,7 +1,7 @@
 import {
   addShiftFormSchema,
   formatLocalDate,
-  QUARTER_HOUR_MINUTES,
+  quarterHourTimes,
   shiftSchema,
   validationMessage,
   weekDays,
@@ -16,7 +16,6 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { addShiftToRota, shiftsPath } from '@/features/rota/rota-queries';
 import { apiErrorMessage } from '@/i18n/api-error-message';
@@ -30,7 +29,7 @@ interface AddShiftFormProps {
   shifts: Shift[];
 }
 
-const TIME_STEP_SECONDS = QUARTER_HOUR_MINUTES * 60;
+const times = quarterHourTimes();
 
 export function AddShiftForm({
   venueId,
@@ -112,26 +111,38 @@ export function AddShiftForm({
           </Field>
           <Field data-invalid={!!errors.startTime}>
             <FieldLabel htmlFor={`${id}-startTime`}>{t('rota.addShift.startTime')}</FieldLabel>
-            <Input
+            <NativeSelect
               id={`${id}-startTime`}
-              type="time"
-              step={TIME_STEP_SECONDS}
+              className="w-full"
               aria-invalid={!!errors.startTime}
               aria-describedby={`${id}-startTime-error`}
               {...form.register('startTime', { onChange: clearFormError })}
-            />
+            >
+              <NativeSelectOption value="">{t('rota.addShift.chooseTime')}</NativeSelectOption>
+              {times.map((time) => (
+                <NativeSelectOption key={time} value={time}>
+                  {time}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
             <FieldError id={`${id}-startTime-error`} errors={[errors.startTime]} />
           </Field>
           <Field data-invalid={!!errors.endTime}>
             <FieldLabel htmlFor={`${id}-endTime`}>{t('rota.addShift.endTime')}</FieldLabel>
-            <Input
+            <NativeSelect
               id={`${id}-endTime`}
-              type="time"
-              step={TIME_STEP_SECONDS}
+              className="w-full"
               aria-invalid={!!errors.endTime}
               aria-describedby={`${id}-endTime-error`}
               {...form.register('endTime', { onChange: clearFormError })}
-            />
+            >
+              <NativeSelectOption value="">{t('rota.addShift.chooseTime')}</NativeSelectOption>
+              {times.map((time) => (
+                <NativeSelectOption key={time} value={time}>
+                  {time}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
             <FieldError id={`${id}-endTime-error`} errors={[errors.endTime]} />
           </Field>
         </div>

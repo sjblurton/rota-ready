@@ -224,8 +224,8 @@ test.describe.serial('MVP journey', () => {
     const sunday = addDays(thisWeek, 6);
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(sunday) });
-    await page.getByLabel('Start').fill('20:00');
-    await page.getByLabel('End').fill('02:00');
+    await page.getByLabel('Start').selectOption('20:00');
+    await page.getByLabel('End').selectOption('02:00');
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(rotaCell('Sam Jones', sunday)).toHaveText('20:00–02:00 (+1)');
   });
@@ -238,8 +238,8 @@ test.describe.serial('MVP journey', () => {
   test('rejects a 17-hour Shift with the error under the end time', async () => {
     await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(thisWeek) });
-    await page.getByLabel('Start').fill('06:00');
-    await page.getByLabel('End').fill('23:00');
+    await page.getByLabel('Start').selectOption('06:00');
+    await page.getByLabel('End').selectOption('23:00');
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(page.getByLabel('End')).toHaveAccessibleDescription(
       'Shifts can be at most 16 hours.',
@@ -252,8 +252,8 @@ test.describe.serial('MVP journey', () => {
     await page.getByRole('link', { name: 'Next Week' }).click();
     await expect(weekHeading(nextWeek)).toBeVisible();
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
-    await page.getByLabel('Start').fill('09:00');
-    await page.getByLabel('End').fill('17:00');
+    await page.getByLabel('Start').selectOption('09:00');
+    await page.getByLabel('End').selectOption('17:00');
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText('09:00–17:00');
   });
@@ -279,18 +279,19 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('09:00–17:00');
   });
 
-  test('rejects a start time that is not on a 15-minute step', async () => {
-    await page.getByLabel('Start').fill('09:10');
-    await page.getByRole('button', { name: 'Add Shift' }).click();
-    await expect(page.getByLabel('Start')).toHaveAccessibleDescription(
-      'Use a time on the hour, quarter past, half past or quarter to.',
-    );
+  test('offers Start times on the 24-hour clock in quarter-hour steps', async () => {
+    const options = page.getByLabel('Start').getByRole('option');
+    await expect(options).toHaveCount(97);
+    await expect(options.nth(1)).toHaveText('00:00');
+    await expect(options.nth(2)).toHaveText('00:15');
+    await expect(options.nth(53)).toHaveText('13:00');
+    await expect(options.last()).toHaveText('23:45');
   });
 
   test("rejects a Shift that overlaps last Week's Overnight Shift running into Monday", async () => {
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
-    await page.getByLabel('Start').fill('01:00');
-    await page.getByLabel('End').fill('05:00');
+    await page.getByLabel('Start').selectOption('01:00');
+    await page.getByLabel('End').selectOption('05:00');
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeVisible();
   });

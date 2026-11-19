@@ -30,6 +30,14 @@ export function shiftTimesIssue(startsAt: Date, endsAt: Date): ValidationMessage
   return null;
 }
 
+export function quarterHourTimes(): string[] {
+  return Array.from({ length: (24 * 60) / QUARTER_HOUR_MINUTES }, (_, index) => {
+    const minutes = index * QUARTER_HOUR_MINUTES;
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+  });
+}
+
 function isOnQuarterHour(minutes: number) {
   return minutes % QUARTER_HOUR_MINUTES === 0;
 }

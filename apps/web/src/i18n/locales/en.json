@@ -93,6 +93,7 @@
     "addShift": {
       "title": "Add a Shift",
       "chooseStaffMember": "Choose a Staff Member",
+      "chooseTime": "Choose a time",
       "day": "Day",
       "startTime": "Start",
       "endTime": "End",

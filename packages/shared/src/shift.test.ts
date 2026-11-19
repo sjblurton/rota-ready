@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addShiftFormSchema,
   createShiftRequestSchema,
+  quarterHourTimes,
   rotaSchema,
   shiftEndsAt,
   shiftTimesIssue,
@@ -332,5 +333,25 @@ describe('rotaSchema', () => {
     it('rejects it', () => {
       expect(success).toBe(false);
     });
+  });
+});
+
+describe('quarterHourTimes', () => {
+  let times: string[];
+
+  beforeEach(() => {
+    times = quarterHourTimes();
+  });
+
+  it('lists all 96 quarter hours of the day', () => {
+    expect(times).toHaveLength(96);
+  });
+
+  it('starts at midnight in 15-minute steps', () => {
+    expect(times.slice(0, 3)).toEqual(['00:00', '00:15', '00:30']);
+  });
+
+  it('uses the 24-hour clock, ending at 23:45', () => {
+    expect([times[52], times.at(-1)]).toEqual(['13:00', '23:45']);
   });
 });
