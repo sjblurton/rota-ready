@@ -6,17 +6,31 @@ disable-model-invocation: true
 
 # Ship a ticket
 
-Run the whole loop without pausing between steps. Stop to ask only for a genuine product decision, a destructive action, or work outside the ticket. Report once, at the end.
+Run the whole loop without pausing between steps. Stop to ask only for a genuine product decision, a ticket split (step 2), a destructive action, or work outside the ticket. Report once, at the end.
 
 ## 1. Pick the ticket
 
 If a ticket number was given, use it. Otherwise list open issues (commands in `docs/agents/issue-tracker.md`) and keep the **startable** ones: labelled `ready-for-agent`, unassigned, and with zero open blockers. This repo's `gh` predates `--json blockedBy`, so count blockers with the REST call in the tracker doc's **Count open blockers** line.
 
+A ticket with open sub-issues (`sub_issues_summary` in the same REST call) is a parent: skip it and consider its sub-issues instead.
+
 Rank by **critical path**: the ticket whose completion unblocks the most other open tickets, counted transitively, comes first. Break ties by the lower issue number.
 
 Done when you can name the ticket, and say what it unblocks and why it beat the runner-up.
 
-## 2. Set up a worktree
+## 2. Size it
+
+One ticket ships as one PR the user can review in a sitting. A ticket that adds new behaviour in more than one of `packages/shared`, `apps/api` and `apps/web` is usually too big: propose splitting it into sub-issues, one per layer or slice, each its own PR.
+
+To split:
+
+1. Ask the user, showing the proposed sub-issues and what each covers.
+2. On a yes, create them with the parent's acceptance criteria shared out between them. Link each one to the parent as a sub-issue, and chain them with blocked-by so they ship in order (commands in `docs/agents/issue-tracker.md`).
+3. Ship only the first sub-issue through the rest of this loop. The others wait for their own run.
+
+Done when the ticket fits one PR, or the user has chosen a split and you're shipping its first sub-issue.
+
+## 3. Set up a worktree
 
 The user may be working in the main checkout, so never switch its branch.
 
@@ -31,7 +45,7 @@ Branch from `origin/main`, because local `main` is often stale. Use the session'
 
 Done when `pnpm typecheck` passes in the worktree.
 
-## 3. Build it
+## 4. Build it
 
 Read the ticket, its parent spec (#1), and every ADR and glossary term it touches. Follow `AGENTS.md` and `.claude/skills/scenario-tests/SKILL.md`. Write each test so it fails without the change. For any test that could pass by accident, prove it: break the code, watch the test go red, then restore the code.
 
@@ -40,13 +54,13 @@ Read the ticket, its parent spec (#1), and every ADR and glossary term it touche
 
 Done when every acceptance criterion in the ticket is met, and lint, typecheck, `pnpm test`, build and the Playwright journey all pass.
 
-## 4. Review and fix
+## 5. Review and fix
 
-Run the `code-review` skill against `origin/main`. Changes are uncommitted, so diff the working tree and mark new files with `git add -N` first. Fix every documented-standard breach and every spec gap. Fix the smells that are cheap and clear. Leave the rest, with a one-line reason each. Re-run the checks from step 3 after fixing.
+Run the `code-review` skill against `origin/main`. Changes are uncommitted, so diff the working tree and mark new files with `git add -N` first. Fix every documented-standard breach and every spec gap. Fix the smells that are cheap and clear. Leave the rest, with a one-line reason each. Re-run the checks from step 4 after fixing.
 
 Done when every finding is either fixed or listed with a reason it stays.
 
-## 5. Commit, push, PR
+## 6. Commit, push, PR
 
 - **Commit** with a conventional message ending `(#<issue>)` and the attribution trailer.
 - **Push** with `git push -u origin <branch>`.
@@ -56,7 +70,7 @@ Done when every finding is either fixed or listed with a reason it stays.
 
 Done when the PR is open, and its body contains only claims you checked.
 
-## 6. Hand back
+## 7. Hand back
 
 Remove the worktree (`git worktree remove <path>`) so the user can check out the branch. Report:
 - the PR link
