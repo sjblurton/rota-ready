@@ -88,9 +88,9 @@ export function AuthForm({ mode, authenticate }: AuthFormProps) {
         </CardContent>
         <CardFooter className="justify-center gap-1 text-sm text-muted-foreground">
           {copy.switchPrompt}
-          <Link to={copy.switchTo} className="text-foreground underline underline-offset-4">
-            {copy.switchLink}
-          </Link>
+          <Button variant="link" asChild>
+            <Link to={copy.switchTo}>{copy.switchLink}</Link>
+          </Button>
         </CardFooter>
       </Card>
     </main>

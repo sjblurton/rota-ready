@@ -1,8 +1,7 @@
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
-import { useTranslation } from 'react-i18next';
+import { AppHeader } from '@/components/app-header';
 import { HealthStatus } from '@/components/health-status';
-import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
 import { bootstrapCurrentUserQuery } from '@/features/users/current-user';
 import { accessToken, supabase } from '@/lib/supabase';
@@ -31,7 +30,6 @@ async function endSession(queryClient: QueryClient) {
 }
 
 function AuthenticatedLayout() {
-  const { t } = useTranslation();
   const { currentUser } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -43,17 +41,7 @@ function AuthenticatedLayout() {
 
   return (
     <>
-      <header className="border-b">
-        <div className="mx-auto flex max-w-xl items-center justify-between gap-4 px-6 py-3">
-          <span className="font-medium">{t('app.name')}</span>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{currentUser.email}</span>
-            <Button variant="outline" size="sm" onClick={logOut}>
-              {t('auth.logOut')}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader email={currentUser.email} onLogOut={logOut} />
       <Outlet />
       <footer className="mx-auto flex max-w-xl px-6 pb-6">
         <HealthStatus />
