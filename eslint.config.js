@@ -44,6 +44,24 @@ export default defineConfig([
         'error',
         {
           mode: 'jsx-only',
+          callees: {
+            exclude: [
+              'i18n(ext)?',
+              't',
+              'require',
+              'addEventListener',
+              'removeEventListener',
+              'postMessage',
+              'getElementById',
+              'dispatch',
+              'commit',
+              'includes',
+              'indexOf',
+              'endsWith',
+              'startsWith',
+              'register',
+            ],
+          },
           'jsx-attributes': {
             include: [
               'alt',

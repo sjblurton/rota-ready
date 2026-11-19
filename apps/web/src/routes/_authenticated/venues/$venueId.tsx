@@ -1,18 +1,20 @@
 import {
-  VENUE_NAME_MAX_LENGTH,
+  renameVenueRequestSchema,
   venueSchema,
   type RenameVenueRequest,
 } from '@rota-ready/shared';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router';
-import type { FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { ErrorAlert } from '@/components/error-alert';
+import { TextField } from '@/components/text-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FieldGroup } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPatch } from '@/lib/api';
+import { formResolver } from '@/lib/form-resolver';
 import { myVenuesQuery, venueQuery } from '@/lib/venues';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId')({
@@ -26,7 +28,7 @@ function VenueError({ error }: ErrorComponentProps) {
   const { t } = useTranslation();
   return (
     <main className="mx-auto max-w-xl p-6 sm:p-10">
-      <p role="alert">{apiErrorMessage(t, error)}</p>
+      <ErrorAlert>{apiErrorMessage(t, error)}</ErrorAlert>
     </main>
   );
 }
@@ -36,6 +38,11 @@ function VenuePage() {
   const { venueId } = Route.useParams();
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
   const queryClient = useQueryClient();
+  const form = useForm({
+    resolver: formResolver(renameVenueRequestSchema),
+    defaultValues: { name: venue.name },
+  });
+  const { errors } = form.formState;
   const rename = useMutation({
     mutationFn: (request: RenameVenueRequest) =>
       apiPatch(`/api/venues/${venueId}`, request, venueSchema),
@@ -46,12 +53,6 @@ function VenuePage() {
       );
     },
   });
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    rename.mutate({ name: String(form.get('name')) });
-  }
 
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">
@@ -68,25 +69,20 @@ function VenuePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">{t('venue.name')}</Label>
-              <Input
+          <form noValidate onSubmit={form.handleSubmit((request) => rename.mutate(request))}>
+            <FieldGroup>
+              <TextField
                 id="name"
-                name="name"
-                defaultValue={venue.name}
-                maxLength={VENUE_NAME_MAX_LENGTH}
-                required
+                label={t('venue.name')}
+                error={errors.name}
+                schema={renameVenueRequestSchema.shape.name}
+                {...form.register('name')}
               />
-            </div>
-            {rename.isError && (
-              <p role="alert" className="text-sm text-destructive">
-                {apiErrorMessage(t, rename.error)}
-              </p>
-            )}
-            <Button type="submit" disabled={rename.isPending}>
-              {t('venue.rename.submit')}
-            </Button>
+              {rename.isError && <ErrorAlert>{apiErrorMessage(t, rename.error)}</ErrorAlert>}
+              <Button type="submit" disabled={rename.isPending}>
+                {t('venue.rename.submit')}
+              </Button>
+            </FieldGroup>
           </form>
         </CardContent>
       </Card>

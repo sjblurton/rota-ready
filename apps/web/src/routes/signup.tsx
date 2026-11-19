@@ -1,7 +1,8 @@
+import type { Credentials } from '@rota-ready/shared';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AuthForm, type Credentials } from '@/components/auth-form';
+import { AuthForm } from '@/components/auth-form';
 import { authErrorMessage } from '@/i18n/auth-error-message';
 import { redirectIfLoggedIn } from '@/lib/redirect-if-logged-in';
 import { supabase } from '@/lib/supabase';

@@ -1,14 +1,13 @@
-import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { credentialsSchema, type Credentials } from '@rota-ready/shared';
+import type { ReactNode } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { ErrorAlert } from '@/components/error-alert';
+import { TextField } from '@/components/text-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
-export interface Credentials {
-  email: string;
-  password: string;
-}
+import { FieldGroup } from '@/components/ui/field';
+import { formResolver } from '@/lib/form-resolver';
 
 interface AuthFormProps {
   title: string;
@@ -26,20 +25,15 @@ export function AuthForm({
   footer,
 }: AuthFormProps) {
   const { t } = useTranslation();
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const form = useForm({
+    resolver: formResolver(credentialsSchema),
+    defaultValues: { email: '', password: '' },
+  });
+  const { errors, isSubmitting } = form.formState;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const credentials = {
-      email: String(form.get('email')),
-      password: String(form.get('password')),
-    };
-    startTransition(async () => {
-      const message = await onSubmit(credentials);
-      startTransition(() => setError(message));
-    });
+  async function submit(credentials: Credentials) {
+    const message = await onSubmit(credentials);
+    if (message) form.setError('root', { message });
   }
 
   return (
@@ -51,29 +45,31 @@ export function AuthForm({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
-              <Input id="email" name="email" type="email" autoComplete="username" required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password">{t('auth.password')}</Label>
-              <Input
+          <form noValidate onSubmit={form.handleSubmit(submit)}>
+            <FieldGroup>
+              <TextField
+                id="email"
+                label={t('auth.email')}
+                type="email"
+                autoComplete="username"
+                error={errors.email}
+                schema={credentialsSchema.shape.email}
+                {...form.register('email')}
+              />
+              <TextField
                 id="password"
-                name="password"
+                label={t('auth.password')}
                 type="password"
                 autoComplete={passwordAutoComplete}
-                required
+                error={errors.password}
+                schema={credentialsSchema.shape.password}
+                {...form.register('password')}
               />
-            </div>
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <Button type="submit" disabled={isPending}>
-              {submitLabel}
-            </Button>
+              {errors.root && <ErrorAlert>{errors.root.message}</ErrorAlert>}
+              <Button type="submit" disabled={isSubmitting}>
+                {submitLabel}
+              </Button>
+            </FieldGroup>
           </form>
         </CardContent>
         <CardFooter className="justify-center gap-1 text-sm text-muted-foreground">
