@@ -59,6 +59,5 @@ model StaffMember {
   venue      Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@unique([venueId, email])
-  @@index([venueId])
   @@map("staff_members")
 }

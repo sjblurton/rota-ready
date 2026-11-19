@@ -106,14 +106,14 @@ test.describe.serial('MVP journey', () => {
     );
   });
 
-  test('adds three Staff Members and lists them by name', async () => {
+  test('adds three Staff Members with Enter, returning focus to Name, and lists them by name', async () => {
     const addForm = staffForm('Add staff member');
     for (const { name, role, email, phone } of staffMembers) {
       await addForm.getByLabel('Name').fill(name);
       await addForm.getByLabel('Role').fill(role);
-      await addForm.getByLabel('Email').fill(email);
       await addForm.getByLabel('Phone').fill(phone);
-      await addForm.getByRole('button', { name: 'Add staff member' }).click();
+      await addForm.getByLabel('Email').fill(email);
+      await addForm.getByLabel('Email').press('Enter');
       await expect(staffList().getByText(name)).toBeVisible();
       await expect(addForm.getByLabel('Name')).toHaveValue('');
       await expect(addForm.getByLabel('Name')).toBeFocused();

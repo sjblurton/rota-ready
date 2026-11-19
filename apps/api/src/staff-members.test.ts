@@ -386,6 +386,47 @@ describe('/api/venues/:venueId/staff-members', () => {
       });
     });
 
+    describe('when the Owner changes only the case of the email', () => {
+      beforeEach(async () => {
+        response = await app.request(
+          'PATCH',
+          `${staffMembersPath(ownVenue)}/${staffMemberId}`,
+          { as: OWNER, body: { ...ALEX, email: 'Alex@Example.com' } },
+        );
+      });
+
+      it('responds with 200', () => {
+        expect(response.status).toBe(200);
+      });
+
+      it('keeps the email lowercased', async () => {
+        expect(await response.json()).toMatchObject({ email: ALEX.email });
+      });
+    });
+
+    describe('when the Owner sends an invalid email', () => {
+      beforeEach(async () => {
+        response = await app.request(
+          'PATCH',
+          `${staffMembersPath(ownVenue)}/${staffMemberId}`,
+          { as: OWNER, body: { ...ALEX, email: 'alex-at-example' } },
+        );
+      });
+
+      it('responds with 400', () => {
+        expect(response.status).toBe(400);
+      });
+
+      it('keeps the old email', async () => {
+        expect(
+          await app.db.staffMember.findUnique({
+            where: { id: staffMemberId },
+            select: { email: true },
+          }),
+        ).toEqual({ email: ALEX.email });
+      });
+    });
+
     describe('when the Owner removes the email', () => {
       beforeEach(async () => {
         response = await app.request(
@@ -447,6 +488,19 @@ describe('/api/venues/:venueId/staff-members', () => {
 
         it('leaves the archived Staff Member out', async () => {
           expect(await response.json()).toEqual([{ id: expect.any(String), ...SAM }]);
+        });
+      });
+
+      describe('when the Owner then adds them again with the same email', () => {
+        beforeEach(async () => {
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('responds with 201', () => {
+          expect(response.status).toBe(201);
         });
       });
     });

@@ -19,8 +19,7 @@
     "internal": "Something went wrong on our side. Please try again.",
     "unauthorized": "Your session has ended. Please log in again.",
     "forbidden": "You don't have access to this.",
-    "venueAlreadyExists": "You already have a venue. Reload the page to open it.",
-    "staffMemberEmailTaken": "Another Staff Member already uses this email."
+    "venueAlreadyExists": "You already have a venue. Reload the page to open it."
   },
   "validation": {
     "required": "This field is required.",

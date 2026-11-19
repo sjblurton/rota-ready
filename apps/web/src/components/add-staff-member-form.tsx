@@ -12,8 +12,8 @@ import { StaffMemberFields } from '@/components/staff-member-fields';
 import { Button } from '@/components/ui/button';
 import { FieldError, FieldGroup } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost } from '@/lib/api';
-import { isEmailTaken, staffMembersPath, updateStaffMembers } from '@/lib/staff-members';
+import { apiPost, hasErrorCode } from '@/lib/api';
+import { staffMembersPath, updateStaffMembers } from '@/lib/staff-members';
 
 const emptyStaffMember = { name: '', role: '', email: '', phone: '' };
 
@@ -33,11 +33,13 @@ export function AddStaffMemberForm({ venueId }: { venueId: string }) {
       form.setFocus('name');
     },
     onError: (error) => {
-      if (isEmailTaken(error)) {
+      if (hasErrorCode(error, 'staff_member_email_taken')) {
         form.setError('email', { message: validationMessage.staffMemberEmailTaken });
       }
     },
   });
+
+  const emailTaken = hasErrorCode(add.error, 'staff_member_email_taken');
 
   function onSubmit(details: StaffMemberDetails) {
     add.mutate(details);
@@ -49,7 +51,7 @@ export function AddStaffMemberForm({ venueId }: { venueId: string }) {
         <FieldGroup>
           <StaffMemberFields />
           <FieldError>
-            {add.isError && !isEmailTaken(add.error) && apiErrorMessage(t, add.error)}
+            {add.isError && !emailTaken && apiErrorMessage(t, add.error)}
           </FieldError>
         </FieldGroup>
         <Button type="submit" className="self-start" disabled={add.isPending}>
