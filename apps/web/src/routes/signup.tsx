@@ -2,6 +2,7 @@ import type { Credentials } from '@rota-ready/shared';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthForm } from '@/features/users/auth-form';
 import { authErrorMessage } from '@/features/users/auth-error-message';
 import { redirectIfLoggedIn } from '@/features/users/redirect-if-logged-in';
@@ -28,7 +29,9 @@ function SignupPage() {
   if (awaitingConfirmation) {
     return (
       <main className="mx-auto max-w-sm p-6 sm:pt-16">
-        <p role="status">{t('auth.signUp.checkEmail')}</p>
+        <Alert role="status">
+          <AlertDescription>{t('auth.signUp.checkEmail')}</AlertDescription>
+        </Alert>
       </main>
     );
   }
