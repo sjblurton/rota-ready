@@ -20,11 +20,11 @@ Done when you can name the ticket, and say what it unblocks and why it beat the 
 
 ## 2. Size it
 
-One ticket ships as one PR the user can review in a sitting. A ticket that adds new behaviour in more than one of `packages/shared`, `apps/api` and `apps/web` is usually too big: propose splitting it into sub-issues, one per layer or slice, each its own PR.
+One ticket ships as one PR the user can review in a sitting and check in the browser. When a ticket is too big for that, propose splitting it into sub-issues, each its own PR. Split into vertical slices: each sub-issue delivers something a human can test in the browser, so a backend change ships with the UI that shows it. A sub-issue that only touches `packages/shared` or `apps/api` has nothing to test, so fold it into the slice that first uses it.
 
 To split:
 
-1. Ask the user, showing the proposed sub-issues and what each covers.
+1. Ask the user, showing the proposed sub-issues and the browser check each one adds.
 2. On a yes, create them with the parent's acceptance criteria shared out between them. Link each one to the parent as a sub-issue, and chain them with blocked-by so they ship in order (commands in `docs/agents/issue-tracker.md`).
 3. Ship only the first sub-issue through the rest of this loop. The others wait for their own run.
 
