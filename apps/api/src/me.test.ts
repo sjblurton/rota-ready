@@ -8,6 +8,7 @@ import {
   type CryptoKey,
 } from 'jose';
 import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
+import { pino } from 'pino';
 import { createApp } from './app.js';
 import { createDb, type Db } from './db.js';
 
@@ -30,6 +31,7 @@ describe('/api/me', () => {
     db = createDb(inject('databaseUrl'));
     server = createApp({
       db,
+      logger: pino({ level: 'silent' }),
       authConfig: {
         keys: createLocalJWKSet({ keys: [publicJwk] }),
         issuer: ISSUER,

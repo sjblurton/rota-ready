@@ -34,3 +34,9 @@ export const handleMalformedJson: ErrorRequestHandler = (error, _req, res, next)
   }
   next(error);
 };
+
+export const handleUnexpectedError: ErrorRequestHandler = (error, _req, res, next) => {
+  if (res.headersSent) return next(error);
+  res.err = error;
+  sendError(res, 'internal_error');
+};
