@@ -14,7 +14,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
-import { Route as AuthenticatedVenuesVenueIdRouteImport } from './routes/_authenticated/venues/$venueId'
+import { Route as AuthenticatedVenuesVenueIdRouteRouteImport } from './routes/_authenticated/venues/$venueId/route'
+import { Route as AuthenticatedVenuesVenueIdIndexRouteImport } from './routes/_authenticated/venues/$venueId/index'
+import { Route as AuthenticatedVenuesVenueIdStaffRouteImport } from './routes/_authenticated/venues/$venueId/staff'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -40,11 +42,23 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedVenuesVenueIdRoute =
-  AuthenticatedVenuesVenueIdRouteImport.update({
+const AuthenticatedVenuesVenueIdRouteRoute =
+  AuthenticatedVenuesVenueIdRouteRouteImport.update({
     id: '/venues/$venueId',
     path: '/venues/$venueId',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVenuesVenueIdIndexRoute =
+  AuthenticatedVenuesVenueIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedVenuesVenueIdRouteRoute,
+  } as any)
+const AuthenticatedVenuesVenueIdStaffRoute =
+  AuthenticatedVenuesVenueIdStaffRouteImport.update({
+    id: '/staff',
+    path: '/staff',
+    getParentRoute: () => AuthenticatedVenuesVenueIdRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -52,14 +66,17 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
-  '/venues/$venueId': typeof AuthenticatedVenuesVenueIdRoute
+  '/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
+  '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
+  '/venues/$venueId/': typeof AuthenticatedVenuesVenueIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/': typeof AuthenticatedIndexRoute
-  '/venues/$venueId': typeof AuthenticatedVenuesVenueIdRoute
+  '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
+  '/venues/$venueId': typeof AuthenticatedVenuesVenueIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,13 +85,28 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/venues/$venueId': typeof AuthenticatedVenuesVenueIdRoute
+  '/_authenticated/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
+  '/_authenticated/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
+  '/_authenticated/venues/$venueId/': typeof AuthenticatedVenuesVenueIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/onboarding' | '/venues/$venueId'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/onboarding'
+    | '/venues/$venueId'
+    | '/venues/$venueId/staff'
+    | '/venues/$venueId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/signup' | '/onboarding' | '/' | '/venues/$venueId'
+  to:
+    | '/login'
+    | '/signup'
+    | '/onboarding'
+    | '/'
+    | '/venues/$venueId/staff'
+    | '/venues/$venueId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -83,6 +115,8 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/'
     | '/_authenticated/venues/$venueId'
+    | '/_authenticated/venues/$venueId/staff'
+    | '/_authenticated/venues/$venueId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,22 +166,53 @@ declare module '@tanstack/react-router' {
       id: '/_authenticated/venues/$venueId'
       path: '/venues/$venueId'
       fullPath: '/venues/$venueId'
-      preLoaderRoute: typeof AuthenticatedVenuesVenueIdRouteImport
+      preLoaderRoute: typeof AuthenticatedVenuesVenueIdRouteRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/venues/$venueId/': {
+      id: '/_authenticated/venues/$venueId/'
+      path: '/'
+      fullPath: '/venues/$venueId/'
+      preLoaderRoute: typeof AuthenticatedVenuesVenueIdIndexRouteImport
+      parentRoute: typeof AuthenticatedVenuesVenueIdRouteRoute
+    }
+    '/_authenticated/venues/$venueId/staff': {
+      id: '/_authenticated/venues/$venueId/staff'
+      path: '/staff'
+      fullPath: '/venues/$venueId/staff'
+      preLoaderRoute: typeof AuthenticatedVenuesVenueIdStaffRouteImport
+      parentRoute: typeof AuthenticatedVenuesVenueIdRouteRoute
     }
   }
 }
 
+interface AuthenticatedVenuesVenueIdRouteRouteChildren {
+  AuthenticatedVenuesVenueIdStaffRoute: typeof AuthenticatedVenuesVenueIdStaffRoute
+  AuthenticatedVenuesVenueIdIndexRoute: typeof AuthenticatedVenuesVenueIdIndexRoute
+}
+
+const AuthenticatedVenuesVenueIdRouteRouteChildren: AuthenticatedVenuesVenueIdRouteRouteChildren =
+  {
+    AuthenticatedVenuesVenueIdStaffRoute: AuthenticatedVenuesVenueIdStaffRoute,
+    AuthenticatedVenuesVenueIdIndexRoute: AuthenticatedVenuesVenueIdIndexRoute,
+  }
+
+const AuthenticatedVenuesVenueIdRouteRouteWithChildren =
+  AuthenticatedVenuesVenueIdRouteRoute._addFileChildren(
+    AuthenticatedVenuesVenueIdRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedVenuesVenueIdRoute: typeof AuthenticatedVenuesVenueIdRoute
+  AuthenticatedVenuesVenueIdRouteRoute: typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedVenuesVenueIdRoute: AuthenticatedVenuesVenueIdRoute,
+  AuthenticatedVenuesVenueIdRouteRoute:
+    AuthenticatedVenuesVenueIdRouteRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

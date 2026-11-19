@@ -40,7 +40,7 @@ async function apiRequest<Schema extends z.ZodType>(
   if (!response.ok) {
     throw new ApiError(response.status, await errorCodeOf(response));
   }
-  return schema.parse(await response.json());
+  return schema.parse(response.status === 204 ? undefined : await response.json());
 }
 
 export function apiGet<Schema extends z.ZodType>(path: string, schema: Schema) {

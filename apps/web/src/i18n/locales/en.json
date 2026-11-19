@@ -64,6 +64,38 @@
     "rename": {
       "title": "Rename venue",
       "submit": "Save name"
+    },
+    "nav": {
+      "label": "Venue",
+      "settings": "Settings",
+      "staff": "Staff"
+    }
+  },
+  "staff": {
+    "title": "Staff",
+    "empty": "No staff yet. Add your team below.",
+    "name": "Name",
+    "role": "Role",
+    "email": "Email",
+    "phone": "Phone",
+    "contactHint": "Add an email, a phone number, or both.",
+    "add": {
+      "title": "Add a staff member",
+      "submit": "Add staff member"
+    },
+    "edit": {
+      "button": "Edit",
+      "label": "Edit {{name}}",
+      "submit": "Save changes",
+      "cancel": "Cancel"
+    },
+    "archive": {
+      "button": "Archive",
+      "label": "Archive {{name}}",
+      "confirm": "Archive {{name}}? They'll drop off the rota."
+    },
+    "errors": {
+      "contactRequired": "Add an email or a phone number."
     }
   }
 }

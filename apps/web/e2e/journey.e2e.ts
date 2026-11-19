@@ -4,6 +4,11 @@ const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
+const staffMembers = [
+  { name: 'Sam Jones', role: 'Kitchen', email: '', phone: '07700 900123' },
+  { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: '07700 900456' },
+  { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
+];
 
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -19,6 +24,14 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
 
 test.describe.serial('MVP journey', () => {
   let page: Page;
+
+  function staffList() {
+    return page.getByRole('list', { name: 'Staff' });
+  }
+
+  function staffForm(submitLabel: string) {
+    return page.locator('form').filter({ has: page.getByRole('button', { name: submitLabel }) });
+  }
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
@@ -76,6 +89,55 @@ test.describe.serial('MVP journey', () => {
     await page.getByLabel('Venue name').fill(renamedVenue);
     await page.getByRole('button', { name: 'Save name' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  });
+
+  test('opens the Staff page with no Staff Members yet', async () => {
+    await page.getByRole('link', { name: 'Staff' }).click();
+    await expect(page.getByText('No staff yet. Add your team below.')).toBeVisible();
+  });
+
+  test('rejects a Staff Member with neither an email nor a phone number', async () => {
+    const addForm = staffForm('Add staff member');
+    await addForm.getByLabel('Name').fill('Alex Smith');
+    await addForm.getByLabel('Role').fill('Bar');
+    await addForm.getByRole('button', { name: 'Add staff member' }).click();
+    await expect(addForm.getByRole('alert')).toHaveText('Add an email or a phone number.');
+  });
+
+  test('adds three Staff Members and lists them by name', async () => {
+    const addForm = staffForm('Add staff member');
+    for (const { name, role, email, phone } of staffMembers) {
+      await addForm.getByLabel('Name').fill(name);
+      await addForm.getByLabel('Role').fill(role);
+      await addForm.getByLabel('Email').fill(email);
+      await addForm.getByLabel('Phone').fill(phone);
+      await addForm.getByRole('button', { name: 'Add staff member' }).click();
+      await expect(staffList().getByText(name)).toBeVisible();
+    }
+    await expect(staffList().getByRole('listitem')).toHaveCount(3);
+    await expect(staffList().getByRole('listitem').first()).toContainText('Alex Smith');
+  });
+
+  test('edits a Staff Member', async () => {
+    await page.getByRole('button', { name: 'Edit Sam Jones' }).click();
+    const editForm = staffForm('Save changes');
+    await editForm.getByLabel('Role').fill('Floor');
+    await editForm.getByRole('button', { name: 'Save changes' }).click();
+    await expect(
+      staffList().getByRole('listitem').filter({ hasText: 'Sam Jones' }),
+    ).toContainText('Floor');
+  });
+
+  test('archives a Staff Member and hides them from the list', async () => {
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Archive Jo Bloggs' }).click();
+    await expect(staffList().getByRole('listitem')).toHaveCount(2);
+    await expect(staffList()).not.toContainText('Jo Bloggs');
+  });
+
+  test('keeps the archived Staff Member hidden after a reload', async () => {
+    await page.reload();
+    await expect(staffList().getByRole('listitem')).toHaveText([/Alex Smith/, /Sam Jones/]);
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {
