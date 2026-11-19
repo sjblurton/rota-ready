@@ -1,6 +1,6 @@
 import { credentialsSchema, type Credentials } from '@rota-ready/shared';
-import type { ReactNode } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -9,21 +9,30 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input';
 
 interface AuthFormProps {
-  title: string;
-  submitLabel: string;
-  passwordAutoComplete: 'current-password' | 'new-password';
+  mode: 'logIn' | 'signUp';
   authenticate: (credentials: Credentials) => Promise<string | null>;
-  footer: ReactNode;
 }
 
-export function AuthForm({
-  title,
-  submitLabel,
-  passwordAutoComplete,
-  authenticate,
-  footer,
-}: AuthFormProps) {
+export function AuthForm({ mode, authenticate }: AuthFormProps) {
   const { t } = useTranslation();
+  const copy = {
+    logIn: {
+      title: t('auth.logIn.title'),
+      submit: t('auth.logIn.submit'),
+      passwordAutoComplete: 'current-password',
+      switchPrompt: t('auth.logIn.noAccount'),
+      switchLink: t('auth.logIn.signUpLink'),
+      switchTo: '/signup',
+    },
+    signUp: {
+      title: t('auth.signUp.title'),
+      submit: t('auth.signUp.submit'),
+      passwordAutoComplete: 'new-password',
+      switchPrompt: t('auth.signUp.haveAccount'),
+      switchLink: t('auth.signUp.logInLink'),
+      switchTo: '/login',
+    },
+  }[mode];
   const form = useForm({
     resolver: zodResolver(credentialsSchema),
     defaultValues: { email: '', password: '' },
@@ -40,7 +49,7 @@ export function AuthForm({
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">
-            <h1>{title}</h1>
+            <h1>{copy.title}</h1>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -63,7 +72,7 @@ export function AuthForm({
                 <Input
                   id="password"
                   type="password"
-                  autoComplete={passwordAutoComplete}
+                  autoComplete={copy.passwordAutoComplete}
                   aria-invalid={!!errors.password}
                   aria-describedby="password-error"
                   {...form.register('password')}
@@ -73,12 +82,15 @@ export function AuthForm({
               <FieldError>{errors.root?.message}</FieldError>
             </FieldGroup>
             <Button type="submit" disabled={isSubmitting}>
-              {submitLabel}
+              {copy.submit}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center gap-1 text-sm text-muted-foreground">
-          {footer}
+          {copy.switchPrompt}
+          <Link to={copy.switchTo} className="text-foreground underline underline-offset-4">
+            {copy.switchLink}
+          </Link>
         </CardFooter>
       </Card>
     </main>

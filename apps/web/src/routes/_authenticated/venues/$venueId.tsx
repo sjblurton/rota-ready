@@ -6,13 +6,13 @@ import {
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { VenueNameField } from '@/components/venue-name-field';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { FieldError, FieldGroup } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPatch } from '@/lib/api';
 import { myVenuesQuery, venueQuery } from '@/lib/venues';
@@ -44,7 +44,6 @@ function VenuePage() {
     resolver: zodResolver(renameVenueRequestSchema),
     defaultValues: { name: venue.name },
   });
-  const { errors } = form.formState;
   const rename = useMutation({
     mutationFn: (request: RenameVenueRequest) =>
       apiPatch(`/api/venues/${venueId}`, request, venueSchema),
@@ -75,24 +74,17 @@ function VenuePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
-            <FieldGroup>
-              <Field data-invalid={!!errors.name}>
-                <FieldLabel htmlFor="name">{t('venue.name')}</FieldLabel>
-                <Input
-                  id="name"
-                  aria-invalid={!!errors.name}
-                  aria-describedby="name-error"
-                  {...form.register('name')}
-                />
-                <FieldError id="name-error" errors={[errors.name]} />
-              </Field>
-              <FieldError>{rename.isError && apiErrorMessage(t, rename.error)}</FieldError>
-            </FieldGroup>
-            <Button type="submit" disabled={rename.isPending}>
-              {t('venue.rename.submit')}
-            </Button>
-          </form>
+          <FormProvider {...form}>
+            <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <FieldGroup>
+                <VenueNameField />
+                <FieldError>{rename.isError && apiErrorMessage(t, rename.error)}</FieldError>
+              </FieldGroup>
+              <Button type="submit" disabled={rename.isPending}>
+                {t('venue.rename.submit')}
+              </Button>
+            </form>
+          </FormProvider>
         </CardContent>
       </Card>
     </main>

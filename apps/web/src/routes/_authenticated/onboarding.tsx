@@ -7,8 +7,9 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { VenueNameField } from '@/components/venue-name-field';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,7 +19,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
@@ -66,41 +66,36 @@ function OnboardingPage() {
           <CardDescription>{t('onboarding.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
-            <FieldGroup>
-              <Field data-invalid={!!errors.name}>
-                <FieldLabel htmlFor="name">{t('venue.name')}</FieldLabel>
-                <Input
-                  id="name"
-                  aria-invalid={!!errors.name}
-                  aria-describedby="name-error"
-                  {...form.register('name')}
-                />
-                <FieldError id="name-error" errors={[errors.name]} />
-              </Field>
-              <Field data-invalid={!!errors.timeZone}>
-                <FieldLabel htmlFor="timeZone">{t('venue.timeZone')}</FieldLabel>
-                <NativeSelect
-                  id="timeZone"
-                  className="w-full"
-                  aria-invalid={!!errors.timeZone}
-                  aria-describedby="timeZone-error"
-                  {...form.register('timeZone')}
-                >
-                  {timeZones.map((timeZone) => (
-                    <NativeSelectOption key={timeZone} value={timeZone}>
-                      {timeZone}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-                <FieldError id="timeZone-error" errors={[errors.timeZone]} />
-              </Field>
-              <FieldError>{createVenue.isError && apiErrorMessage(t, createVenue.error)}</FieldError>
-            </FieldGroup>
-            <Button type="submit" disabled={createVenue.isPending}>
-              {t('onboarding.submit')}
-            </Button>
-          </form>
+          <FormProvider {...form}>
+            <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <FieldGroup>
+                <VenueNameField />
+                <Field data-invalid={!!errors.timeZone}>
+                  <FieldLabel htmlFor="timeZone">{t('venue.timeZone')}</FieldLabel>
+                  <NativeSelect
+                    id="timeZone"
+                    className="w-full"
+                    aria-invalid={!!errors.timeZone}
+                    aria-describedby="timeZone-error"
+                    {...form.register('timeZone')}
+                  >
+                    {timeZones.map((timeZone) => (
+                      <NativeSelectOption key={timeZone} value={timeZone}>
+                        {timeZone}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                  <FieldError id="timeZone-error" errors={[errors.timeZone]} />
+                </Field>
+                <FieldError>
+                  {createVenue.isError && apiErrorMessage(t, createVenue.error)}
+                </FieldError>
+              </FieldGroup>
+              <Button type="submit" disabled={createVenue.isPending}>
+                {t('onboarding.submit')}
+              </Button>
+            </form>
+          </FormProvider>
         </CardContent>
       </Card>
     </main>

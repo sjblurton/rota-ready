@@ -1,5 +1,5 @@
 import type { Credentials } from '@rota-ready/shared';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthForm } from '@/components/auth-form';
@@ -34,19 +34,6 @@ function SignupPage() {
   }
 
   return (
-    <AuthForm
-      title={t('auth.signUp.title')}
-      submitLabel={t('auth.signUp.submit')}
-      passwordAutoComplete="new-password"
-      authenticate={signUp}
-      footer={
-        <>
-          {t('auth.signUp.haveAccount')}
-          <Link to="/login" className="text-foreground underline underline-offset-4">
-            {t('auth.signUp.logInLink')}
-          </Link>
-        </>
-      }
-    />
+    <AuthForm mode="signUp" authenticate={signUp} />
   );
 }

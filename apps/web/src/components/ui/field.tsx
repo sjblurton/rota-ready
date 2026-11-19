@@ -1,13 +1,11 @@
-import { useMemo } from "react"
+import type { ReactNode } from "react"
+import type { ValidationMessageKey } from "@rota-ready/shared"
 import { cva, type VariantProps } from "class-variance-authority"
 import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import type en from "@/i18n/locales/en.json"
-
-type ValidationMessageKey = `validation.${keyof typeof en.validation}`
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -184,35 +182,21 @@ function FieldError({
   errors?: Array<{ message?: string } | undefined>
 }) {
   const { t } = useTranslation()
-  const content = useMemo(() => {
-    if (children) {
-      return children
-    }
+  const messages = [
+    ...new Set(errors?.map((error) => error?.message).filter(Boolean)),
+  ].map((message) => t(message as ValidationMessageKey))
 
-    if (!errors?.length) {
-      return null
-    }
-
-    const uniqueErrors = [
-      ...new Map(errors.map((error) => [error?.message, error])).values(),
-    ]
-
-    if (uniqueErrors?.length == 1) {
-      const message = uniqueErrors[0]?.message
-      return message && t(message as ValidationMessageKey)
-    }
-
-    return (
+  const content: ReactNode =
+    children ||
+    (messages.length > 1 ? (
       <ul className="ml-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map(
-          (error, index) =>
-            error?.message && (
-              <li key={index}>{t(error.message as ValidationMessageKey)}</li>
-            )
-        )}
+        {messages.map((message) => (
+          <li key={message}>{message}</li>
+        ))}
       </ul>
-    )
-  }, [children, errors, t])
+    ) : (
+      messages[0]
+    ))
 
   if (!content) {
     return null
