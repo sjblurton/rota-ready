@@ -88,6 +88,14 @@
     "goToThisWeek": "Go to this Week",
     "staffMember": "Staff Member",
     "noStaff": "Add Staff Members to start building the Rota.",
+    "addShift": {
+      "title": "Add a Shift",
+      "chooseStaffMember": "Choose a Staff Member",
+      "day": "Day",
+      "startTime": "Start",
+      "endTime": "End",
+      "submit": "Add Shift"
+    },
     "status": {
       "draft": "Draft",
       "published": "Published"

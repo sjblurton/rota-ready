@@ -1,4 +1,4 @@
-import { formatLocalDate, weekDays, type StaffMember } from '@rota-ready/shared';
+import { formatLocalDate, weekDays, type Shift, type StaffMember } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -8,15 +8,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { layOutShifts } from '@/features/rota/shift-layout';
 
 interface RotaGridProps {
   weekStart: string;
+  timeZone: string;
   staffMembers: StaffMember[];
+  shifts: Shift[];
 }
 
-export function RotaGrid({ weekStart, staffMembers }: RotaGridProps) {
+export function RotaGrid({ weekStart, timeZone, staffMembers, shifts }: RotaGridProps) {
   const { t } = useTranslation();
   const days = weekDays(weekStart);
+  const shiftsIn = layOutShifts(shifts, timeZone);
 
   return (
     <Table aria-label={t('rota.title')}>
@@ -33,7 +37,11 @@ export function RotaGrid({ weekStart, staffMembers }: RotaGridProps) {
           <TableRow key={staffMember.id}>
             <TableCell className="font-medium">{staffMember.name}</TableCell>
             {days.map((day) => (
-              <TableCell key={day} />
+              <TableCell key={day} className="align-top">
+                {shiftsIn(staffMember.id, day).map((shift) => (
+                  <div key={shift.id}>{shift.times}</div>
+                ))}
+              </TableCell>
             ))}
           </TableRow>
         ))}

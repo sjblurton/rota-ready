@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { RotaGrid } from '@/features/rota/rota-grid';
 import { RotaLoadError } from '@/features/rota/rota-load-error';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AddShiftForm } from '@/features/rota/add-shift-form';
 import { WeekLink } from '@/features/rota/week-link';
 import { rotaQuery } from '@/features/rota/rota-queries';
 import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
+import { venueQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/rota/$weekStart')({
   loader: ({ context, params }) =>
@@ -25,6 +27,7 @@ function RotaPage() {
   const { venueId, weekStart } = Route.useParams();
   const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
   const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
+  const { data: venue } = useSuspenseQuery(venueQuery(venueId));
 
   return (
     <div className="flex flex-col gap-4">
@@ -51,10 +54,33 @@ function RotaPage() {
           {staffMembers.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('rota.noStaff')}</p>
           ) : (
-            <RotaGrid weekStart={rota.weekStart} staffMembers={staffMembers} />
+            <RotaGrid
+              weekStart={rota.weekStart}
+              timeZone={venue.timeZone}
+              staffMembers={staffMembers}
+              shifts={rota.shifts}
+            />
           )}
         </CardContent>
       </Card>
+      {staffMembers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h3>{t('rota.addShift.title')}</h3>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AddShiftForm
+              key={rota.weekStart}
+              venueId={venueId}
+              timeZone={venue.timeZone}
+              weekStart={rota.weekStart}
+              staffMembers={staffMembers}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
