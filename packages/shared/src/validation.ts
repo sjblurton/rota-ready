@@ -6,6 +6,7 @@ export const validationMessage = {
   staffMemberNameTooLong: 'validation.staffMemberNameTooLong',
   staffMemberRoleTooLong: 'validation.staffMemberRoleTooLong',
   invalidPhone: 'validation.invalidPhone',
+  staffMemberEmailTaken: 'validation.staffMemberEmailTaken',
 } as const;
 
 export type ValidationMessageKey = (typeof validationMessage)[keyof typeof validationMessage];

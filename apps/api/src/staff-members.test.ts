@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createStaffMember, createUser, createVenueFor } from '../test/seed.js';
+import {
+  createActiveStaffMember,
+  createArchivedStaffMember,
+  createUser,
+  createVenueFor,
+} from '../test/seed.js';
 import { startTestApp, type TestApp } from '../test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
@@ -48,9 +53,9 @@ describe('/api/venues/:venueId/staff-members', () => {
     let otherStaffMemberId: string;
 
     beforeEach(async () => {
-      ownStaffMemberId = (await createStaffMember(app.db, ownVenue, ALEX)).id;
+      ownStaffMemberId = (await createActiveStaffMember(app.db, ownVenue, ALEX)).id;
       otherStaffMemberId = (
-        await createStaffMember(app.db, otherVenue, SAM, { archivedAt: null })
+        await createActiveStaffMember(app.db, otherVenue, SAM)
       ).id;
     });
 
@@ -110,7 +115,7 @@ describe('/api/venues/:venueId/staff-members', () => {
 
       beforeEach(async () => {
         otherStaffMemberId = (
-          await createStaffMember(app.db, otherVenue, SAM, { archivedAt: null })
+          await createActiveStaffMember(app.db, otherVenue, SAM)
         ).id;
         response = await send(otherStaffMemberId);
       });
@@ -155,9 +160,7 @@ describe('/api/venues/:venueId/staff-members', () => {
 
     describe('when the Staff Member is archived', () => {
       beforeEach(async () => {
-        const archived = await createStaffMember(app.db, ownVenue, ALEX, {
-          archivedAt: new Date(),
-        });
+        const archived = await createArchivedStaffMember(app.db, ownVenue, ALEX);
         response = await send(archived.id);
       });
 
@@ -180,20 +183,10 @@ describe('/api/venues/:venueId/staff-members', () => {
 
     describe('when the venue has active and archived Staff Members, and another venue has its own', () => {
       beforeEach(async () => {
-        await createStaffMember(app.db, otherVenue, { ...SAM, name: 'Other Venue Person' });
-        await createStaffMember(app.db, ownVenue, SAM, { archivedAt: null });
-        await createStaffMember(
-          app.db,
-          ownVenue,
-          { ...ALEX, name: 'zoe Archived' },
-          { archivedAt: new Date() },
-        );
-        await createStaffMember(
-          app.db,
-          ownVenue,
-          { ...ALEX, name: 'alex smith' },
-          { archivedAt: null },
-        );
+        await createActiveStaffMember(app.db, otherVenue, { ...SAM, name: 'Other Venue Person' });
+        await createActiveStaffMember(app.db, ownVenue, SAM);
+        await createArchivedStaffMember(app.db, ownVenue, { ...ALEX, name: 'zoe Archived' });
+        await createActiveStaffMember(app.db, ownVenue, { ...ALEX, name: 'alex smith' });
         response = await app.request('GET', staffMembersPath(ownVenue), { as: OWNER });
       });
 
@@ -253,6 +246,56 @@ describe('/api/venues/:venueId/staff-members', () => {
       });
     });
 
+    describe('when another active Staff Member in the venue already has the email', () => {
+      beforeEach(async () => {
+        await createActiveStaffMember(app.db, ownVenue, ALEX);
+        response = await app.request('POST', staffMembersPath(ownVenue), {
+          as: OWNER,
+          body: { ...SAM, email: 'ALEX@example.com' },
+        });
+      });
+
+      it('responds with 409', () => {
+        expect(response.status).toBe(409);
+      });
+
+      it('carries the staff_member_email_taken code', async () => {
+        expect(await response.json()).toEqual({ code: 'staff_member_email_taken' });
+      });
+
+      it('creates no second Staff Member', async () => {
+        expect(await app.db.staffMember.count()).toBe(1);
+      });
+    });
+
+    describe('when only an archived Staff Member in the venue has the email', () => {
+      beforeEach(async () => {
+        await createArchivedStaffMember(app.db, ownVenue, ALEX);
+        response = await app.request('POST', staffMembersPath(ownVenue), {
+          as: OWNER,
+          body: ALEX,
+        });
+      });
+
+      it('responds with 201', () => {
+        expect(response.status).toBe(201);
+      });
+    });
+
+    describe('when a Staff Member in another venue has the email', () => {
+      beforeEach(async () => {
+        await createActiveStaffMember(app.db, otherVenue, ALEX);
+        response = await app.request('POST', staffMembersPath(ownVenue), {
+          as: OWNER,
+          body: ALEX,
+        });
+      });
+
+      it('responds with 201', () => {
+        expect(response.status).toBe(201);
+      });
+    });
+
     describe.each([
       { scenario: 'a blank email', body: { ...SAM, email: '  ' } },
       { scenario: 'no email', body: { name: SAM.name, role: SAM.role, phone: SAM.phone } },
@@ -283,7 +326,7 @@ describe('/api/venues/:venueId/staff-members', () => {
     let staffMemberId: string;
 
     beforeEach(async () => {
-      staffMemberId = (await createStaffMember(app.db, ownVenue, ALEX)).id;
+      staffMemberId = (await createActiveStaffMember(app.db, ownVenue, ALEX)).id;
     });
 
     describe('when the Owner changes the Role and adds a phone number', () => {
@@ -315,6 +358,34 @@ describe('/api/venues/:venueId/staff-members', () => {
       });
     });
 
+    describe("when the Owner changes the email to another active Staff Member's", () => {
+      beforeEach(async () => {
+        await createActiveStaffMember(app.db, ownVenue, SAM);
+        response = await app.request(
+          'PATCH',
+          `${staffMembersPath(ownVenue)}/${staffMemberId}`,
+          { as: OWNER, body: { ...ALEX, email: SAM.email } },
+        );
+      });
+
+      it('responds with 409', () => {
+        expect(response.status).toBe(409);
+      });
+
+      it('carries the staff_member_email_taken code', async () => {
+        expect(await response.json()).toEqual({ code: 'staff_member_email_taken' });
+      });
+
+      it('keeps the old email', async () => {
+        expect(
+          await app.db.staffMember.findUnique({
+            where: { id: staffMemberId },
+            select: { email: true },
+          }),
+        ).toEqual({ email: ALEX.email });
+      });
+    });
+
     describe('when the Owner removes the email', () => {
       beforeEach(async () => {
         response = await app.request(
@@ -343,8 +414,8 @@ describe('/api/venues/:venueId/staff-members', () => {
     let staffMemberId: string;
 
     beforeEach(async () => {
-      staffMemberId = (await createStaffMember(app.db, ownVenue, ALEX)).id;
-      await createStaffMember(app.db, ownVenue, SAM, { archivedAt: null });
+      staffMemberId = (await createActiveStaffMember(app.db, ownVenue, ALEX)).id;
+      await createActiveStaffMember(app.db, ownVenue, SAM);
     });
 
     describe('when the Owner archives a Staff Member', () => {
@@ -360,13 +431,13 @@ describe('/api/venues/:venueId/staff-members', () => {
         expect(response.status).toBe(204);
       });
 
-      it('keeps the Staff Member with an archived timestamp', async () => {
+      it('keeps the Staff Member with an archived timestamp and clears their email', async () => {
         expect(
           await app.db.staffMember.findUnique({
             where: { id: staffMemberId },
-            select: { archivedAt: true },
+            select: { archivedAt: true, email: true },
           }),
-        ).toEqual({ archivedAt: expect.any(Date) });
+        ).toEqual({ archivedAt: expect.any(Date), email: null });
       });
 
       describe('when the Owner then lists Staff Members', () => {

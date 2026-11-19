@@ -8,6 +8,7 @@ const messageKeys = {
   forbidden: 'errors.forbidden',
   not_found: 'errors.notFound',
   venue_already_exists: 'errors.venueAlreadyExists',
+  staff_member_email_taken: 'errors.staffMemberEmailTaken',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

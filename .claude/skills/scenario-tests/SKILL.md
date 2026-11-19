@@ -65,7 +65,7 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
 - **API integration tests** (Vitest, real Postgres, single worker, truncate before each test): the outer `beforeEach` builds the app and seeds the scenario through HTTP or the database; nested `describe('when …')` blocks make the request; `it` blocks assert the status, the body, the database row or the outbox. Global migrate and truncate setup lives in Vitest config, which doesn't count as a shared `testUtils` file.
 - **Shared API test infrastructure**: API tests share two files, and nothing else.
   - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a silent logger), and signs tokens and sends requests against it. Later fakes, such as the `clock` and the email outbox, belong here too.
-  - `apps/api/test/seed.ts` holds seed factories such as `createUser`, `createVenueFor` and `createStaffMember`, with defaults each test can override.
+  - `apps/api/test/seed.ts` holds seed factories such as `createUser`, `createVenueFor` and `createActiveStaffMember`, with defaults each test can override.
 
   Every scenario's data is still created by explicit calls in its own `beforeEach` (`await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })`), so the scenario reads from the test file alone. Pass every value a test asserts on; never assert on a value a factory defaulted. Shared fixtures that create data without being called, such as a global `beforeEach` or a factory that seeds more than it says, are not allowed.
 - **Tenancy scenarios**: every venue-scoped route gets a `describe('when a member of another venue requests it')` block that asserts 404.

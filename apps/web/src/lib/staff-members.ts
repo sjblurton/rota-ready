@@ -1,6 +1,6 @@
 import { byStaffMemberName, staffMemberListSchema, type StaffMember } from '@rota-ready/shared';
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
-import { apiGet } from './api';
+import { ApiError, apiGet } from './api';
 
 export function staffMembersQuery(venueId: string) {
   return queryOptions({
@@ -16,6 +16,10 @@ export function staffMembersPath(venueId: string) {
 
 export function staffMemberPath(venueId: string, staffMemberId: string) {
   return `${staffMembersPath(venueId)}/${staffMemberId}`;
+}
+
+export function isEmailTaken(error: unknown) {
+  return error instanceof ApiError && error.code === 'staff_member_email_taken';
 }
 
 export function updateStaffMembers(

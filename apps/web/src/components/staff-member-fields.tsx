@@ -7,9 +7,6 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
 export function StaffMemberFields() {
-  // reset() unregisters the fields, and React Hook Form re-registers them only when register()
-  // runs again on the next render. The compiler would skip those calls, leaving the inputs dead.
-  'use no memo';
   const { t } = useTranslation();
   const id = useId();
   const { register, formState } = useFormContext<z.input<typeof staffMemberDetailsSchema>>();

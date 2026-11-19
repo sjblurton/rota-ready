@@ -6,6 +6,7 @@ export const apiErrorCodeSchema = z.enum([
   'forbidden',
   'not_found',
   'venue_already_exists',
+  'staff_member_email_taken',
   'internal_error',
 ]);
 

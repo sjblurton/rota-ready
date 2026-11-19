@@ -1,6 +1,7 @@
 import {
   staffMemberDetailsSchema,
   staffMemberSchema,
+  validationMessage,
   type StaffMemberDetails,
 } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { FieldError, FieldGroup } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
-import { staffMembersPath, updateStaffMembers } from '@/lib/staff-members';
+import { isEmailTaken, staffMembersPath, updateStaffMembers } from '@/lib/staff-members';
 
 const emptyStaffMember = { name: '', role: '', email: '', phone: '' };
 
@@ -28,7 +29,13 @@ export function AddStaffMemberForm({ venueId }: { venueId: string }) {
       apiPost(staffMembersPath(venueId), details, staffMemberSchema),
     onSuccess: (added) => {
       updateStaffMembers(queryClient, venueId, (current) => [...current, added]);
-      form.reset(emptyStaffMember);
+      form.reset(emptyStaffMember, { keepFieldsRef: true });
+      form.setFocus('name');
+    },
+    onError: (error) => {
+      if (isEmailTaken(error)) {
+        form.setError('email', { message: validationMessage.staffMemberEmailTaken });
+      }
     },
   });
 
@@ -41,7 +48,9 @@ export function AddStaffMemberForm({ venueId }: { venueId: string }) {
       <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <StaffMemberFields />
-          <FieldError>{add.isError && apiErrorMessage(t, add.error)}</FieldError>
+          <FieldError>
+            {add.isError && !isEmailTaken(add.error) && apiErrorMessage(t, add.error)}
+          </FieldError>
         </FieldGroup>
         <Button type="submit" className="self-start" disabled={add.isPending}>
           {t('staff.add.submit')}

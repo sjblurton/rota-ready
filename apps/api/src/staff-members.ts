@@ -10,6 +10,10 @@ type StaffMemberRequestHandler = VenueRequestHandler<{ staffMemberId: string }>;
 
 const staffMemberIdSchema = z.uuid();
 
+function isPrismaError(error: unknown, code: 'P2002' | 'P2025') {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
+}
+
 function toStaffMember({ id, name, role, email, phone }: StaffMember) {
   return staffMemberSchema.parse({ id, name, role, email, phone });
 }
@@ -27,10 +31,15 @@ export function staffMemberRoutes(db: Db): Router {
   const addStaffMember: VenueRequestHandler<object> = async (req, res) => {
     const details = parseBody(staffMemberDetailsSchema, req.body, res);
     if (!details) return;
-    const staffMember = await db.staffMember.create({
-      data: { ...details, venueId: res.locals.venue.id },
-    });
-    res.status(201).json(toStaffMember(staffMember));
+    try {
+      const staffMember = await db.staffMember.create({
+        data: { ...details, venueId: res.locals.venue.id },
+      });
+      res.status(201).json(toStaffMember(staffMember));
+    } catch (error) {
+      if (isPrismaError(error, 'P2002')) return sendError(res, 'staff_member_email_taken');
+      throw error;
+    }
   };
 
   async function updateActiveStaffMember(
@@ -49,8 +58,12 @@ export function staffMemberRoutes(db: Db): Router {
         data,
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (isPrismaError(error, 'P2025')) {
         sendError(res, 'not_found');
+        return undefined;
+      }
+      if (isPrismaError(error, 'P2002')) {
+        sendError(res, 'staff_member_email_taken');
         return undefined;
       }
       throw error;
@@ -67,6 +80,7 @@ export function staffMemberRoutes(db: Db): Router {
   const archiveStaffMember: StaffMemberRequestHandler = async (req, res) => {
     const archived = await updateActiveStaffMember(res, req.params.staffMemberId, {
       archivedAt: new Date(),
+      email: null,
     });
     if (archived) res.status(204).end();
   };

@@ -23,11 +23,20 @@ export function createVenueFor(
   });
 }
 
-export function createStaffMember(
+export function createActiveStaffMember(
   db: Db,
   venue: { id: string },
   details: StaffMemberDetails,
-  { archivedAt = null }: { archivedAt?: Date | null } = {},
 ) {
-  return db.staffMember.create({ data: { ...details, venueId: venue.id, archivedAt } });
+  return db.staffMember.create({ data: { ...details, venueId: venue.id } });
+}
+
+export function createArchivedStaffMember(
+  db: Db,
+  venue: { id: string },
+  details: Omit<StaffMemberDetails, 'email'>,
+) {
+  return db.staffMember.create({
+    data: { ...details, email: null, venueId: venue.id, archivedAt: new Date() },
+  });
 }

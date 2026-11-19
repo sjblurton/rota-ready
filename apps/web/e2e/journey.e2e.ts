@@ -116,9 +116,21 @@ test.describe.serial('MVP journey', () => {
       await addForm.getByRole('button', { name: 'Add staff member' }).click();
       await expect(staffList().getByText(name)).toBeVisible();
       await expect(addForm.getByLabel('Name')).toHaveValue('');
+      await expect(addForm.getByLabel('Name')).toBeFocused();
     }
     await expect(staffList().getByRole('listitem')).toHaveCount(3);
     await expect(staffList().getByRole('listitem').first()).toContainText('Alex Smith');
+  });
+
+  test('rejects a Staff Member whose email another Staff Member already uses', async () => {
+    const addForm = staffForm('Add staff member');
+    await addForm.getByLabel('Name').fill('Jo Again');
+    await addForm.getByLabel('Role').fill('Bar');
+    await addForm.getByLabel('Email').fill('JO@example.com');
+    await addForm.getByRole('button', { name: 'Add staff member' }).click();
+    await expect(addForm.getByLabel('Email')).toHaveAccessibleDescription(
+      'Another Staff Member already uses this email.',
+    );
   });
 
   test('edits a Staff Member', async () => {

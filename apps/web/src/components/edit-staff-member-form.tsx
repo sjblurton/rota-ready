@@ -1,6 +1,7 @@
 import {
   staffMemberDetailsSchema,
   staffMemberSchema,
+  validationMessage,
   type StaffMember,
   type StaffMemberDetails,
 } from '@rota-ready/shared';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { FieldError, FieldGroup } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPatch } from '@/lib/api';
-import { staffMemberPath, updateStaffMembers } from '@/lib/staff-members';
+import { isEmailTaken, staffMemberPath, updateStaffMembers } from '@/lib/staff-members';
 
 interface EditStaffMemberFormProps {
   venueId: string;
@@ -42,6 +43,11 @@ export function EditStaffMemberForm({ venueId, staffMember, onDone }: EditStaffM
       );
       onDone();
     },
+    onError: (error) => {
+      if (isEmailTaken(error)) {
+        form.setError('email', { message: validationMessage.staffMemberEmailTaken });
+      }
+    },
   });
 
   function onSubmit(details: StaffMemberDetails) {
@@ -53,7 +59,9 @@ export function EditStaffMemberForm({ venueId, staffMember, onDone }: EditStaffM
       <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <StaffMemberFields />
-          <FieldError>{edit.isError && apiErrorMessage(t, edit.error)}</FieldError>
+          <FieldError>
+            {edit.isError && !isEmailTaken(edit.error) && apiErrorMessage(t, edit.error)}
+          </FieldError>
         </FieldGroup>
         <div className="flex gap-2">
           <Button type="submit" disabled={edit.isPending}>
