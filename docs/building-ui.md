@@ -130,6 +130,8 @@ If one form needs a different label or a description, compose `Field` there inst
 
 Each mutation handles its own errors in `onError` (ADR-0009). Put a code the form can fix on its field or on `root` with `setError`. Send everything else to a toast with `toast.error(apiErrorMessage(t, error))` from `sonner`. Don't render a catch-all API error inside the form. `<Toaster />` is rendered once, in `routes/__root.tsx`.
 
+Show a success toast (`toast.success`) only when nothing on the page changes to show the result, such as an email being sent. When the page updates, that is the confirmation.
+
 ## Customising a component
 
 Use the first option that works. Each one costs more at upgrade time than the one before.
