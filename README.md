@@ -121,6 +121,7 @@ Open http://localhost:5173 and you'll land on the login page. Create an account 
 | `pnpm build` | Production builds of the web app and the API |
 | `pnpm --filter @rota-ready/api start` | Runs the built API (after `pnpm build`) |
 | `pnpm db:stop` | Stops the local Supabase stack |
+| `pnpm db:reset` | Wipes the local database, including Users and logins, and re-applies the Prisma migrations. Use it when a migration you'd already applied has changed. |
 | `pnpm --filter @rota-ready/api db:migration --name <name>` | Creates a new migration from changes to `apps/api/prisma/schema.prisma` |
 
 Integration tests create a fresh `rota_ready_test` database each run, apply the migrations once, and truncate every table before each test. They check tokens against a key pair generated in the test, through the same verifier production uses.
