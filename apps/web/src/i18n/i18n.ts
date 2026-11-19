@@ -1,4 +1,5 @@
 import {
+  MAX_SHIFT_HOURS,
   STAFF_MEMBER_NAME_MAX_LENGTH,
   STAFF_MEMBER_ROLE_MAX_LENGTH,
   VENUE_NAME_MAX_LENGTH,
@@ -27,6 +28,7 @@ await i18n.use(initReactI18next).init({
     escapeValue: false,
     defaultVariables: {
       venueNameMaxLength: VENUE_NAME_MAX_LENGTH,
+      maxShiftHours: MAX_SHIFT_HOURS,
       staffMemberNameMaxLength: STAFF_MEMBER_NAME_MAX_LENGTH,
       staffMemberRoleMaxLength: STAFF_MEMBER_ROLE_MAX_LENGTH,
     },

@@ -31,7 +31,9 @@
     "staffMemberNameTooLong": "$t(validation.tooLong, {\"count\": {{staffMemberNameMaxLength}} })",
     "staffMemberRoleTooLong": "$t(validation.tooLong, {\"count\": {{staffMemberRoleMaxLength}} })",
     "invalidPhone": "Enter a valid phone number.",
-    "staffMemberEmailTaken": "Another Staff Member already uses this email."
+    "staffMemberEmailTaken": "Another Staff Member already uses this email.",
+    "shiftEndsBeforeStart": "The end must be after the start.",
+    "shiftTooLong": "Shifts can be at most {{maxShiftHours}} hours."
   },
   "auth": {
     "email": "Email",

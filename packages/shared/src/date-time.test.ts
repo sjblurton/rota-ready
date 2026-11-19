@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { formatDate, formatShiftTimes, formatTime } from './date-time.js';
+import { formatDate, formatLocalDate, formatShiftTimes, formatTime } from './date-time.js';
 
 const london = { timeZone: 'Europe/London' };
 
@@ -169,6 +169,20 @@ describe('formatShiftTimes', () => {
 
     it(`shows ${expected} in ${timeZone} local time`, () => {
       expect(formatted).toBe(expected);
+    });
+  });
+});
+
+describe('formatLocalDate', () => {
+  let formatted: string;
+
+  describe('when given a local date', () => {
+    beforeEach(() => {
+      formatted = formatLocalDate('2026-11-16');
+    });
+
+    it('shows the short weekday, day and month', () => {
+      expect(formatted).toBe('Mon 16 Nov');
     });
   });
 });

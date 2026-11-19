@@ -1,3 +1,5 @@
+import { daysBetween, localDateOf } from './week.js';
+
 export interface DateTimeFormatOptions {
   timeZone: string;
   locale?: string;
@@ -29,26 +31,19 @@ export function formatDate(
   }).format(instant);
 }
 
-function calendarDayNumber(instant: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-  }).formatToParts(instant);
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((p) => p.type === type)?.value);
-  return Date.UTC(part('year'), part('month') - 1, part('day')) / 86_400_000;
-}
-
 export function formatShiftTimes(
   startsAt: Date,
   endsAt: Date,
   options: DateTimeFormatOptions,
 ): string {
-  const extraDays =
-    calendarDayNumber(endsAt, options.timeZone) -
-    calendarDayNumber(startsAt, options.timeZone);
+  const extraDays = daysBetween(
+    localDateOf(startsAt, options.timeZone),
+    localDateOf(endsAt, options.timeZone),
+  );
   const range = `${formatTime(startsAt, options)}–${formatTime(endsAt, options)}`;
   return extraDays > 0 ? `${range} (+${extraDays})` : range;
+}
+
+export function formatLocalDate(localDate: string): string {
+  return formatDate(new Date(`${localDate}T12:00:00Z`), { timeZone: 'UTC' });
 }
