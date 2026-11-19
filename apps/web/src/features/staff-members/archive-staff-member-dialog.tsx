@@ -2,6 +2,7 @@ import type { StaffMember } from '@rota-ready/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import {
   AlertDialog,
@@ -15,7 +16,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { FieldError } from '@/components/ui/field';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
 import { staffMemberPath, updateStaffMembers } from '@/features/staff-members/staff-member-queries';
@@ -38,12 +38,10 @@ export function ArchiveStaffMemberDialog({ venueId, staffMember }: ArchiveStaffM
         current.filter((existing) => existing.id !== staffMember.id),
       );
     },
+    onError: (error) => {
+      toast.error(apiErrorMessage(t, error));
+    },
   });
-
-  function onOpenChange(nextOpen: boolean) {
-    if (nextOpen) archive.reset();
-    setOpen(nextOpen);
-  }
 
   function confirm(event: MouseEvent) {
     event.preventDefault();
@@ -51,7 +49,7 @@ export function ArchiveStaffMemberDialog({ venueId, staffMember }: ArchiveStaffM
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button
           variant="destructive"
@@ -66,7 +64,6 @@ export function ArchiveStaffMemberDialog({ venueId, staffMember }: ArchiveStaffM
           <AlertDialogTitle>{t('staff.archive.title', { name: staffMember.name })}</AlertDialogTitle>
           <AlertDialogDescription>{t('staff.archive.description')}</AlertDialogDescription>
         </AlertDialogHeader>
-        <FieldError>{archive.isError && apiErrorMessage(t, archive.error)}</FieldError>
         <AlertDialogFooter>
           <AlertDialogCancel>{t('staff.archive.cancel')}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" disabled={archive.isPending} onClick={confirm}>

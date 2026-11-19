@@ -2,7 +2,7 @@ import type { Credentials } from '@rota-ready/shared';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { AuthForm } from '@/features/users/auth-form';
-import { authErrorMessage } from '@/features/users/auth-error-message';
+import { formMessageOrToast } from '@/features/users/auth-error-message';
 import { redirectIfLoggedIn } from '@/features/users/redirect-if-logged-in';
 import { supabase } from '@/lib/supabase';
 
@@ -17,7 +17,7 @@ function LoginPage() {
 
   async function logIn(credentials: Credentials) {
     const { error } = await supabase.auth.signInWithPassword(credentials);
-    if (error) return authErrorMessage(t, error.code);
+    if (error) return formMessageOrToast(t, error.code);
     await navigate({ to: '/' });
     return null;
   }

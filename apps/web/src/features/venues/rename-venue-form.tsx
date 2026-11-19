@@ -8,8 +8,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { FieldError, FieldGroup } from '@/components/ui/field';
+import { FieldGroup } from '@/components/ui/field';
 import { VenueNameField } from '@/features/venues/venue-name-field';
 import { myVenuesQuery, venueQuery } from '@/features/venues/venue-queries';
 import { apiErrorMessage } from '@/i18n/api-error-message';
@@ -31,6 +32,9 @@ export function RenameVenueForm({ venue }: { venue: Venue }) {
         venues?.map((existing) => (existing.id === renamed.id ? renamed : existing)),
       );
     },
+    onError: (error) => {
+      toast.error(apiErrorMessage(t, error));
+    },
   });
 
   function onSubmit(request: RenameVenueRequest) {
@@ -42,7 +46,6 @@ export function RenameVenueForm({ venue }: { venue: Venue }) {
       <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <VenueNameField />
-          <FieldError>{rename.isError && apiErrorMessage(t, rename.error)}</FieldError>
         </FieldGroup>
         <Button type="submit" disabled={rename.isPending}>
           {t('venue.rename.submit')}
