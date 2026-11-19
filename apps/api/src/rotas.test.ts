@@ -243,6 +243,39 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
     });
   });
 
+  describe('when the Owner adds the first Shifts of a new Week from two tabs at once', () => {
+    let responses: Response[];
+
+    beforeEach(async () => {
+      const jo = await createActiveStaffMember(app.db, ownVenue, JO);
+      responses = await Promise.all(
+        [sam, jo].map((staffMember) =>
+          app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+            as: OWNER,
+            body: {
+              staffMemberId: staffMember.id,
+              startsAt: '2026-11-16T09:00:00.000Z',
+              endsAt: '2026-11-16T17:00:00.000Z',
+            },
+          }),
+        ),
+      );
+    });
+
+    it('responds with 201 to both', () => {
+      expect(responses.map((each) => each.status)).toEqual([201, 201]);
+    });
+
+    it('stores only one Rota', async () => {
+      expect(await app.db.rota.count()).toBe(1);
+    });
+
+    it('stores both Shifts in that Rota', async () => {
+      const rota = await app.db.rota.findFirstOrThrow();
+      expect(await app.db.shift.count({ where: { rotaId: rota.id } })).toBe(2);
+    });
+  });
+
   describe('when the Owner adds an Overnight Shift that starts on Sunday', () => {
     beforeEach(async () => {
       response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
