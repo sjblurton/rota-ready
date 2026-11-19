@@ -7,7 +7,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a run on main: it may be part-way through production migrations.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -61,3 +62,42 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report/
           retention-days: 7
+
+  deploy:
+    name: Migrate and deploy to production
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://rota-ready.onrender.com
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations to the production database
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy the API and wait until it is live
+        run: .github/scripts/render-deploy.sh "$DEPLOY_HOOK" "$SERVICE_ID"
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+          SERVICE_ID: ${{ vars.RENDER_API_SERVICE_ID }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
+      - name: Deploy the web app and wait until it is live
+        run: .github/scripts/render-deploy.sh "$DEPLOY_HOOK" "$SERVICE_ID"
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+          SERVICE_ID: ${{ vars.RENDER_WEB_SERVICE_ID }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}

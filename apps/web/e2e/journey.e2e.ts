@@ -101,6 +101,17 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
   });
 
+  test('shows a loading screen while the API is slow to answer', async () => {
+    await page.route('**/api/me', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      await route.continue();
+    });
+    await page.goto('/');
+    await expect(page.getByText('Loading…')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+    await page.unroute('**/api/me');
+  });
+
   test('shows every string as pseudo-text with ?lng=pseudo, apart from the email address and Venue name', async () => {
     await page.goto('/?lng=pseudo');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
