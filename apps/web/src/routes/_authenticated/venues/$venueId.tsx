@@ -7,11 +7,11 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { createFileRoute, type ErrorComponentProps } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ErrorAlert } from '@/components/error-alert';
-import { TextField } from '@/components/text-field';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FieldGroup } from '@/components/ui/field';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPatch } from '@/lib/api';
 import { formResolver } from '@/lib/form-resolver';
@@ -28,7 +28,9 @@ function VenueError({ error }: ErrorComponentProps) {
   const { t } = useTranslation();
   return (
     <main className="mx-auto max-w-xl p-6 sm:p-10">
-      <ErrorAlert>{apiErrorMessage(t, error)}</ErrorAlert>
+      <Alert variant="destructive">
+        <AlertDescription>{apiErrorMessage(t, error)}</AlertDescription>
+      </Alert>
     </main>
   );
 }
@@ -54,6 +56,10 @@ function VenuePage() {
     },
   });
 
+  function onSubmit(request: RenameVenueRequest) {
+    rename.mutate(request);
+  }
+
   return (
     <main className="mx-auto flex max-w-xl flex-col gap-6 p-6 sm:p-10">
       <div className="flex flex-col gap-1">
@@ -69,20 +75,27 @@ function VenuePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form noValidate onSubmit={form.handleSubmit((request) => rename.mutate(request))}>
+          <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
-              <TextField
-                id="name"
-                label={t('venue.name')}
-                error={errors.name}
-                schema={renameVenueRequestSchema.shape.name}
-                {...form.register('name')}
-              />
-              {rename.isError && <ErrorAlert>{apiErrorMessage(t, rename.error)}</ErrorAlert>}
-              <Button type="submit" disabled={rename.isPending}>
-                {t('venue.rename.submit')}
-              </Button>
+              <Field data-invalid={!!errors.name}>
+                <FieldLabel htmlFor="name">{t('venue.name')}</FieldLabel>
+                <Input
+                  id="name"
+                  aria-invalid={!!errors.name}
+                  aria-describedby="name-error"
+                  {...form.register('name')}
+                />
+                <FieldError id="name-error" errors={[errors.name]} />
+              </Field>
             </FieldGroup>
+            {rename.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>{apiErrorMessage(t, rename.error)}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" disabled={rename.isPending}>
+              {t('venue.rename.submit')}
+            </Button>
           </form>
         </CardContent>
       </Card>

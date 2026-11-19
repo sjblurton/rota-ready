@@ -38,7 +38,7 @@ function SignupPage() {
       title={t('auth.signUp.title')}
       submitLabel={t('auth.signUp.submit')}
       passwordAutoComplete="new-password"
-      onSubmit={signUp}
+      authenticate={signUp}
       footer={
         <>
           {t('auth.signUp.haveAccount')}

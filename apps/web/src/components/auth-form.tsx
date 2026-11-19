@@ -2,18 +2,18 @@ import { credentialsSchema, type Credentials } from '@rota-ready/shared';
 import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ErrorAlert } from '@/components/error-alert';
-import { TextField } from '@/components/text-field';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FieldGroup } from '@/components/ui/field';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { formResolver } from '@/lib/form-resolver';
 
 interface AuthFormProps {
   title: string;
   submitLabel: string;
   passwordAutoComplete: 'current-password' | 'new-password';
-  onSubmit: (credentials: Credentials) => Promise<string | null>;
+  authenticate: (credentials: Credentials) => Promise<string | null>;
   footer: ReactNode;
 }
 
@@ -21,7 +21,7 @@ export function AuthForm({
   title,
   submitLabel,
   passwordAutoComplete,
-  onSubmit,
+  authenticate,
   footer,
 }: AuthFormProps) {
   const { t } = useTranslation();
@@ -31,8 +31,8 @@ export function AuthForm({
   });
   const { errors, isSubmitting } = form.formState;
 
-  async function submit(credentials: Credentials) {
-    const message = await onSubmit(credentials);
+  async function onSubmit(credentials: Credentials) {
+    const message = await authenticate(credentials);
     if (message) form.setError('root', { message });
   }
 
@@ -45,31 +45,41 @@ export function AuthForm({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form noValidate onSubmit={form.handleSubmit(submit)}>
+          <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
-              <TextField
-                id="email"
-                label={t('auth.email')}
-                type="email"
-                autoComplete="username"
-                error={errors.email}
-                schema={credentialsSchema.shape.email}
-                {...form.register('email')}
-              />
-              <TextField
-                id="password"
-                label={t('auth.password')}
-                type="password"
-                autoComplete={passwordAutoComplete}
-                error={errors.password}
-                schema={credentialsSchema.shape.password}
-                {...form.register('password')}
-              />
-              {errors.root && <ErrorAlert>{errors.root.message}</ErrorAlert>}
-              <Button type="submit" disabled={isSubmitting}>
-                {submitLabel}
-              </Button>
+              <Field data-invalid={!!errors.email}>
+                <FieldLabel htmlFor="email">{t('auth.email')}</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="username"
+                  aria-invalid={!!errors.email}
+                  aria-describedby="email-error"
+                  {...form.register('email')}
+                />
+                <FieldError id="email-error" errors={[errors.email]} />
+              </Field>
+              <Field data-invalid={!!errors.password}>
+                <FieldLabel htmlFor="password">{t('auth.password')}</FieldLabel>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete={passwordAutoComplete}
+                  aria-invalid={!!errors.password}
+                  aria-describedby="password-error"
+                  {...form.register('password')}
+                />
+                <FieldError id="password-error" errors={[errors.password]} />
+              </Field>
             </FieldGroup>
+            {errors.root && (
+              <Alert variant="destructive">
+                <AlertDescription>{errors.root.message}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" disabled={isSubmitting}>
+              {submitLabel}
+            </Button>
           </form>
         </CardContent>
         <CardFooter className="justify-center gap-1 text-sm text-muted-foreground">

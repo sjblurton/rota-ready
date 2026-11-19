@@ -8,8 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ErrorAlert } from '@/components/error-alert';
-import { TextField } from '@/components/text-field';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,6 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost } from '@/lib/api';
@@ -53,6 +53,10 @@ function OnboardingPage() {
     },
   });
 
+  function onSubmit(request: CreateVenueRequest) {
+    createVenue.mutate(request);
+  }
+
   return (
     <main className="mx-auto flex max-w-xl flex-col p-6 sm:p-10">
       <Card>
@@ -63,21 +67,25 @@ function OnboardingPage() {
           <CardDescription>{t('onboarding.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form noValidate onSubmit={form.handleSubmit((request) => createVenue.mutate(request))}>
+          <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
-              <TextField
-                id="name"
-                label={t('venue.name')}
-                error={errors.name}
-                schema={createVenueRequestSchema.shape.name}
-                {...form.register('name')}
-              />
+              <Field data-invalid={!!errors.name}>
+                <FieldLabel htmlFor="name">{t('venue.name')}</FieldLabel>
+                <Input
+                  id="name"
+                  aria-invalid={!!errors.name}
+                  aria-describedby="name-error"
+                  {...form.register('name')}
+                />
+                <FieldError id="name-error" errors={[errors.name]} />
+              </Field>
               <Field data-invalid={!!errors.timeZone}>
                 <FieldLabel htmlFor="timeZone">{t('venue.timeZone')}</FieldLabel>
                 <NativeSelect
                   id="timeZone"
                   className="w-full"
                   aria-invalid={!!errors.timeZone}
+                  aria-describedby="timeZone-error"
                   {...form.register('timeZone')}
                 >
                   {timeZones.map((timeZone) => (
@@ -86,15 +94,17 @@ function OnboardingPage() {
                     </NativeSelectOption>
                   ))}
                 </NativeSelect>
-                <FieldError errors={[errors.timeZone]} />
+                <FieldError id="timeZone-error" errors={[errors.timeZone]} />
               </Field>
-              {createVenue.isError && (
-                <ErrorAlert>{apiErrorMessage(t, createVenue.error)}</ErrorAlert>
-              )}
-              <Button type="submit" disabled={createVenue.isPending}>
-                {t('onboarding.submit')}
-              </Button>
             </FieldGroup>
+            {createVenue.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>{apiErrorMessage(t, createVenue.error)}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" disabled={createVenue.isPending}>
+              {t('onboarding.submit')}
+            </Button>
           </form>
         </CardContent>
       </Card>

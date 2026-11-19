@@ -16,6 +16,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 - The React Compiler is on (ADR-0004). Don't add `useMemo`, `useCallback` or `React.memo` by default. Only add one with a comment explaining why the compiler isn't enough.
 - Follow the Rules of React: components and hooks are pure, so never mutate props, state or values used in render while rendering. `eslint-plugin-react-hooks` enforces this as errors; fix the code rather than disabling the rule.
+- Before adding or changing a component, read `docs/building-ui.md`: compose shadcn components rather than wrapping them, and give product components a closed API.
 
 ## i18n
 

@@ -27,7 +27,7 @@ function LoginPage() {
       title={t('auth.logIn.title')}
       submitLabel={t('auth.logIn.submit')}
       passwordAutoComplete="current-password"
-      onSubmit={logIn}
+      authenticate={logIn}
       footer={
         <>
           {t('auth.logIn.noAccount')}
