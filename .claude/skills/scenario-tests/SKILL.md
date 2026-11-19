@@ -12,7 +12,7 @@ description: Scenario-based test structure (describe "when…" + beforeEach setu
 - Nest scenario blocks when a situation builds on an earlier one; each nested block's `beforeEach()` sets up its additional conditions.
 - Keep `it` or `test` blocks focused on asserting the outcome named in their description. Prefer one assertion per test; use only a handful when they express one inseparable outcome.
 - Give separate outcomes separate tests, and keep each test independent with a fresh scenario and cleanup between tests where needed.
-- Keep each test file self-contained (WET is fine): no shared `testUtils` file. Small local helpers inside the file are OK if the scenario stays clear in its `beforeEach()`.
+- Keep each test file self-contained (WET is fine): no shared `testUtils` file. Small local helpers inside the file are OK if the scenario stays clear in its `beforeEach()`. Rota Ready's API tests have one exception, described in *Rota Ready specifics*.
 - Don't repeat the same setup in two `beforeEach` blocks (e.g. filling the same form twice). Nest the scenarios so the setup runs once, and hang the other outcomes off that one branch.
 
 ```ts
@@ -63,6 +63,11 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
 
 - **No fakes of our own system.** No MSW, no mocked API client, no mocked Prisma, and no mocked auth or venue-membership checks. The only fakes are at outside boundaries passed into `createApp({ db, clock, emailSender, authConfig })`: the in-memory email outbox, a fixed `clock`, and a test signing key in `authConfig`.
 - **API integration tests** (Vitest, real Postgres, single worker, truncate before each test): the outer `beforeEach` builds the app and seeds the scenario through HTTP or the database; nested `describe('when …')` blocks make the request; `it` blocks assert the status, the body, the database row or the outbox. Global migrate and truncate setup lives in Vitest config, which doesn't count as a shared `testUtils` file.
+- **Shared API test infrastructure**: API tests share two files, and nothing else.
+  - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a silent logger), and signs tokens and sends requests against it. Later fakes, such as the `clock` and the email outbox, belong here too.
+  - `apps/api/test/seed.ts` holds seed factories such as `createUser` and `createVenueFor`, with defaults each test can override.
+
+  Every scenario's data is still created by explicit calls in its own `beforeEach` (`await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })`), so the scenario reads from the test file alone. Pass every value a test asserts on; never assert on a value a factory defaulted. Shared fixtures that create data without being called, such as a global `beforeEach` or a factory that seeds more than it says, are not allowed.
 - **Tenancy scenarios**: every venue-scoped route gets a `describe('when a member of another venue requests it')` block that asserts 404.
 - **Email scenarios** check both who received an email and who did not, in separate `it` blocks.
 - **Time scenarios** set the injected clock in `beforeEach`; use `describe.each` for the March and October clock-change cases.
