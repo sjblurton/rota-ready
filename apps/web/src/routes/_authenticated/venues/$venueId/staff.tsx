@@ -2,9 +2,9 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AddStaffMemberForm } from '@/components/add-staff-member-form';
-import { ArchiveStaffMemberDialog } from '@/components/archive-staff-member-dialog';
-import { EditStaffMemberForm } from '@/components/edit-staff-member-form';
+import { AddStaffMemberForm } from '@/features/staff-members/add-staff-member-form';
+import { ArchiveStaffMemberDialog } from '@/features/staff-members/archive-staff-member-dialog';
+import { EditStaffMemberForm } from '@/features/staff-members/edit-staff-member-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { staffMembersQuery } from '@/lib/staff-members';
+import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/staff')({
   loader: ({ context, params }) =>

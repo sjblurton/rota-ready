@@ -7,6 +7,15 @@ import tseslint from 'typescript-eslint';
 
 const reactHooksRecommended = reactHooks.configs.flat.recommended;
 
+const noRoutesImport = {
+  regex: '(^@/|/)routes/',
+  message: 'Nothing imports from routes/. Move shared code into a feature, components/ or lib/.',
+};
+const noFeaturesImport = {
+  regex: '(^@/|/)features/',
+  message: 'components/ and lib/ hold app-wide code with no glossary concept, so they cannot import from features/.',
+};
+
 export default defineConfig([
   globalIgnores(['**/dist', '**/routeTree.gen.ts', '**/coverage', '**/generated']),
   js.configs.recommended,
@@ -34,6 +43,25 @@ export default defineConfig([
     rules: Object.fromEntries(
       Object.keys(reactHooksRecommended.rules).map((rule) => [rule, 'error']),
     ),
+  },
+  {
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [noRoutesImport] }] },
+  },
+  {
+    files: ['apps/web/src/routes/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [noRoutesImport, { ...noRoutesImport, regex: '^\\.\\.?/' }] },
+      ],
+    },
+  },
+  {
+    files: ['apps/web/src/components/**/*.{ts,tsx}', 'apps/web/src/lib/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [noRoutesImport, noFeaturesImport] }],
+    },
   },
   {
     files: ['apps/web/src/**/*.tsx'],

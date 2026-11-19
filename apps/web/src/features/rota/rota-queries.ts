@@ -1,6 +1,6 @@
 import { rotaSchema } from '@rota-ready/shared';
 import { queryOptions } from '@tanstack/react-query';
-import { apiGet } from './api';
+import { apiGet } from '@/lib/api';
 
 export function rotaQuery(venueId: string, weekStart: string) {
   return queryOptions({

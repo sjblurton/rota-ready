@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { myVenuesQuery } from '@/lib/venues';
+import { myVenuesQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/')({
   beforeLoad: async ({ context }) => {

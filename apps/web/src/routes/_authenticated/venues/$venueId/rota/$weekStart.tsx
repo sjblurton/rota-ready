@@ -2,13 +2,13 @@ import { addDays, formatLocalDate } from '@rota-ready/shared';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { RotaGrid } from '@/components/rota-grid';
-import { RotaLoadError } from '@/components/rota-load-error';
+import { RotaGrid } from '@/features/rota/rota-grid';
+import { RotaLoadError } from '@/features/rota/rota-load-error';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { WeekLink } from '@/components/week-link';
-import { rotaQuery } from '@/lib/rotas';
-import { staffMembersQuery } from '@/lib/staff-members';
+import { WeekLink } from '@/features/rota/week-link';
+import { rotaQuery } from '@/features/rota/rota-queries';
+import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/rota/$weekStart')({
   loader: ({ context, params }) =>

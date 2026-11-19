@@ -1,6 +1,6 @@
 import { byStaffMemberName, staffMemberListSchema, type StaffMember } from '@rota-ready/shared';
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
-import { apiGet } from './api';
+import { apiGet } from '@/lib/api';
 
 export function staffMembersQuery(venueId: string) {
   return queryOptions({

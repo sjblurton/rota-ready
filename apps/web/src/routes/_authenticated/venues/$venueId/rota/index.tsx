@@ -1,6 +1,6 @@
 import { weekStartOf } from '@rota-ready/shared';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { venueQuery } from '@/lib/venues';
+import { venueQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/rota/')({
   beforeLoad: async ({ context, params }) => {

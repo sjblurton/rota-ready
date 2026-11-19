@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { apiErrorMessage } from '@/i18n/api-error-message';
-import { venueQuery } from '@/lib/venues';
+import { venueQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId')({
   loader: ({ context, params }) => context.queryClient.query(venueQuery(params.venueId)),
