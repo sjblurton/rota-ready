@@ -33,7 +33,9 @@
     "invalidPhone": "Enter a valid phone number.",
     "staffMemberEmailTaken": "Another Staff Member already uses this email.",
     "shiftEndsBeforeStart": "The end must be after the start.",
-    "shiftTooLong": "Shifts can be at most {{maxShiftHours}} hours."
+    "shiftTooLong": "Shifts can be at most {{maxShiftHours}} hours.",
+    "shiftQuarterHour": "Use a time on the hour, quarter past, half past or quarter to.",
+    "shiftOverlaps": "This Staff Member already has a Shift at that time."
   },
   "auth": {
     "email": "Email",
@@ -88,6 +90,15 @@
     "goToThisWeek": "Go to this Week",
     "staffMember": "Staff Member",
     "noStaff": "Add Staff Members to start building the Rota.",
+    "addShift": {
+      "title": "Add a Shift",
+      "chooseStaffMember": "Choose a Staff Member",
+      "chooseTime": "Choose a time",
+      "day": "Day",
+      "startTime": "Start",
+      "endTime": "End",
+      "submit": "Add Shift"
+    },
     "status": {
       "draft": "Draft",
       "published": "Published"

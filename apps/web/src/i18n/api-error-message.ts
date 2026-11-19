@@ -9,6 +9,7 @@ const messageKeys = {
   not_found: 'errors.notFound',
   venue_already_exists: 'errors.venueAlreadyExists',
   staff_member_email_taken: 'validation.staffMemberEmailTaken',
+  shift_overlaps: 'validation.shiftOverlaps',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

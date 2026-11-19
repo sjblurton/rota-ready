@@ -40,3 +40,26 @@ export function createArchivedStaffMember(
     data: { ...details, email: null, venueId: venue.id, archivedAt: new Date() },
   });
 }
+
+export function createRotaFor(db: Db, venue: { id: string }, weekStart: string) {
+  return db.rota.create({
+    data: { venueId: venue.id, weekStart: new Date(`${weekStart}T00:00:00Z`) },
+  });
+}
+
+export function createShift(
+  db: Db,
+  rota: { id: string; venueId: string },
+  staffMember: { id: string },
+  { startsAt, endsAt }: { startsAt: string; endsAt: string },
+) {
+  return db.shift.create({
+    data: {
+      venueId: rota.venueId,
+      rotaId: rota.id,
+      staffMemberId: staffMember.id,
+      startsAt: new Date(startsAt),
+      endsAt: new Date(endsAt),
+    },
+  });
+}

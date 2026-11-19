@@ -24,6 +24,7 @@ model Venue {
   members      VenueMember[]
   staffMembers StaffMember[]
   rotas        Rota[]
+  shifts       Shift[]
 
   @@map("venues")
 }
@@ -58,6 +59,7 @@ model StaffMember {
   archivedAt DateTime? @map("archived_at") @db.Timestamptz
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
   venue      Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  shifts     Shift[]
 
   @@unique([venueId, email])
   @@map("staff_members")
@@ -77,7 +79,25 @@ model Rota {
   status    RotaStatus @default(draft)
   createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
   venue     Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  shifts    Shift[]
 
   @@unique([venueId, weekStart])
   @@map("rotas")
+}
+
+model Shift {
+  id            String      @id @default(uuid()) @db.Uuid
+  venueId       String      @map("venue_id") @db.Uuid
+  rotaId        String      @map("rota_id") @db.Uuid
+  staffMemberId String      @map("staff_member_id") @db.Uuid
+  startsAt      DateTime    @map("starts_at") @db.Timestamptz
+  endsAt        DateTime    @map("ends_at") @db.Timestamptz
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  venue         Venue       @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  rota          Rota        @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  staffMember   StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Restrict)
+
+  @@index([rotaId, startsAt])
+  @@index([staffMemberId, startsAt])
+  @@map("shifts")
 }

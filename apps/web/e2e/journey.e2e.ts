@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addDays, formatLocalDate } from '@rota-ready/shared';
+import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
@@ -39,6 +39,13 @@ test.describe.serial('MVP journey', () => {
 
   function rotaGrid() {
     return page.getByRole('table', { name: 'Rota' });
+  }
+
+  function rotaCell(staffMemberName: string, day: string, weekStart = thisWeek) {
+    return rotaGrid()
+      .getByRole('row', { name: staffMemberName })
+      .getByRole('cell')
+      .nth(1 + daysBetween(weekStart, day));
   }
 
   function staffRows() {
@@ -211,6 +218,87 @@ test.describe.serial('MVP journey', () => {
     );
     await page.getByRole('link', { name: 'Go to this Week' }).click();
     await expect(weekHeading(thisWeek)).toBeVisible();
+  });
+
+  test('adds an Overnight Shift and shows it on the day it starts, marked (+1)', async () => {
+    const sunday = addDays(thisWeek, 6);
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Day').selectOption({ label: formatLocalDate(sunday) });
+    await page.getByLabel('Start').selectOption('20:00');
+    await page.getByLabel('End').selectOption('02:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Sam Jones', sunday)).toHaveText('20:00–02:00 (+1)');
+  });
+
+  test('keeps the Shift after a reload', async () => {
+    await page.reload();
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toHaveText('20:00–02:00 (+1)');
+  });
+
+  test('rejects a 17-hour Shift with the error under the end time', async () => {
+    await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
+    await page.getByLabel('Day').selectOption({ label: formatLocalDate(thisWeek) });
+    await page.getByLabel('Start').selectOption('06:00');
+    await page.getByLabel('End').selectOption('23:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(page.getByLabel('End')).toHaveAccessibleDescription(
+      'Shifts can be at most 16 hours.',
+    );
+    await expect(rotaCell('Alex Smith', thisWeek)).toHaveText('');
+  });
+
+  test("adds a Shift on the next Week's Monday without choosing the day again", async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(nextWeek)).toBeVisible();
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Start').selectOption('09:00');
+    await page.getByLabel('End').selectOption('17:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText('09:00–17:00');
+  });
+
+  test('keeps the details after adding a Shift, with focus back on Staff Member', async () => {
+    await expect(page.getByLabel('Staff Member')).toBeFocused();
+    await expect(page.getByLabel('Start')).toHaveValue('09:00');
+    await expect(page.getByLabel('End')).toHaveValue('17:00');
+  });
+
+  test('rejects a Shift that overlaps one the Staff Member already has', async () => {
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeVisible();
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 7), addDays(thisWeek, 7))).toHaveText(
+      '09:00–17:00',
+    );
+  });
+
+  test('adds the same times for another Staff Member by changing only the person', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('09:00–17:00');
+  });
+
+  test('offers Start times on the 24-hour clock in quarter-hour steps', async () => {
+    const options = page.getByLabel('Start').getByRole('option');
+    await expect(options).toHaveCount(97);
+    await expect(options.nth(1)).toHaveText('00:00');
+    await expect(options.nth(2)).toHaveText('00:15');
+    await expect(options.nth(53)).toHaveText('13:00');
+    await expect(options.last()).toHaveText('23:45');
+  });
+
+  test("rejects a Shift that overlaps last Week's Overnight Shift running into Monday", async () => {
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Start').selectOption('01:00');
+    await page.getByLabel('End').selectOption('05:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeVisible();
+  });
+
+  test('clears the overlap message once the Staff Member changes', async () => {
+    await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
+    await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeHidden();
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

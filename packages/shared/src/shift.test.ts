@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addShiftFormSchema,
   createShiftRequestSchema,
+  quarterHourTimes,
   rotaSchema,
   shiftEndsAt,
   shiftTimesIssue,
@@ -136,6 +137,38 @@ describe('createShiftRequestSchema', () => {
       ]);
     });
   });
+
+  describe('when the start is not on a quarter hour', () => {
+    beforeEach(() => {
+      result = createShiftRequestSchema.safeParse({
+        staffMemberId,
+        startsAt: '2026-07-15T08:10:00.000Z',
+        endsAt: '2026-07-15T16:00:00.000Z',
+      });
+    });
+
+    it('rejects it with the quarter-hour key on startsAt', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['startsAt'], message: 'validation.shiftQuarterHour' }),
+      ]);
+    });
+  });
+
+  describe('when the end has seconds', () => {
+    beforeEach(() => {
+      result = createShiftRequestSchema.safeParse({
+        staffMemberId,
+        startsAt: '2026-07-15T08:00:00.000Z',
+        endsAt: '2026-07-15T16:00:30.000Z',
+      });
+    });
+
+    it('rejects it with the quarter-hour key on endsAt', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['endsAt'], message: 'validation.shiftQuarterHour' }),
+      ]);
+    });
+  });
 });
 
 describe('addShiftFormSchema', () => {
@@ -213,6 +246,79 @@ describe('addShiftFormSchema', () => {
       ]);
     });
   });
+
+  describe('when the start time is not on a quarter hour', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '09:10',
+        endTime: '17:00',
+      });
+    });
+
+    it('rejects it with the quarter-hour key on the start time', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: ['startTime'], message: 'validation.shiftQuarterHour' }),
+      ]);
+    });
+  });
+
+  describe('when the Staff Member already has a Shift that day from 12:00 to 18:00', () => {
+    const existing = {
+      staffMemberId,
+      startsAt: '2026-07-15T11:00:00.000Z',
+      endsAt: '2026-07-15T17:00:00.000Z',
+    };
+    const schemaWithShift = addShiftFormSchema(LONDON, [existing]);
+
+    describe('when the new Shift overlaps it', () => {
+      beforeEach(() => {
+        result = schemaWithShift.safeParse({
+          staffMemberId,
+          date: '2026-07-15',
+          startTime: '17:00',
+          endTime: '22:00',
+        });
+      });
+
+      it('rejects it with the overlap key on the form as a whole', () => {
+        expect(result.error?.issues).toEqual([
+          expect.objectContaining({ path: ['root'], message: 'validation.shiftOverlaps' }),
+        ]);
+      });
+    });
+
+    describe('when the new Shift starts as it ends', () => {
+      beforeEach(() => {
+        result = schemaWithShift.safeParse({
+          staffMemberId,
+          date: '2026-07-15',
+          startTime: '18:00',
+          endTime: '22:00',
+        });
+      });
+
+      it('accepts it', () => {
+        expect(result.success).toBe(true);
+      });
+    });
+
+    describe('when the overlapping Shift is for another Staff Member', () => {
+      beforeEach(() => {
+        result = schemaWithShift.safeParse({
+          staffMemberId: '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a',
+          date: '2026-07-15',
+          startTime: '17:00',
+          endTime: '22:00',
+        });
+      });
+
+      it('accepts it', () => {
+        expect(result.success).toBe(true);
+      });
+    });
+  });
 });
 
 describe('rotaSchema', () => {
@@ -227,5 +333,25 @@ describe('rotaSchema', () => {
     it('rejects it', () => {
       expect(success).toBe(false);
     });
+  });
+});
+
+describe('quarterHourTimes', () => {
+  let times: string[];
+
+  beforeEach(() => {
+    times = quarterHourTimes();
+  });
+
+  it('lists all 96 quarter hours of the day', () => {
+    expect(times).toHaveLength(96);
+  });
+
+  it('starts at midnight in 15-minute steps', () => {
+    expect(times.slice(0, 3)).toEqual(['00:00', '00:15', '00:30']);
+  });
+
+  it('uses the 24-hour clock, ending at 23:45', () => {
+    expect([times[52], times.at(-1)]).toEqual(['13:00', '23:45']);
   });
 });
