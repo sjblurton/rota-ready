@@ -25,8 +25,12 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
 test.describe.serial('MVP journey', () => {
   let page: Page;
 
-  function staffList() {
-    return page.getByRole('list', { name: 'Staff' });
+  function staffTable() {
+    return page.getByRole('table', { name: 'Staff' });
+  }
+
+  function staffRows() {
+    return staffTable().getByRole('row').filter({ has: page.getByRole('cell') });
   }
 
   function staffForm(submitLabel: string) {
@@ -92,7 +96,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('opens the Staff page with no Staff Members yet', async () => {
-    await page.getByRole('link', { name: 'Staff' }).click();
+    await page.getByRole('tab', { name: 'Staff' }).click();
     await expect(page.getByText('No Staff Members yet. Add the first one below.')).toBeVisible();
   });
 
@@ -114,12 +118,12 @@ test.describe.serial('MVP journey', () => {
       await addForm.getByLabel('Phone').fill(phone);
       await addForm.getByLabel('Email').fill(email);
       await addForm.getByLabel('Email').press('Enter');
-      await expect(staffList().getByText(name)).toBeVisible();
+      await expect(staffTable().getByText(name)).toBeVisible();
       await expect(addForm.getByLabel('Name')).toHaveValue('');
       await expect(addForm.getByLabel('Name')).toBeFocused();
     }
-    await expect(staffList().getByRole('listitem')).toHaveCount(3);
-    await expect(staffList().getByRole('listitem').first()).toContainText('Alex Smith');
+    await expect(staffRows()).toHaveCount(3);
+    await expect(staffRows().first()).toContainText('Alex Smith');
   });
 
   test('rejects a Staff Member whose email another Staff Member already uses', async () => {
@@ -139,7 +143,7 @@ test.describe.serial('MVP journey', () => {
     await editForm.getByLabel('Role').fill('Floor');
     await editForm.getByRole('button', { name: 'Save changes' }).click();
     await expect(
-      staffList().getByRole('listitem').filter({ hasText: 'Sam Jones' }),
+      staffRows().filter({ hasText: 'Sam Jones' }),
     ).toContainText('Floor');
   });
 
@@ -151,13 +155,13 @@ test.describe.serial('MVP journey', () => {
   test('archives a Staff Member and hides them from the list', async () => {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
     await expect(page.getByRole('alertdialog')).toBeHidden();
-    await expect(staffList().getByRole('listitem')).toHaveCount(2);
-    await expect(staffList()).not.toContainText('Jo Bloggs');
+    await expect(staffRows()).toHaveCount(2);
+    await expect(staffTable()).not.toContainText('Jo Bloggs');
   });
 
   test('keeps the archived Staff Member hidden after a reload', async () => {
     await page.reload();
-    await expect(staffList().getByRole('listitem')).toHaveText([/Alex Smith/, /Sam Jones/]);
+    await expect(staffRows()).toHaveText([/Alex Smith/, /Sam Jones/]);
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

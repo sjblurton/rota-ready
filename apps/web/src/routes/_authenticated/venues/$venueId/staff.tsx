@@ -8,6 +8,14 @@ import { EditStaffMemberForm } from '@/components/edit-staff-member-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { staffMembersQuery } from '@/lib/staff-members';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/staff')({
@@ -34,43 +42,59 @@ function StaffPage() {
           {staffMembers.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('staff.empty')}</p>
           ) : (
-            <ul aria-label={t('staff.title')} className="flex flex-col divide-y">
-              {staffMembers.map((staffMember) => (
-                <li key={staffMember.id} className="py-3 first:pt-0 last:pb-0">
-                  {editingId === staffMember.id ? (
-                    <EditStaffMemberForm
-                      venueId={venueId}
-                      staffMember={staffMember}
-                      onDone={() => setEditingId(null)}
-                    />
+            <Table aria-label={t('staff.title')}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('staff.name')}</TableHead>
+                  <TableHead>{t('staff.role')}</TableHead>
+                  <TableHead>{t('staff.contact')}</TableHead>
+                  <TableHead>
+                    <span className="sr-only">{t('staff.actions')}</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {staffMembers.map((staffMember) =>
+                  editingId === staffMember.id ? (
+                    <TableRow key={staffMember.id}>
+                      <TableCell colSpan={4} className="whitespace-normal">
+                        <EditStaffMemberForm
+                          venueId={venueId}
+                          staffMember={staffMember}
+                          onDone={() => setEditingId(null)}
+                        />
+                      </TableCell>
+                    </TableRow>
                   ) : (
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex min-w-0 flex-col gap-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{staffMember.name}</span>
-                          <Badge variant="secondary">{staffMember.role}</Badge>
-                        </div>
-                        <div className="flex flex-col text-sm break-words text-muted-foreground">
+                    <TableRow key={staffMember.id}>
+                      <TableCell className="font-medium">{staffMember.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{staffMember.role}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <div className="flex flex-col">
                           <span>{staffMember.email}</span>
                           {staffMember.phone && <span>{staffMember.phone}</span>}
                         </div>
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={t('staff.edit.label', { name: staffMember.name })}
-                          onClick={() => setEditingId(staffMember.id)}
-                        >
-                          {t('staff.edit.button')}
-                        </Button>
-                        <ArchiveStaffMemberDialog venueId={venueId} staffMember={staffMember} />
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label={t('staff.edit.label', { name: staffMember.name })}
+                            onClick={() => setEditingId(staffMember.id)}
+                          >
+                            {t('staff.edit.button')}
+                          </Button>
+                          <ArchiveStaffMemberDialog venueId={venueId} staffMember={staffMember} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ),
+                )}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
