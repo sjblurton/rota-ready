@@ -54,7 +54,7 @@ export function AuthForm({
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">{t('auth.email')}</Label>
-              <Input id="email" name="email" type="email" autoComplete="email" required />
+              <Input id="email" name="email" type="email" autoComplete="username" required />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">{t('auth.password')}</Label>
