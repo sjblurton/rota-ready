@@ -33,9 +33,10 @@ async function lockStaffMemberUntilCommit(tx: Prisma.TransactionClient, staffMem
 export function rotaRoutes(db: Db): Router {
   const router = Router();
 
-  function findOrCreateRota(venue: Venue, weekStart: string) {
+  async function findOrCreateRota(venue: Venue, weekStart: string) {
     const key = { venueId: venue.id, weekStart: toDbDate(weekStart) };
-    return db.rota.upsert({ where: { venueId_weekStart: key }, create: key, update: {} });
+    await db.rota.createMany({ data: [key], skipDuplicates: true });
+    return db.rota.findUniqueOrThrow({ where: { venueId_weekStart: key } });
   }
 
   const getRota: RotaRequestHandler = async (req, res) => {
