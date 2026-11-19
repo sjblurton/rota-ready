@@ -3,6 +3,9 @@ export const validationMessage = {
   invalid: 'validation.invalid',
   invalidEmail: 'validation.invalidEmail',
   venueNameTooLong: 'validation.venueNameTooLong',
+  staffMemberNameTooLong: 'validation.staffMemberNameTooLong',
+  staffMemberRoleTooLong: 'validation.staffMemberRoleTooLong',
+  invalidPhone: 'validation.invalidPhone',
 } as const;
 
 export type ValidationMessageKey = (typeof validationMessage)[keyof typeof validationMessage];

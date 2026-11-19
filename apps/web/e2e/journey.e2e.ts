@@ -5,7 +5,7 @@ const password = 'correct-horse-battery-staple';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
 const staffMembers = [
-  { name: 'Sam Jones', role: 'Kitchen', email: '', phone: '07700 900123' },
+  { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: '07700 900123' },
   { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: '07700 900456' },
   { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
 ];
@@ -93,15 +93,17 @@ test.describe.serial('MVP journey', () => {
 
   test('opens the Staff page with no Staff Members yet', async () => {
     await page.getByRole('link', { name: 'Staff' }).click();
-    await expect(page.getByText('No staff yet. Add your team below.')).toBeVisible();
+    await expect(page.getByText('No Staff Members yet. Add the first one below.')).toBeVisible();
   });
 
-  test('rejects a Staff Member with neither an email nor a phone number', async () => {
+  test('rejects a Staff Member with no email address', async () => {
     const addForm = staffForm('Add staff member');
     await addForm.getByLabel('Name').fill('Alex Smith');
     await addForm.getByLabel('Role').fill('Bar');
     await addForm.getByRole('button', { name: 'Add staff member' }).click();
-    await expect(addForm.getByRole('alert')).toHaveText('Add an email or a phone number.');
+    await expect(addForm.getByLabel('Email')).toHaveAccessibleDescription(
+      'This field is required.',
+    );
   });
 
   test('adds three Staff Members and lists them by name', async () => {
@@ -113,6 +115,7 @@ test.describe.serial('MVP journey', () => {
       await addForm.getByLabel('Phone').fill(phone);
       await addForm.getByRole('button', { name: 'Add staff member' }).click();
       await expect(staffList().getByText(name)).toBeVisible();
+      await expect(addForm.getByLabel('Name')).toHaveValue('');
     }
     await expect(staffList().getByRole('listitem')).toHaveCount(3);
     await expect(staffList().getByRole('listitem').first()).toContainText('Alex Smith');
@@ -128,9 +131,14 @@ test.describe.serial('MVP journey', () => {
     ).toContainText('Floor');
   });
 
-  test('archives a Staff Member and hides them from the list', async () => {
-    page.once('dialog', (dialog) => dialog.accept());
+  test('asks for confirmation before archiving a Staff Member', async () => {
     await page.getByRole('button', { name: 'Archive Jo Bloggs' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText('Archive Jo Bloggs?');
+  });
+
+  test('archives a Staff Member and hides them from the list', async () => {
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
     await expect(staffList().getByRole('listitem')).toHaveCount(2);
     await expect(staffList()).not.toContainText('Jo Bloggs');
   });

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { StaffMemberDetails } from '@rota-ready/shared';
 import type { Db } from '../src/db.js';
 
 export function createUser(
@@ -20,4 +21,13 @@ export function createVenueFor(
       members: { create: { userId: user.id, role: 'owner' } },
     },
   });
+}
+
+export function createStaffMember(
+  db: Db,
+  venue: { id: string },
+  details: StaffMemberDetails,
+  { archivedAt = null }: { archivedAt?: Date | null } = {},
+) {
+  return db.staffMember.create({ data: { ...details, venueId: venue.id, archivedAt } });
 }

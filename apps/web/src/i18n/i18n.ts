@@ -1,4 +1,8 @@
-import { VENUE_NAME_MAX_LENGTH } from '@rota-ready/shared';
+import {
+  STAFF_MEMBER_NAME_MAX_LENGTH,
+  STAFF_MEMBER_ROLE_MAX_LENGTH,
+  VENUE_NAME_MAX_LENGTH,
+} from '@rota-ready/shared';
 import i18n, { type Resource } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
@@ -21,7 +25,11 @@ await i18n.use(initReactI18next).init({
   resources,
   interpolation: {
     escapeValue: false,
-    defaultVariables: { venueNameMaxLength: VENUE_NAME_MAX_LENGTH },
+    defaultVariables: {
+      venueNameMaxLength: VENUE_NAME_MAX_LENGTH,
+      staffMemberNameMaxLength: STAFF_MEMBER_NAME_MAX_LENGTH,
+      staffMemberRoleMaxLength: STAFF_MEMBER_ROLE_MAX_LENGTH,
+    },
   },
 });
 

@@ -1,51 +1,50 @@
 import { z } from 'zod';
+import { validationMessage } from './validation.js';
 
 export const STAFF_MEMBER_NAME_MAX_LENGTH = 100;
 export const STAFF_MEMBER_ROLE_MAX_LENGTH = 50;
 export const STAFF_MEMBER_EMAIL_MAX_LENGTH = 254;
 export const STAFF_MEMBER_PHONE_MAX_LENGTH = 30;
 
-function blankToNull(value: unknown) {
-  return typeof value === 'string' && value.trim() === '' ? null : value;
-}
+const PHONE_NUMBER = /^\+?[\d\s()-]*\d[\d\s()-]*$/;
 
-function optionalContact<Schema extends z.ZodType<string, string>>(schema: Schema) {
-  return z.preprocess(
-    blankToNull,
-    schema
-      .nullish()
-      .transform((value) => value ?? null),
-  );
-}
-
-const contactEmailSchema = optionalContact(
-  z.string().trim().toLowerCase().pipe(z.email().max(STAFF_MEMBER_EMAIL_MAX_LENGTH)),
-);
-
-const contactPhoneSchema = optionalContact(
-  z
+export const staffMemberDetailsSchema = z.object({
+  name: z
     .string()
     .trim()
-    .max(STAFF_MEMBER_PHONE_MAX_LENGTH)
-    .regex(/^\+?[\d\s()-]*\d[\d\s()-]*$/),
-);
+    .min(1, validationMessage.required)
+    .max(STAFF_MEMBER_NAME_MAX_LENGTH, validationMessage.staffMemberNameTooLong),
+  role: z
+    .string()
+    .trim()
+    .min(1, validationMessage.required)
+    .max(STAFF_MEMBER_ROLE_MAX_LENGTH, validationMessage.staffMemberRoleTooLong),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, validationMessage.required)
+    .pipe(
+      z
+        .email(validationMessage.invalidEmail)
+        .max(STAFF_MEMBER_EMAIL_MAX_LENGTH, validationMessage.invalidEmail),
+    ),
+  phone: z
+    .string()
+    .trim()
+    .max(STAFF_MEMBER_PHONE_MAX_LENGTH, validationMessage.invalidPhone)
+    .refine((phone) => phone === '' || PHONE_NUMBER.test(phone), validationMessage.invalidPhone)
+    .nullish()
+    .transform((phone) => phone || null),
+});
 
-export const staffMemberDetailsSchema = z
-  .object({
-    name: z.string().trim().min(1).max(STAFF_MEMBER_NAME_MAX_LENGTH),
-    role: z.string().trim().min(1).max(STAFF_MEMBER_ROLE_MAX_LENGTH),
-    email: contactEmailSchema,
-    phone: contactPhoneSchema,
-  })
-  .refine(({ email, phone }) => email !== null || phone !== null, { path: ['email'] });
-
-export type StaffMemberDetails = z.input<typeof staffMemberDetailsSchema>;
+export type StaffMemberDetails = z.output<typeof staffMemberDetailsSchema>;
 
 export const staffMemberSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   role: z.string(),
-  email: z.string().nullable(),
+  email: z.string(),
   phone: z.string().nullable(),
 });
 

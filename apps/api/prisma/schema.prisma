@@ -52,7 +52,7 @@ model StaffMember {
   venueId    String    @map("venue_id") @db.Uuid
   name       String
   role       String
-  email      String?
+  email      String
   phone      String?
   archivedAt DateTime? @map("archived_at") @db.Timestamptz
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz

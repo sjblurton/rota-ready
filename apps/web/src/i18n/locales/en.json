@@ -25,7 +25,10 @@
     "required": "This field is required.",
     "invalid": "Check this field and try again.",
     "invalidEmail": "Enter a valid email address.",
-    "venueNameTooLong": "Use {{venueNameMaxLength}} characters or fewer."
+    "venueNameTooLong": "Use {{venueNameMaxLength}} characters or fewer.",
+    "staffMemberNameTooLong": "Use {{staffMemberNameMaxLength}} characters or fewer.",
+    "staffMemberRoleTooLong": "Use {{staffMemberRoleMaxLength}} characters or fewer.",
+    "invalidPhone": "Enter a valid phone number."
   },
   "auth": {
     "email": "Email",
@@ -73,12 +76,11 @@
   },
   "staff": {
     "title": "Staff",
-    "empty": "No staff yet. Add your team below.",
+    "empty": "No Staff Members yet. Add the first one below.",
     "name": "Name",
     "role": "Role",
     "email": "Email",
-    "phone": "Phone",
-    "contactHint": "Add an email, a phone number, or both.",
+    "phone": "Phone (optional)",
     "add": {
       "title": "Add a staff member",
       "submit": "Add staff member"
@@ -92,10 +94,10 @@
     "archive": {
       "button": "Archive",
       "label": "Archive {{name}}",
-      "confirm": "Archive {{name}}? They'll drop off the rota."
-    },
-    "errors": {
-      "contactRequired": "Add an email or a phone number."
+      "title": "Archive {{name}}?",
+      "description": "They'll drop off the staff list and the rota.",
+      "confirm": "Archive",
+      "cancel": "Cancel"
     }
   }
 }

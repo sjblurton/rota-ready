@@ -35,12 +35,10 @@ type ShiftRoleFilterProps = {
 ```
 
 ```tsx
-// ✅ Good: a closed API that describes the product concept.
+// ✅ Good: a closed API that describes the product concept. The dialog owns its trigger, the confirmation and the archive request.
 type ArchiveStaffMemberDialogProps = {
-  open: boolean;
-  staffMemberName: string;
-  onConfirm: () => void;
-  onCancel: () => void;
+  venueId: string;
+  staffMember: StaffMember;
 };
 ```
 
