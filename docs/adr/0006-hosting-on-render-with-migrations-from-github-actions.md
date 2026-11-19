@@ -26,4 +26,4 @@ Both the CI migrations and the API use Supabase's **session pooler** connection 
 
 ## Consequences
 
-The free API spins down after 15 minutes without traffic and takes about a minute to wake, so the first request after a quiet spell is slow. Moving off Render means replacing `render.yaml`, the `/api/*` rewrite and the two deploy-hook steps in `ci.yml`; the app code has no Render-specific parts. `pnpm --filter @rota-ready/api check:production` checks the live setup from outside (see the README).
+The free API spins down after 15 minutes without traffic and takes about a minute to wake, so the first request after a quiet spell is slow. Moving off Render means replacing `render.yaml`, the `/api/*` rewrite and the two deploy-hook steps in `ci.yml`; the app code has no Render-specific parts.

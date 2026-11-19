@@ -10,8 +10,7 @@
     "test": "vitest run",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:migration": "prisma migrate dev --create-only",
-    "check:production": "tsx --env-file=../../.env.production scripts/check-production.ts"
+    "db:migration": "prisma migrate dev --create-only"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

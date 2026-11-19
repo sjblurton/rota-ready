@@ -146,9 +146,7 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
 | Later | SMTP credentials (#11), Staff Link encryption key (#10) | Added to Render `rota-ready-api` when those tickets land |
 
-The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it, and `check:production` confirms the trigger is installed. Both Render services track `main`.
-
-To check the live setup from outside, put `WEB_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `DATABASE_URL` in a git-ignored `.env.production` at the repo root and run `pnpm --filter @rota-ready/api check:production`. It checks that `/api` reaches a healthy API and database, that the Data API returns no table data to the publishable key, that tokens are signed with an asymmetric key, and that every table has RLS and no client-role grants on tables, sequences or functions.
+The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 
 ### Roadmap
 
