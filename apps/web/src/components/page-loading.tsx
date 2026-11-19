@@ -16,7 +16,7 @@ export function PageLoading() {
   return (
     <div
       aria-live="polite"
-      className="mx-auto flex max-w-xl flex-col items-center gap-3 p-10 text-center"
+      className="mx-auto flex min-h-[60svh] max-w-xl flex-col items-center justify-center gap-3 p-10 text-center"
     >
       <LoaderCircleIcon aria-hidden className="size-6 animate-spin text-muted-foreground" />
       <p className="font-medium">{t('loading.title')}</p>
