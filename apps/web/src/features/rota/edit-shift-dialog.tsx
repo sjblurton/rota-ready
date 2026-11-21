@@ -3,16 +3,14 @@ import {
   shiftFormSchema,
   shiftFormValues,
   shiftSchema,
-  validationMessage,
   type Shift,
   type ShiftRequest,
 } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -27,8 +25,8 @@ import {
 import { FieldError, FieldGroup } from '@/components/ui/field';
 import { replaceShiftInRota, shiftPath, useRotaWeek } from '@/features/rota/rota-queries';
 import { ShiftFields } from '@/features/rota/shift-fields';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPatch, hasErrorCode } from '@/lib/api';
+import { useShiftMutation } from '@/features/rota/shift-mutation';
+import { apiPatch } from '@/lib/api';
 
 interface EditShiftDialogProps {
   venueId: string;
@@ -89,19 +87,12 @@ function EditShiftForm({
     resolver: zodResolver(shiftFormSchema(timeZone, otherShifts)),
     defaultValues: shiftFormValues(shift, timeZone),
   });
-  const edit = useMutation({
-    mutationFn: (request: ShiftRequest) =>
-      apiPatch(shiftPath(venueId, weekStart, shift.id), request, shiftSchema),
+  const edit = useShiftMutation({
+    form,
+    send: (request) => apiPatch(shiftPath(venueId, weekStart, shift.id), request, shiftSchema),
     onSuccess: (updated) => {
       replaceShiftInRota(queryClient, venueId, weekStart, updated);
       onDone();
-    },
-    onError: (error) => {
-      if (hasErrorCode(error, 'shift_overlaps')) {
-        form.setError('root', { message: validationMessage.shiftOverlaps });
-      } else {
-        toast.error(apiErrorMessage(t, error));
-      }
     },
   });
 
