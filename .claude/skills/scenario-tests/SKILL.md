@@ -61,10 +61,10 @@ describe('when the submenu is reopened', () => {
 
 These follow from the spec (#1) and ADRs, and take precedence over the generic patterns above.
 
-- **No fakes of our own system.** No MSW, no mocked API client, no mocked Prisma, and no mocked auth or venue-membership checks. The only fakes are at outside boundaries passed into `createApp({ db, clock, emailSender, authConfig })`: the in-memory email outbox, a fixed `clock`, and a test signing key in `authConfig`.
+- **No fakes of our own system.** No MSW, no mocked API client, no mocked Prisma, and no mocked auth or venue-membership checks. The only fakes are at outside boundaries passed into `createApp({ db, clock, emailSender, authConfig, staffLinkKey })`: the in-memory email outbox, a fixed `clock`, and a test signing key in `authConfig`.
 - **API integration tests** (Vitest, real Postgres, single worker, truncate before each test): the outer `beforeEach` builds the app and seeds the scenario through HTTP or the database; nested `describe('when …')` blocks make the request; `it` blocks assert the status, the body, the database row or the outbox. Global migrate and truncate setup lives in Vitest config, which doesn't count as a shared `testUtils` file.
 - **Shared API test infrastructure**: API tests share two files, and nothing else.
-  - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a silent logger), and signs tokens and sends requests against it. Later fakes, such as the `clock` and the email outbox, belong here too.
+  - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a random Staff Link key, and a logger that records to memory so a test can check what was logged), and signs tokens and sends requests against it. Later fakes, such as the `clock` and the email outbox, belong here too.
   - `apps/api/test/seed.ts` holds seed factories such as `createUser`, `createVenueFor` and `createActiveStaffMember`, with defaults each test can override.
 
   Every scenario's data is still created by explicit calls in its own `beforeEach` (`await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })`), so the scenario reads from the test file alone. Pass every value a test asserts on; never assert on a value a factory defaulted. Shared fixtures that create data without being called, such as a global `beforeEach` or a factory that seeds more than it says, are not allowed.

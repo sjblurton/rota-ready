@@ -50,16 +50,18 @@ model VenueMember {
 }
 
 model StaffMember {
-  id         String    @id @default(uuid()) @db.Uuid
-  venueId    String    @map("venue_id") @db.Uuid
-  name       String
-  role       String
-  email      String?
-  phone      String?
-  archivedAt DateTime? @map("archived_at") @db.Timestamptz
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  venue      Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  shifts     Shift[]
+  id                       String    @id @default(uuid()) @db.Uuid
+  venueId                  String    @map("venue_id") @db.Uuid
+  name                     String
+  role                     String
+  email                    String?
+  phone                    String?
+  archivedAt               DateTime? @map("archived_at") @db.Timestamptz
+  staffLinkTokenHash       String?   @unique @map("staff_link_token_hash")
+  staffLinkTokenCiphertext String?   @map("staff_link_token_ciphertext")
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  venue                    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  shifts                   Shift[]
 
   @@unique([venueId, email])
   @@map("staff_members")

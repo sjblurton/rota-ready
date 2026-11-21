@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
 
 const email = `e2e-${Date.now()}@example.com`;
@@ -26,6 +26,8 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
 test.describe.serial('MVP journey', () => {
   let page: Page;
   let thisWeek: string;
+  let samsLink: string;
+  let privateWindow: BrowserContext;
 
   function staffTable() {
     return page.getByRole('table', { name: 'Staff' });
@@ -73,6 +75,7 @@ test.describe.serial('MVP journey', () => {
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.clock.install();
   });
 
@@ -365,6 +368,63 @@ test.describe.serial('MVP journey', () => {
     await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
     await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publish' })).toBeVisible();
+  });
+
+  test("shows Sam's Staff Link from the Staff page", async () => {
+    await page.getByRole('tab', { name: 'Staff' }).click();
+    await page.getByRole('button', { name: 'Staff Link for Sam Jones' }).click();
+    await expect(page.getByRole('dialog')).toContainText("Sam Jones's Staff Link");
+    await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
+    samsLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
+  });
+
+  test("copies Sam's Staff Link", async () => {
+    await page.getByRole('dialog').getByRole('button', { name: 'Copy link' }).click();
+    await expect(toast()).toHaveText('Link copied');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(samsLink);
+    await dismissToasts();
+  });
+
+  test("opens Sam's page from the Staff Link in a private window, without logging in", async ({
+    browser,
+  }) => {
+    privateWindow = await browser.newContext();
+    const privatePage = await privateWindow.newPage();
+    await privatePage.goto(samsLink);
+    await expect(privatePage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
+    await expect(privatePage.getByText('This is your Staff Link for The Rose & Crown.')).toBeVisible();
+    await expect(privatePage.getByRole('banner')).toHaveCount(0);
+  });
+
+  test('asks for confirmation before regenerating the Staff Link', async () => {
+    await page.getByRole('dialog').getByRole('button', { name: 'Regenerate' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText("Regenerate Sam's Staff Link?");
+  });
+
+  test('regenerates the Staff Link and shows the new one', async () => {
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Regenerate' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expect(page.getByRole('dialog').getByLabel('Link')).not.toHaveValue(samsLink);
+    await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
+  });
+
+  test("says the old Staff Link isn't valid once it's regenerated", async () => {
+    const privatePage = await privateWindow.newPage();
+    await privatePage.goto(samsLink);
+    await expect(privatePage.getByRole('heading', { level: 1 })).toHaveText(
+      "This link isn't valid",
+    );
+    await expect(privatePage.getByText('Ask your manager for a new link.')).toBeVisible();
+  });
+
+  test("opens Sam's page from the new Staff Link", async () => {
+    const newLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
+    const privatePage = await privateWindow.newPage();
+    await privatePage.goto(newLink);
+    await expect(privatePage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
+    await privateWindow.close();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

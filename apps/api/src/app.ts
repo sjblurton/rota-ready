@@ -6,12 +6,14 @@ import { withIdentity, withUser, type AuthConfig } from './auth.js';
 import type { Db } from './db.js';
 import type { User } from './generated/prisma/client.js';
 import { handleMalformedJson, handleUnexpectedError, sendError } from './http-errors.js';
+import { staffLinkRoutes, withoutStaffLinkToken } from './staff-links.js';
 import { venueRoutes } from './venues.js';
 
 export interface AppDependencies {
   db: Db;
   authConfig: AuthConfig;
   logger: Logger;
+  staffLinkKey: Buffer;
 }
 
 const DB_HEALTH_TIMEOUT_MS = 1_000;
@@ -31,10 +33,17 @@ function toCurrentUser({ id, email }: User) {
   return currentUserSchema.parse({ id, email });
 }
 
-export function createApp({ db, authConfig, logger }: AppDependencies): Express {
+export function createApp({ db, authConfig, logger, staffLinkKey }: AppDependencies): Express {
   const app = express();
   app.disable('x-powered-by');
-  app.use(pinoHttp({ logger }));
+  app.use(
+    pinoHttp({
+      logger,
+      serializers: {
+        req: (req: { url: string }) => ({ ...req, url: withoutStaffLinkToken(req.url) }),
+      },
+    }),
+  );
   app.use(express.json());
 
   app.get('/api/health', async (_req, res) => {
@@ -60,7 +69,8 @@ export function createApp({ db, authConfig, logger }: AppDependencies): Express 
     }),
   );
 
-  app.use('/api/venues', venueRoutes(db, authConfig));
+  app.use('/api/venues', venueRoutes(db, authConfig, staffLinkKey));
+  app.use('/api/staff-links', staffLinkRoutes(db));
 
   app.use((_req, res) => sendError(res, 'not_found'));
   app.use(handleMalformedJson);

@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as AuthenticatedVenuesVenueIdRouteRouteImport } from './routes/_authenticated/venues/$venueId/route'
 import { Route as AuthenticatedVenuesVenueIdIndexRouteImport } from './routes/_authenticated/venues/$venueId/index'
 import { Route as AuthenticatedVenuesVenueIdStaffRouteImport } from './routes/_authenticated/venues/$venueId/staff'
@@ -43,6 +44,11 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const STokenRoute = STokenRouteImport.update({
+  id: '/s/$token',
+  path: '/s/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVenuesVenueIdRouteRoute =
   AuthenticatedVenuesVenueIdRouteRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/s/$token': typeof STokenRoute
   '/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
   '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/venues/$venueId/': typeof AuthenticatedVenuesVenueIdIndexRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/s/$token': typeof STokenRoute
   '/': typeof AuthenticatedIndexRoute
   '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/venues/$venueId': typeof AuthenticatedVenuesVenueIdIndexRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/s/$token': typeof STokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
   '/_authenticated/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/onboarding'
+    | '/s/$token'
     | '/venues/$venueId'
     | '/venues/$venueId/staff'
     | '/venues/$venueId/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/onboarding'
+    | '/s/$token'
     | '/'
     | '/venues/$venueId/staff'
     | '/venues/$venueId'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_authenticated/onboarding'
+    | '/s/$token'
     | '/_authenticated/'
     | '/_authenticated/venues/$venueId'
     | '/_authenticated/venues/$venueId/staff'
@@ -149,6 +161,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  STokenRoute: typeof STokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -187,6 +200,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/s/$token': {
+      id: '/s/$token'
+      path: '/s/$token'
+      fullPath: '/s/$token'
+      preLoaderRoute: typeof STokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/venues/$venueId': {
       id: '/_authenticated/venues/$venueId'
@@ -269,6 +289,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  STokenRoute: STokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

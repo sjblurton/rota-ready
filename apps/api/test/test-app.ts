@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type CryptoKey } from 'jose';
 import { pino } from 'pino';
@@ -31,9 +32,11 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   const { publicKey, privateKey } = await generateKeyPair('ES256');
   const publicJwk = { ...(await exportJWK(publicKey)), kid: KEY_ID, alg: 'ES256' };
   const db: Db = createDb(databaseUrl);
+  const logLines: string[] = [];
   const server = createApp({
     db,
-    logger: pino({ level: 'silent' }),
+    logger: pino({}, { write: (line: string) => logLines.push(line) }),
+    staffLinkKey: randomBytes(32),
     authConfig: {
       keys: createLocalJWKSet({ keys: [publicJwk] }),
       issuer: ISSUER,
@@ -91,5 +94,9 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     await db.$disconnect();
   }
 
-  return { db, request, signToken, signTokenWithAnotherKey, signExpiredToken, close };
+  function logs() {
+    return logLines.join('');
+  }
+
+  return { db, logs, request, signToken, signTokenWithAnotherKey, signExpiredToken, close };
 }

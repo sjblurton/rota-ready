@@ -139,5 +139,30 @@
       "confirm": "Archive",
       "cancel": "Cancel"
     }
+  },
+  "staffLink": {
+    "button": "Staff Link",
+    "label": "Staff Link for {{name}}",
+    "title": "{{name}}'s Staff Link",
+    "description": "Anyone with this link can see {{firstName}}'s Shifts, so send it only to {{firstName}}.",
+    "url": "Link",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "copyFailed": "Couldn't copy the link. Select it and copy it yourself.",
+    "tryAgain": "Try again",
+    "regenerate": {
+      "button": "Regenerate",
+      "title": "Regenerate {{firstName}}'s Staff Link?",
+      "description": "The current link stops working straight away. You'll need to send {{firstName}} the new one.",
+      "confirm": "Regenerate",
+      "cancel": "Cancel"
+    },
+    "page": {
+      "greeting": "Hi {{firstName}}",
+      "description": "This is your Staff Link for {{venueName}}. Keep it to yourself: anyone with it can see your Shifts.",
+      "invalidTitle": "This link isn't valid",
+      "invalidDescription": "Ask your manager for a new link.",
+      "tryAgain": "Try again"
+    }
   }
 }
