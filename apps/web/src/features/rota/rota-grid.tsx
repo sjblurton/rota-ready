@@ -1,4 +1,4 @@
-import { formatLocalDate, weekDays, type Shift, type StaffMember } from '@rota-ready/shared';
+import { formatLocalDate, weekDays } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -8,25 +8,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { EditShiftDialog } from '@/features/rota/edit-shift-dialog';
+import { useRotaWeek } from '@/features/rota/rota-queries';
 import { layOutShifts } from '@/features/rota/shift-layout';
 import { ShiftResponseWithReason } from '@/features/staff-links/shift-response-badge';
 
 interface RotaGridProps {
+  venueId: string;
   weekStart: string;
-  timeZone: string;
-  staffMembers: StaffMember[];
-  shifts: Shift[];
-  showResponses: boolean;
 }
 
-export function RotaGrid({
-  weekStart,
-  timeZone,
-  staffMembers,
-  shifts,
-  showResponses,
-}: RotaGridProps) {
+export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
   const { t } = useTranslation();
+  const { status, shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
+  const showResponses = status === 'published';
   const days = weekDays(weekStart);
   const shiftsIn = layOutShifts(shifts, timeZone);
 
@@ -48,7 +43,12 @@ export function RotaGrid({
               <TableCell key={day} className="align-top">
                 {shiftsIn(staffMember.id, day).map(({ shift, times }) => (
                   <div key={shift.id} className="flex flex-col items-start gap-1">
-                    <span>{times}</span>
+                    <EditShiftDialog
+                      venueId={venueId}
+                      weekStart={weekStart}
+                      shift={shift}
+                      times={times}
+                    />
                     {showResponses && (
                       <ShiftResponseWithReason
                         response={shift.response}

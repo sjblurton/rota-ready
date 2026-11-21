@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  addShiftFormSchema,
-  createShiftRequestSchema,
   quarterHourTimes,
   rotaSchema,
   shiftEndsAt,
+  shiftFormSchema,
+  shiftFormValues,
+  shiftRequestSchema,
   shiftTimesIssue,
 } from './shift.js';
 import { zonedTimeToUtc } from './week.js';
@@ -104,13 +105,13 @@ describe('shiftTimesIssue', () => {
   });
 });
 
-describe('createShiftRequestSchema', () => {
+describe('shiftRequestSchema', () => {
   const staffMemberId = STAFF_MEMBER_ID;
-  let result: ReturnType<typeof createShiftRequestSchema.safeParse>;
+  let result: ReturnType<typeof shiftRequestSchema.safeParse>;
 
   describe('when the times come from toISOString and last 8 hours', () => {
     beforeEach(() => {
-      result = createShiftRequestSchema.safeParse({
+      result = shiftRequestSchema.safeParse({
         staffMemberId,
         startsAt: new Date('2026-07-15T08:00:00Z').toISOString(),
         endsAt: new Date('2026-07-15T16:00:00Z').toISOString(),
@@ -124,7 +125,7 @@ describe('createShiftRequestSchema', () => {
 
   describe('when the Shift lasts 17 hours', () => {
     beforeEach(() => {
-      result = createShiftRequestSchema.safeParse({
+      result = shiftRequestSchema.safeParse({
         staffMemberId,
         startsAt: '2026-07-15T06:00:00Z',
         endsAt: '2026-07-15T23:00:00Z',
@@ -140,7 +141,7 @@ describe('createShiftRequestSchema', () => {
 
   describe('when the start is not on a quarter hour', () => {
     beforeEach(() => {
-      result = createShiftRequestSchema.safeParse({
+      result = shiftRequestSchema.safeParse({
         staffMemberId,
         startsAt: '2026-07-15T08:10:00.000Z',
         endsAt: '2026-07-15T16:00:00.000Z',
@@ -156,7 +157,7 @@ describe('createShiftRequestSchema', () => {
 
   describe('when the end has seconds', () => {
     beforeEach(() => {
-      result = createShiftRequestSchema.safeParse({
+      result = shiftRequestSchema.safeParse({
         staffMemberId,
         startsAt: '2026-07-15T08:00:00.000Z',
         endsAt: '2026-07-15T16:00:30.000Z',
@@ -171,9 +172,9 @@ describe('createShiftRequestSchema', () => {
   });
 });
 
-describe('addShiftFormSchema', () => {
+describe('shiftFormSchema', () => {
   const staffMemberId = STAFF_MEMBER_ID;
-  const schema = addShiftFormSchema(LONDON);
+  const schema = shiftFormSchema(LONDON);
   let result: ReturnType<typeof schema.safeParse>;
 
   describe('when the form has a 20:00–02:00 Shift on a summer day', () => {
@@ -270,7 +271,7 @@ describe('addShiftFormSchema', () => {
       startsAt: '2026-07-15T11:00:00.000Z',
       endsAt: '2026-07-15T17:00:00.000Z',
     };
-    const schemaWithShift = addShiftFormSchema(LONDON, [existing]);
+    const schemaWithShift = shiftFormSchema(LONDON, [existing]);
 
     describe('when the new Shift overlaps it', () => {
       beforeEach(() => {
@@ -316,6 +317,32 @@ describe('addShiftFormSchema', () => {
 
       it('accepts it', () => {
         expect(result.success).toBe(true);
+      });
+    });
+  });
+});
+
+describe('shiftFormValues', () => {
+  let values: ReturnType<typeof shiftFormValues>;
+
+  describe('when an Overnight Shift runs from 20:00 to 02:00 on a summer evening', () => {
+    beforeEach(() => {
+      values = shiftFormValues(
+        {
+          staffMemberId: STAFF_MEMBER_ID,
+          startsAt: '2026-07-15T19:00:00.000Z',
+          endsAt: '2026-07-16T01:00:00.000Z',
+        },
+        LONDON,
+      );
+    });
+
+    it('gives its start day and wall-clock times in the Venue timezone', () => {
+      expect(values).toEqual({
+        staffMemberId: STAFF_MEMBER_ID,
+        date: '2026-07-15',
+        startTime: '20:00',
+        endTime: '02:00',
       });
     });
   });

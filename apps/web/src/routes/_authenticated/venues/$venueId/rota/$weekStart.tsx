@@ -11,7 +11,6 @@ import { PublishRotaDialog } from '@/features/rota/publish-rota-dialog';
 import { WeekLink } from '@/features/rota/week-link';
 import { rotaQuery } from '@/features/rota/rota-queries';
 import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
-import { venueQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/rota/$weekStart')({
   loader: ({ context, params }) =>
@@ -28,7 +27,6 @@ function RotaPage() {
   const { venueId, weekStart } = Route.useParams();
   const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
   const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
-  const { data: venue } = useSuspenseQuery(venueQuery(venueId));
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,13 +56,7 @@ function RotaPage() {
           {staffMembers.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('rota.noStaff')}</p>
           ) : (
-            <RotaGrid
-              weekStart={rota.weekStart}
-              timeZone={venue.timeZone}
-              staffMembers={staffMembers}
-              shifts={rota.shifts}
-              showResponses={rota.status === 'published'}
-            />
+            <RotaGrid venueId={venueId} weekStart={rota.weekStart} />
           )}
         </CardContent>
       </Card>
@@ -76,14 +68,7 @@ function RotaPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <AddShiftForm
-              key={rota.weekStart}
-              venueId={venueId}
-              timeZone={venue.timeZone}
-              weekStart={rota.weekStart}
-              staffMembers={staffMembers}
-              shifts={rota.shifts}
-            />
+            <AddShiftForm key={rota.weekStart} venueId={venueId} weekStart={rota.weekStart} />
           </CardContent>
         </Card>
       )}
