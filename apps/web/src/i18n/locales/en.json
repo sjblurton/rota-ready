@@ -19,7 +19,8 @@
     "internal": "Something went wrong on our side. Please try again.",
     "unauthorized": "Your session has ended. Please log in again.",
     "forbidden": "You don't have access to this.",
-    "venueAlreadyExists": "You already have a venue. Reload the page to open it."
+    "venueAlreadyExists": "You already have a venue. Reload the page to open it.",
+    "rotaAlreadyPublished": "This Week's Rota is already Published."
   },
   "validation": {
     "required": "This field is required.",
@@ -102,6 +103,13 @@
     "status": {
       "draft": "Draft",
       "published": "Published"
+    },
+    "publish": {
+      "button": "Publish",
+      "title": "Publish the Week of {{date}}?",
+      "description": "You can still change Shifts afterwards, but you can't unpublish a Rota.",
+      "confirm": "Publish",
+      "cancel": "Cancel"
     }
   },
   "staff": {

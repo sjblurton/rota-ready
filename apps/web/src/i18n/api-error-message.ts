@@ -10,6 +10,7 @@ const messageKeys = {
   venue_already_exists: 'errors.venueAlreadyExists',
   staff_member_email_taken: 'validation.staffMemberEmailTaken',
   shift_overlaps: 'validation.shiftOverlaps',
+  rota_already_published: 'errors.rotaAlreadyPublished',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

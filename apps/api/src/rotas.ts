@@ -88,12 +88,23 @@ export function rotaRoutes(db: Db): Router {
     res.status(201).json(toShift(shift));
   };
 
+  const publishRota: RotaRequestHandler = async (req, res) => {
+    const rota = await findOrCreateRota(res.locals.venue, req.params.weekStart);
+    const { count } = await db.rota.updateMany({
+      where: { id: rota.id, status: 'draft' },
+      data: { status: 'published', publishedAt: new Date() },
+    });
+    if (count === 0) return sendError(res, 'rota_already_published');
+    res.status(204).end();
+  };
+
   router.param('weekStart', (_req, res, next, weekStart: string) => {
     if (!isWeekStart(weekStart)) return sendError(res, 'not_found');
     next();
   });
   router.get('/:weekStart', getRota);
   router.post('/:weekStart/shifts', addShift);
+  router.post('/:weekStart/publish', publishRota);
 
   return router;
 }
