@@ -39,6 +39,14 @@ export function toShift(
   });
 }
 
+function detailsChanged(before: ShiftTimes, after: ShiftTimes) {
+  return (
+    before.staffMemberId !== after.staffMemberId ||
+    before.startsAt.getTime() !== after.startsAt.getTime() ||
+    before.endsAt.getTime() !== after.endsAt.getTime()
+  );
+}
+
 async function lockStaffMemberUntilCommit(tx: Prisma.TransactionClient, staffMemberId: string) {
   await tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`;
 }
@@ -139,9 +147,12 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     if (!existing) return sendError(res, 'not_found');
     const times = await resolveShiftTimesOrReject(res, weekStart, request);
     if (!times) return;
+    const data = detailsChanged(existing, times)
+      ? { ...times, response: 'pending' as const, declineReason: null, respondedAt: null }
+      : times;
     const shift = await db.$transaction(async (tx) => {
       if (await overlapsOtherShift(tx, times, existing.id)) return null;
-      return tx.shift.update({ where: { id: existing.id }, data: times });
+      return tx.shift.update({ where: { id: existing.id }, data });
     });
     if (!shift) return sendError(res, 'shift_overlaps');
     res.json(toShift(shift, clock.now()));

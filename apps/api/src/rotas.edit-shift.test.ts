@@ -170,6 +170,118 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
     });
   });
 
+  describe('when Sam has Declined a Shift in a Published Rota, with a reason', () => {
+    const MONDAY_23_9_TO_5 = {
+      startsAt: '2026-11-23T09:00:00.000Z',
+      endsAt: '2026-11-23T17:00:00.000Z',
+    };
+    const RESPONDED_AT = new Date('2026-11-20T10:00:00.000Z');
+    let declined: { id: string };
+
+    function storedResponse() {
+      return app.db.shift.findUnique({
+        where: { id: declined.id },
+        select: { response: true, declineReason: true, respondedAt: true },
+      });
+    }
+
+    beforeEach(async () => {
+      const publishedRota = await createPublishedRotaFor(app.db, ownVenue, '2026-11-23');
+      declined = await createShift(app.db, publishedRota, sam, MONDAY_23_9_TO_5);
+      await app.db.shift.update({
+        where: { id: declined.id },
+        data: { response: 'declined', declineReason: 'Dentist', respondedAt: RESPONDED_AT },
+      });
+    });
+
+    describe('when the Owner reassigns it to Jo', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', declined), {
+          as: OWNER,
+          body: { staffMemberId: jo.id, ...MONDAY_23_9_TO_5 },
+        });
+      });
+
+      it('returns it as Pending with no Decline Reason', async () => {
+        expect(await response.json()).toMatchObject({ response: 'pending', declineReason: null });
+      });
+
+      it('clears the stored answer', async () => {
+        expect(await storedResponse()).toEqual({
+          response: 'pending',
+          declineReason: null,
+          respondedAt: null,
+        });
+      });
+    });
+
+    describe('when the Owner moves it an hour later for Sam', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', declined), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-23T10:00:00.000Z',
+            endsAt: '2026-11-23T18:00:00.000Z',
+          },
+        });
+      });
+
+      it('resets it to Pending', async () => {
+        expect(await storedResponse()).toMatchObject({ response: 'pending', declineReason: null });
+      });
+    });
+
+    describe('when the Owner saves it without changing anything', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', declined), {
+          as: OWNER,
+          body: { staffMemberId: sam.id, ...MONDAY_23_9_TO_5 },
+        });
+      });
+
+      it("keeps Sam's Decline and reason", async () => {
+        expect(await storedResponse()).toEqual({
+          response: 'declined',
+          declineReason: 'Dentist',
+          respondedAt: RESPONDED_AT,
+        });
+      });
+    });
+  });
+
+  describe('when Sam has Confirmed a Shift in a Published Rota and the Owner reassigns it to Jo', () => {
+    let confirmed: { id: string };
+
+    beforeEach(async () => {
+      const publishedRota = await createPublishedRotaFor(app.db, ownVenue, '2026-11-23');
+      confirmed = await createShift(app.db, publishedRota, sam, {
+        startsAt: '2026-11-23T09:00:00.000Z',
+        endsAt: '2026-11-23T17:00:00.000Z',
+      });
+      await app.db.shift.update({
+        where: { id: confirmed.id },
+        data: { response: 'confirmed', respondedAt: new Date('2026-11-20T10:00:00.000Z') },
+      });
+      response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', confirmed), {
+        as: OWNER,
+        body: {
+          staffMemberId: jo.id,
+          startsAt: '2026-11-23T09:00:00.000Z',
+          endsAt: '2026-11-23T17:00:00.000Z',
+        },
+      });
+    });
+
+    it('resets it to Pending for Jo', async () => {
+      expect(await app.db.shift.findUnique({ where: { id: confirmed.id } })).toMatchObject({
+        staffMemberId: jo.id,
+        response: 'pending',
+        respondedAt: null,
+      });
+    });
+  });
+
   describe('when Jo already has a Shift from 16:00 to 20:00 on Monday', () => {
     beforeEach(async () => {
       await createShift(app.db, rota, jo, {
