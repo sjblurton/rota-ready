@@ -338,6 +338,35 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeHidden();
   });
 
+  test('asks for confirmation before Publishing this Week', async () => {
+    await page.getByRole('link', { name: 'Previous Week' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.getByRole('button', { name: 'Publish' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText(
+      `Publish the Week of ${formatLocalDate(thisWeek, { withYear: true })}?`,
+    );
+  });
+
+  test('Publishes this Week and shows the Published badge in place of the Publish button', async () => {
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Publish' })).toHaveCount(0);
+  });
+
+  test('keeps this Week Published after a reload', async () => {
+    await page.reload();
+    await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toHaveText('20:00–02:00 (+1)');
+  });
+
+  test('keeps the next Week a Draft with a Publish button', async () => {
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
+    await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Publish' })).toBeVisible();
+  });
+
   test('keeps a User with a Venue out of onboarding', async () => {
     await page.goto('/onboarding');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);

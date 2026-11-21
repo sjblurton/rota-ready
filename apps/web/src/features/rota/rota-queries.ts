@@ -28,3 +28,13 @@ export function addShiftToRota(
     rota && { ...rota, shifts: [...rota.shifts, shift] },
   );
 }
+
+export function publishPath(venueId: string, weekStart: string) {
+  return `${rotaPath(venueId, weekStart)}/publish`;
+}
+
+export function markRotaPublished(queryClient: QueryClient, venueId: string, weekStart: string) {
+  queryClient.setQueryData(rotaQuery(venueId, weekStart).queryKey, (rota) =>
+    rota && { ...rota, status: 'published' as const },
+  );
+}
