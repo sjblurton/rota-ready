@@ -28,6 +28,7 @@ test.describe.serial('MVP journey', () => {
   let thisWeek: string;
   let samsLink: string;
   let privateWindow: BrowserContext;
+  let staffLinkPage: Page;
 
   function staffTable() {
     return page.getByRole('table', { name: 'Staff' });
@@ -419,9 +420,15 @@ test.describe.serial('MVP journey', () => {
 
   test("opens Sam's page from the new Staff Link", async () => {
     const newLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
-    const privatePage = await privateWindow.newPage();
-    await privatePage.goto(newLink);
-    await expect(privatePage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
+    staffLinkPage = await privateWindow.newPage();
+    await staffLinkPage.goto(newLink);
+    await expect(staffLinkPage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
+  });
+
+  test("shows only Sam's upcoming Published Shift, not next Week's Draft ones", async () => {
+    await expect(
+      staffLinkPage.getByRole('list', { name: 'Your upcoming Shifts' }).getByRole('listitem'),
+    ).toHaveText([`${formatLocalDate(addDays(thisWeek, 6))}20:00–02:00 (+1)`]);
     await privateWindow.close();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();

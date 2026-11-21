@@ -3,6 +3,7 @@ import type { Logger } from 'pino';
 import { pinoHttp } from 'pino-http';
 import { currentUserSchema, healthResponseSchema } from '@rota-ready/shared';
 import { withIdentity, withUser, type AuthConfig } from './auth.js';
+import type { Clock } from './clock.js';
 import type { Db } from './db.js';
 import type { User } from './generated/prisma/client.js';
 import { handleMalformedJson, handleUnexpectedError, sendError } from './http-errors.js';
@@ -11,6 +12,7 @@ import { venueRoutes } from './venues.js';
 
 export interface AppDependencies {
   db: Db;
+  clock: Clock;
   authConfig: AuthConfig;
   logger: Logger;
   staffLinkKey: Buffer;
@@ -33,7 +35,13 @@ function toCurrentUser({ id, email }: User) {
   return currentUserSchema.parse({ id, email });
 }
 
-export function createApp({ db, authConfig, logger, staffLinkKey }: AppDependencies): Express {
+export function createApp({
+  db,
+  clock,
+  authConfig,
+  logger,
+  staffLinkKey,
+}: AppDependencies): Express {
   const app = express();
   app.disable('x-powered-by');
   app.use(
@@ -69,8 +77,8 @@ export function createApp({ db, authConfig, logger, staffLinkKey }: AppDependenc
     }),
   );
 
-  app.use('/api/venues', venueRoutes(db, authConfig, staffLinkKey));
-  app.use('/api/staff-links', staffLinkRoutes(db));
+  app.use('/api/venues', venueRoutes(db, authConfig, staffLinkKey, clock));
+  app.use('/api/staff-links', staffLinkRoutes(db, clock));
 
   app.use((_req, res) => sendError(res, 'not_found'));
   app.use(handleMalformedJson);
