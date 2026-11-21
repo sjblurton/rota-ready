@@ -63,3 +63,14 @@ export function createShift(
     },
   });
 }
+
+export function createPublishedRotaFor(db: Db, venue: { id: string }, weekStart: string) {
+  return db.rota.create({
+    data: {
+      venueId: venue.id,
+      weekStart: new Date(`${weekStart}T00:00:00Z`),
+      status: 'published',
+      publishedAt: new Date(`${weekStart}T00:00:00Z`),
+    },
+  });
+}

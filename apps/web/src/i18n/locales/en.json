@@ -160,6 +160,8 @@
     "page": {
       "greeting": "Hi {{firstName}}",
       "description": "This is your Staff Link for {{venueName}}. Keep it to yourself: anyone with it can see your Shifts.",
+      "shifts": "Your upcoming Shifts",
+      "noShifts": "You have no upcoming Shifts.",
       "invalidTitle": "This link isn't valid",
       "invalidDescription": "Ask your manager for a new link.",
       "tryAgain": "Try again"

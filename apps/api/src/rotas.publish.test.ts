@@ -97,6 +97,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
         startsAt: '2026-11-16T09:00:00.000Z',
         endsAt: '2026-11-16T17:00:00.000Z',
       });
+      app.setClock('2026-11-14T10:30:00.000Z');
       response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
     });
 
@@ -107,7 +108,9 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     it('stores the Rota as Published, with when it was published', async () => {
       expect(
         await app.db.rota.findMany({ select: { id: true, status: true, publishedAt: true } }),
-      ).toEqual([{ id: rota.id, status: 'published', publishedAt: expect.any(Date) }]);
+      ).toEqual([
+        { id: rota.id, status: 'published', publishedAt: new Date('2026-11-14T10:30:00.000Z') },
+      ]);
     });
 
     describe('when the Owner opens that Week', () => {

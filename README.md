@@ -7,7 +7,16 @@
 [![Projects board](https://img.shields.io/badge/board-Rota_Ready_MVP-blue)](https://github.com/users/sjblurton/projects/1)
 [![PRD](https://img.shields.io/badge/PRD-%231-informational)](https://github.com/sjblurton/rota-ready/issues/1)
 
-> 📸 _Screenshot coming soon: the owner's rota grid next to the staff member's mobile view._
+<table>
+  <tr>
+    <td><img src="docs/images/owner-rota-grid.png" alt="The Owner's Rota grid for the Week of 23 November, Published, with each Staff Member's Shifts by day" width="620"></td>
+    <td><img src="docs/images/staff-link-mobile.png" alt="Sam's Staff Link page on a phone, listing their four upcoming Shifts" width="220"></td>
+  </tr>
+  <tr>
+    <td align="center"><em>The Owner builds and Publishes the Week</em></td>
+    <td align="center"><em>Sam opens their Staff Link</em></td>
+  </tr>
+</table>
 
 Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
 
@@ -163,7 +172,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [ ] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members
 - [ ] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
 - [ ] [#9](https://github.com/sjblurton/rota-ready/issues/9) Edit and delete shifts
-- [ ] [#10](https://github.com/sjblurton/rota-ready/issues/10) Publish and the staff link page
+- [x] [#10](https://github.com/sjblurton/rota-ready/issues/10) Publish and the staff link page
 - [ ] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
 - [ ] [#12](https://github.com/sjblurton/rota-ready/issues/12) Confirm and decline
 - [ ] [#13](https://github.com/sjblurton/rota-ready/issues/13) Changes after publishing

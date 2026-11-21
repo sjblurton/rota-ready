@@ -33,8 +33,10 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   const publicJwk = { ...(await exportJWK(publicKey)), kid: KEY_ID, alg: 'ES256' };
   const db: Db = createDb(databaseUrl);
   const logLines: string[] = [];
+  let now: Date | undefined;
   const server = createApp({
     db,
+    clock: { now: () => now ?? new Date() },
     logger: pino({}, { write: (line: string) => logLines.push(line) }),
     staffLinkKey: randomBytes(32),
     authConfig: {
@@ -94,9 +96,22 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     await db.$disconnect();
   }
 
+  function setClock(instant: string) {
+    now = new Date(instant);
+  }
+
   function logs() {
     return logLines.join('');
   }
 
-  return { db, logs, request, signToken, signTokenWithAnotherKey, signExpiredToken, close };
+  return {
+    db,
+    logs,
+    setClock,
+    request,
+    signToken,
+    signTokenWithAnotherKey,
+    signExpiredToken,
+    close,
+  };
 }

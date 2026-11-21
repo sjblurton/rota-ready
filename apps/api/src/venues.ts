@@ -10,6 +10,7 @@ import {
   type AuthConfig,
   type VenueRequestHandler,
 } from './auth.js';
+import type { Clock } from './clock.js';
 import type { Db } from './db.js';
 import { Prisma, type Venue } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
@@ -20,7 +21,12 @@ function toVenue({ id, name, timeZone }: Venue) {
   return venueSchema.parse({ id, name, timeZone });
 }
 
-export function venueRoutes(db: Db, authConfig: AuthConfig, staffLinkKey: Buffer): Router {
+export function venueRoutes(
+  db: Db,
+  authConfig: AuthConfig,
+  staffLinkKey: Buffer,
+  clock: Clock,
+): Router {
   const router = Router();
 
   router.post(
@@ -71,7 +77,7 @@ export function venueRoutes(db: Db, authConfig: AuthConfig, staffLinkKey: Buffer
   venue.get('/', getVenue);
   venue.patch('/', renameVenue);
   venue.use('/staff-members', staffMemberRoutes(db, staffLinkKey));
-  venue.use('/rotas', rotaRoutes(db));
+  venue.use('/rotas', rotaRoutes(db, clock));
 
   router.use('/:venueId', requireVenueMember(authConfig, db), venue);
 

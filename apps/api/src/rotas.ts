@@ -7,6 +7,7 @@ import {
 } from '@rota-ready/shared';
 import { Router } from 'express';
 import type { VenueRequestHandler } from './auth.js';
+import type { Clock } from './clock.js';
 import type { Db } from './db.js';
 import type { Prisma, Shift, Venue } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
@@ -17,7 +18,7 @@ function toDbDate(localDate: string): Date {
   return new Date(`${localDate}T00:00:00Z`);
 }
 
-function toShift({ id, staffMemberId, startsAt, endsAt }: Shift) {
+export function toShift({ id, staffMemberId, startsAt, endsAt }: Shift) {
   return shiftSchema.parse({
     id,
     staffMemberId,
@@ -30,7 +31,7 @@ async function lockStaffMemberUntilCommit(tx: Prisma.TransactionClient, staffMem
   await tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`;
 }
 
-export function rotaRoutes(db: Db): Router {
+export function rotaRoutes(db: Db, clock: Clock): Router {
   const router = Router();
 
   async function findOrCreateRota(venue: Venue, weekStart: string) {
@@ -92,7 +93,7 @@ export function rotaRoutes(db: Db): Router {
     const rota = await findOrCreateRota(res.locals.venue, req.params.weekStart);
     const { count } = await db.rota.updateMany({
       where: { id: rota.id, status: 'draft' },
-      data: { status: 'published', publishedAt: new Date() },
+      data: { status: 'published', publishedAt: clock.now() },
     });
     if (count === 0) return sendError(res, 'rota_already_published');
     res.status(204).end();

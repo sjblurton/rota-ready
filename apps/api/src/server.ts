@@ -21,6 +21,7 @@ const logger = pino({
 
 createApp({
   db: createDb(databaseUrl),
+  clock: { now: () => new Date() },
   authConfig: supabaseAuthConfig(supabaseUrl),
   logger,
   staffLinkKey: parseStaffLinkKey(staffLinkKey),
