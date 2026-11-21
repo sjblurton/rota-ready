@@ -8,7 +8,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import type { Clock } from './clock.js';
 import type { Db } from './db.js';
-import type { Shift } from './generated/prisma/client.js';
+import { RotaStatus, ShiftResponse, type Shift } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
 import { toShift } from './rotas.js';
 import { hashStaffLinkToken } from './staff-link-token.js';
@@ -46,7 +46,7 @@ export function staffLinkRoutes(db: Db, clock: Clock): Router {
     const shifts = await db.shift.findMany({
       where: {
         staffMemberId: staffMember.id,
-        rota: { status: 'published' },
+        rota: { status: RotaStatus.published },
         endsAt: { gt: clock.now() },
       },
       orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
@@ -71,14 +71,14 @@ export function staffLinkRoutes(db: Db, clock: Clock): Router {
     const where = {
       id: id.data,
       staffMemberId: staffMember.id,
-      rota: { status: 'published' as const },
+      rota: { status: RotaStatus.published },
     };
     const now = clock.now();
     const { count } = await db.shift.updateMany({
       where: { ...where, startsAt: { gt: now } },
       data: {
         response: request.response,
-        declineReason: request.response === 'declined' ? request.declineReason : null,
+        declineReason: request.response === ShiftResponse.declined ? request.declineReason : null,
         respondedAt: now,
       },
     });

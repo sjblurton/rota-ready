@@ -11,7 +11,13 @@ import { z } from 'zod';
 import type { VenueMemberLocals, VenueRequestHandler } from './auth.js';
 import type { Clock } from './clock.js';
 import type { Db } from './db.js';
-import type { Prisma, Shift, Venue } from './generated/prisma/client.js';
+import {
+  RotaStatus,
+  ShiftResponse,
+  type Prisma,
+  type Shift,
+  type Venue,
+} from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
 
 type RotaRequestHandler = VenueRequestHandler<{ weekStart: string }>;
@@ -148,7 +154,7 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     const times = await resolveShiftTimesOrReject(res, weekStart, request);
     if (!times) return;
     const data = detailsChanged(existing, times)
-      ? { ...times, response: 'pending' as const, declineReason: null, respondedAt: null }
+      ? { ...times, response: ShiftResponse.pending, declineReason: null, respondedAt: null }
       : times;
     const shift = await db.$transaction(async (tx) => {
       if (await overlapsOtherShift(tx, times, existing.id)) return null;
@@ -161,8 +167,8 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
   const publishRota: RotaRequestHandler = async (req, res) => {
     const rota = await findOrCreateRota(res.locals.venue, req.params.weekStart);
     const { count } = await db.rota.updateMany({
-      where: { id: rota.id, status: 'draft' },
-      data: { status: 'published', publishedAt: clock.now() },
+      where: { id: rota.id, status: RotaStatus.draft },
+      data: { status: RotaStatus.published, publishedAt: clock.now() },
     });
     if (count === 0) return sendError(res, 'rota_already_published');
     res.status(204).end();
