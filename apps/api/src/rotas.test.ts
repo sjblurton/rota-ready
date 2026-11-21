@@ -200,6 +200,22 @@ describe('GET /api/venues/:venueId/rotas/:weekStart', () => {
         shifts: expect.arrayContaining([expect.objectContaining({ id: nextWeekShift.id })]),
       });
     });
+
+    describe('when the Owner opens it at 09:00 on Monday', () => {
+      beforeEach(async () => {
+        app.setClock('2026-11-16T09:00:00.000Z');
+        response = await app.request('GET', rotaPath(ownVenue, WEEK_START), { as: OWNER });
+      });
+
+      it("marks Monday's Shift as started and Sunday's as not", async () => {
+        expect(await response.json()).toMatchObject({
+          shifts: [
+            { id: earlyShift.id, started: true },
+            { id: lateShift.id, started: false },
+          ],
+        });
+      });
+    });
   });
 });
 
@@ -278,6 +294,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
 
   describe('when the Owner adds an Overnight Shift that starts on Sunday', () => {
     beforeEach(async () => {
+      app.setClock('2026-11-16T08:00:00.000Z');
       response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
         as: OWNER,
         body: {
@@ -300,6 +317,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
         endsAt: '2026-11-23T02:00:00.000Z',
         response: 'pending',
         declineReason: null,
+        started: false,
       });
     });
 

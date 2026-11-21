@@ -18,7 +18,10 @@ function toDbDate(localDate: string): Date {
   return new Date(`${localDate}T00:00:00Z`);
 }
 
-export function toShift({ id, staffMemberId, startsAt, endsAt, response, declineReason }: Shift) {
+export function toShift(
+  { id, staffMemberId, startsAt, endsAt, response, declineReason }: Shift,
+  now: Date,
+) {
   return shiftSchema.parse({
     id,
     staffMemberId,
@@ -26,6 +29,7 @@ export function toShift({ id, staffMemberId, startsAt, endsAt, response, decline
     endsAt: endsAt.toISOString(),
     response,
     declineReason,
+    started: startsAt <= now,
   });
 }
 
@@ -49,7 +53,14 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
       where: { rotaId: rota.id },
       orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
     });
-    res.json(rotaSchema.parse({ weekStart, status: rota.status, shifts: shifts.map(toShift) }));
+    const now = clock.now();
+    res.json(
+      rotaSchema.parse({
+        weekStart,
+        status: rota.status,
+        shifts: shifts.map((shift) => toShift(shift, now)),
+      }),
+    );
   };
 
   const addShift: RotaRequestHandler = async (req, res) => {
@@ -88,7 +99,7 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
       });
     });
     if (!shift) return sendError(res, 'shift_overlaps');
-    res.status(201).json(toShift(shift));
+    res.status(201).json(toShift(shift, clock.now()));
   };
 
   const publishRota: RotaRequestHandler = async (req, res) => {

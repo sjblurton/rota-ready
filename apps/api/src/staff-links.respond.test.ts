@@ -79,7 +79,7 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
           ...THURSDAY_9_TO_5,
           response: 'confirmed',
           declineReason: null,
-          canRespond: true,
+          started: false,
         },
       ]);
     });
@@ -127,7 +127,7 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
           ...THURSDAY_9_TO_5,
           response: 'declined',
           declineReason: 'Dentist appointment',
-          canRespond: true,
+          started: false,
         },
       ]);
     });

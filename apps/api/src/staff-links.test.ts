@@ -155,14 +155,14 @@ describe('GET /api/staff-links/:token', () => {
       expect(await returnedShiftIds()).not.toContain(shifts.joThursday.id);
     });
 
-    it('lets Sam answer only the Shifts that have not started', async () => {
+    it('marks the Shift that began at noon as started, and the later ones as not', async () => {
       const { shifts: returned } = (await response.json()) as {
-        shifts: { id: string; canRespond: boolean }[];
+        shifts: { id: string; started: boolean }[];
       };
-      expect(returned.map(({ id, canRespond }) => ({ id, canRespond }))).toEqual([
-        { id: shifts.inProgress.id, canRespond: false },
-        { id: shifts.thursday.id, canRespond: true },
-        { id: shifts.sunday.id, canRespond: true },
+      expect(returned.map(({ id, started }) => ({ id, started }))).toEqual([
+        { id: shifts.inProgress.id, started: true },
+        { id: shifts.thursday.id, started: false },
+        { id: shifts.sunday.id, started: false },
       ]);
     });
 

@@ -493,9 +493,9 @@ test.describe.serial('MVP journey', () => {
     await privateWindow.close();
   });
 
-  test("shows the Decline and its reason on the Owner's grid", async () => {
+  test("shows the Decline and its reason on the Owner's grid within 30 seconds, without a reload", async () => {
     const nextWeek = addDays(thisWeek, 7);
-    await page.reload();
+    await page.clock.fastForward(30_000);
     const wednesday = rotaCell('Sam Jones', addDays(nextWeek, 2), nextWeek);
     await wednesday.getByRole('button', { name: 'Declined: see the Decline Reason' }).click();
     await expect(page.getByRole('dialog')).toHaveText('Dentist appointment');
@@ -503,9 +503,10 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('dialog')).toBeHidden();
   });
 
-  test("shows the Confirm on the Owner's grid", async () => {
+  test("shows the Confirm on the Owner's grid after the next refresh", async () => {
     await page.getByRole('link', { name: 'Previous Week' }).click();
     await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.clock.fastForward(30_000);
     await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('Confirmed');
   });
 

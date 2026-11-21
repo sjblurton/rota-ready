@@ -37,10 +37,7 @@ export function staffLinkRoutes(db: Db, clock: Clock): Router {
   }
 
   function toStaffLinkShift(shift: Shift) {
-    return staffLinkShiftSchema.parse({
-      ...toShift(shift),
-      canRespond: shift.startsAt > clock.now(),
-    });
+    return staffLinkShiftSchema.parse(toShift(shift, clock.now()));
   }
 
   router.get('/:token', async (req, res) => {

@@ -8,21 +8,31 @@ const variants = {
   pending: 'outline',
   confirmed: 'default',
   declined: 'destructive',
-} as const satisfies Record<ShiftResponse, string>;
+  noReply: 'secondary',
+} as const satisfies Record<ShiftResponse | 'noReply', string>;
 
-export function ShiftResponseBadge({ response }: { response: ShiftResponse }) {
-  const { t } = useTranslation();
-  return <Badge variant={variants[response]}>{t(`shiftResponse.${response}`)}</Badge>;
+interface ShiftResponseBadgeProps {
+  response: ShiftResponse;
+  started: boolean;
 }
 
-interface ShiftResponseWithReasonProps {
-  response: ShiftResponse;
+export function ShiftResponseBadge({ response, started }: ShiftResponseBadgeProps) {
+  const { t } = useTranslation();
+  const shown = response === 'pending' && started ? 'noReply' : response;
+  return <Badge variant={variants[shown]}>{t(`shiftResponse.${shown}`)}</Badge>;
+}
+
+interface ShiftResponseWithReasonProps extends ShiftResponseBadgeProps {
   declineReason: string | null;
 }
 
-export function ShiftResponseWithReason({ response, declineReason }: ShiftResponseWithReasonProps) {
+export function ShiftResponseWithReason({
+  response,
+  started,
+  declineReason,
+}: ShiftResponseWithReasonProps) {
   const { t } = useTranslation();
-  if (!declineReason) return <ShiftResponseBadge response={response} />;
+  if (!declineReason) return <ShiftResponseBadge response={response} started={started} />;
 
   return (
     <Popover>
@@ -33,7 +43,7 @@ export function ShiftResponseWithReason({ response, declineReason }: ShiftRespon
           className="h-auto p-0"
           aria-label={t('shiftResponse.showReason', { response: t(`shiftResponse.${response}`) })}
         >
-          <ShiftResponseBadge response={response} />
+          <ShiftResponseBadge response={response} started={started} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto max-w-72">{declineReason}</PopoverContent>

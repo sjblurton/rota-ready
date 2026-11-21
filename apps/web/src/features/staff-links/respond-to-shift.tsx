@@ -48,7 +48,7 @@ function useRespondToShift(token: string, shift: StaffLinkShift, onDone?: () => 
     onError: (error) => {
       toast.error(apiErrorMessage(t, error));
       if (hasErrorCode(error, 'shift_started')) {
-        replaceStaffLinkShift(queryClient, token, { ...shift, canRespond: false });
+        replaceStaffLinkShift(queryClient, token, { ...shift, started: true });
         onDone?.();
       }
     },
@@ -59,7 +59,7 @@ export function RespondToShift({ token, shift, day, times }: RespondToShiftProps
   const { t } = useTranslation();
   const confirm = useRespondToShift(token, shift);
 
-  if (!shift.canRespond) {
+  if (shift.started) {
     return <p className="text-sm text-muted-foreground">{t('staffLink.page.started')}</p>;
   }
 

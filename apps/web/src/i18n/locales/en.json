@@ -146,6 +146,7 @@
     "pending": "Pending",
     "confirmed": "Confirmed",
     "declined": "Declined",
+    "noReply": "No reply",
     "showReason": "{{response}}: see the Decline Reason"
   },
   "staffLink": {

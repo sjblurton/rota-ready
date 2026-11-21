@@ -126,6 +126,7 @@ export const shiftSchema = z.object({
   endsAt: z.iso.datetime(),
   response: shiftResponseSchema,
   declineReason: z.string().nullable(),
+  started: z.boolean(),
 });
 
 export type Shift = z.infer<typeof shiftSchema>;

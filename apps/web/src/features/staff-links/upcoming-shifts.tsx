@@ -32,7 +32,7 @@ export function UpcomingShifts({ token, shifts, timeZone }: UpcomingShiftsProps)
                   <span className="tabular-nums">{times}</span>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <ShiftResponseBadge response={shift.response} />
+                  <ShiftResponseBadge response={shift.response} started={shift.started} />
                   <RespondToShift token={token} shift={shift} day={day} times={times} />
                 </div>
                 {shift.declineReason && (

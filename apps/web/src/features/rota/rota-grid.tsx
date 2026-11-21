@@ -52,6 +52,7 @@ export function RotaGrid({
                     {showResponses && (
                       <ShiftResponseWithReason
                         response={shift.response}
+                        started={shift.started}
                         declineReason={shift.declineReason}
                       />
                     )}
