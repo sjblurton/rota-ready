@@ -67,42 +67,42 @@ export function ShiftFields({ weekStart, staffMembers }: ShiftFieldsProps) {
         </NativeSelect>
         <FieldError id={`${id}-date-error`} errors={[errors.date]} />
       </Field>
-      <Field data-invalid={!!errors.startTime}>
-        <FieldLabel htmlFor={`${id}-startTime`}>{t('rota.shift.startTime')}</FieldLabel>
-        <NativeSelect
-          id={`${id}-startTime`}
-          className="w-full"
-          aria-invalid={!!errors.startTime}
-          aria-describedby={`${id}-startTime-error`}
-          {...register('startTime', { onChange: clearFormError })}
-        >
-          <NativeSelectOption value="">{t('rota.shift.chooseTime')}</NativeSelectOption>
-          {times.map((time) => (
-            <NativeSelectOption key={time} value={time}>
-              {time}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <FieldError id={`${id}-startTime-error`} errors={[errors.startTime]} />
-      </Field>
-      <Field data-invalid={!!errors.endTime}>
-        <FieldLabel htmlFor={`${id}-endTime`}>{t('rota.shift.endTime')}</FieldLabel>
-        <NativeSelect
-          id={`${id}-endTime`}
-          className="w-full"
-          aria-invalid={!!errors.endTime}
-          aria-describedby={`${id}-endTime-error`}
-          {...register('endTime', { onChange: clearFormError })}
-        >
-          <NativeSelectOption value="">{t('rota.shift.chooseTime')}</NativeSelectOption>
-          {times.map((time) => (
-            <NativeSelectOption key={time} value={time}>
-              {time}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <FieldError id={`${id}-endTime-error`} errors={[errors.endTime]} />
-      </Field>
+      <ShiftTimeField name="startTime" />
+      <ShiftTimeField name="endTime" />
     </div>
+  );
+}
+
+const timeLabels = {
+  startTime: 'rota.shift.startTime',
+  endTime: 'rota.shift.endTime',
+} as const;
+
+function ShiftTimeField({ name }: { name: keyof typeof timeLabels }) {
+  const { t } = useTranslation();
+  const id = useId();
+  const { register, formState, clearErrors } =
+    useFormContext<z.input<ReturnType<typeof shiftFormSchema>>>();
+  const error = formState.errors[name];
+
+  return (
+    <Field data-invalid={!!error}>
+      <FieldLabel htmlFor={id}>{t(timeLabels[name])}</FieldLabel>
+      <NativeSelect
+        id={id}
+        className="w-full"
+        aria-invalid={!!error}
+        aria-describedby={`${id}-error`}
+        {...register(name, { onChange: () => clearErrors('root') })}
+      >
+        <NativeSelectOption value="">{t('rota.shift.chooseTime')}</NativeSelectOption>
+        {times.map((time) => (
+          <NativeSelectOption key={time} value={time}>
+            {time}
+          </NativeSelectOption>
+        ))}
+      </NativeSelect>
+      <FieldError id={`${id}-error`} errors={[error]} />
+    </Field>
   );
 }

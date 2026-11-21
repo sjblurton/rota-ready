@@ -2,9 +2,7 @@ import {
   shiftFormSchema,
   shiftSchema,
   validationMessage,
-  type Shift,
   type ShiftRequest,
-  type StaffMember,
 } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,27 +11,19 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FieldError, FieldGroup } from '@/components/ui/field';
-import { addShiftToRota, shiftsPath } from '@/features/rota/rota-queries';
+import { addShiftToRota, shiftsPath, useRotaWeek } from '@/features/rota/rota-queries';
 import { ShiftFields } from '@/features/rota/shift-fields';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPost, hasErrorCode } from '@/lib/api';
 
 interface AddShiftFormProps {
   venueId: string;
-  timeZone: string;
   weekStart: string;
-  staffMembers: StaffMember[];
-  shifts: Shift[];
 }
 
-export function AddShiftForm({
-  venueId,
-  timeZone,
-  weekStart,
-  staffMembers,
-  shifts,
-}: AddShiftFormProps) {
+export function AddShiftForm({ venueId, weekStart }: AddShiftFormProps) {
   const { t } = useTranslation();
+  const { shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
   const queryClient = useQueryClient();
   const form = useForm({
     resolver: zodResolver(shiftFormSchema(timeZone, shifts)),

@@ -1,5 +1,7 @@
 import { rotaSchema, type Shift } from '@rota-ready/shared';
-import { queryOptions, type QueryClient } from '@tanstack/react-query';
+import { queryOptions, useSuspenseQuery, type QueryClient } from '@tanstack/react-query';
+import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
+import { venueQuery } from '@/features/venues/venue-queries';
 import { apiGet } from '@/lib/api';
 
 export function rotaQuery(venueId: string, weekStart: string) {
@@ -8,6 +10,13 @@ export function rotaQuery(venueId: string, weekStart: string) {
     queryFn: () => apiGet(rotaPath(venueId, weekStart), rotaSchema),
     staleTime: 'static',
   });
+}
+
+export function useRotaWeek(venueId: string, weekStart: string) {
+  const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
+  const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
+  const { data: venue } = useSuspenseQuery(venueQuery(venueId));
+  return { shifts: rota.shifts, staffMembers, timeZone: venue.timeZone };
 }
 
 function rotaPath(venueId: string, weekStart: string) {

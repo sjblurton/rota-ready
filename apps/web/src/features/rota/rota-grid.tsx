@@ -1,4 +1,4 @@
-import { formatLocalDate, weekDays, type Shift, type StaffMember } from '@rota-ready/shared';
+import { formatLocalDate, weekDays } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -9,18 +9,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EditShiftDialog } from '@/features/rota/edit-shift-dialog';
+import { useRotaWeek } from '@/features/rota/rota-queries';
 import { layOutShifts } from '@/features/rota/shift-layout';
 
 interface RotaGridProps {
   venueId: string;
   weekStart: string;
-  timeZone: string;
-  staffMembers: StaffMember[];
-  shifts: Shift[];
 }
 
-export function RotaGrid({ venueId, weekStart, timeZone, staffMembers, shifts }: RotaGridProps) {
+export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
   const { t } = useTranslation();
+  const { shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
   const days = weekDays(weekStart);
   const shiftsIn = layOutShifts(shifts, timeZone);
 
@@ -44,13 +43,9 @@ export function RotaGrid({ venueId, weekStart, timeZone, staffMembers, shifts }:
                   <div key={shift.id}>
                     <EditShiftDialog
                       venueId={venueId}
-                      timeZone={timeZone}
                       weekStart={weekStart}
-                      staffMembers={staffMembers}
-                      shifts={shifts}
                       shift={shift}
                       times={times}
-                      staffMember={staffMember}
                     />
                   </div>
                 ))}

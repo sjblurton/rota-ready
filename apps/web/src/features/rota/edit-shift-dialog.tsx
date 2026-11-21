@@ -6,7 +6,6 @@ import {
   validationMessage,
   type Shift,
   type ShiftRequest,
-  type StaffMember,
 } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,28 +25,24 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { FieldError, FieldGroup } from '@/components/ui/field';
-import { replaceShiftInRota, shiftPath } from '@/features/rota/rota-queries';
+import { replaceShiftInRota, shiftPath, useRotaWeek } from '@/features/rota/rota-queries';
 import { ShiftFields } from '@/features/rota/shift-fields';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiPatch, hasErrorCode } from '@/lib/api';
 
 interface EditShiftDialogProps {
   venueId: string;
-  timeZone: string;
   weekStart: string;
-  staffMembers: StaffMember[];
-  shifts: Shift[];
   shift: Shift;
   times: string;
-  staffMember: StaffMember;
 }
 
-export function EditShiftDialog({ times, staffMember, ...formProps }: EditShiftDialogProps) {
-  const { timeZone, shift } = formProps;
+export function EditShiftDialog({ venueId, weekStart, shift, times }: EditShiftDialogProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const { staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
   const summary = {
-    name: staffMember.name,
+    name: staffMembers.find((staffMember) => staffMember.id === shift.staffMemberId)?.name,
     day: formatLocalDate(shiftFormValues(shift, timeZone).date),
     times,
   };
@@ -69,7 +64,12 @@ export function EditShiftDialog({ times, staffMember, ...formProps }: EditShiftD
           <DialogTitle>{t('rota.editShift.title')}</DialogTitle>
           <DialogDescription>{t('rota.editShift.description', summary)}</DialogDescription>
         </DialogHeader>
-        <EditShiftForm {...formProps} onDone={() => setOpen(false)} />
+        <EditShiftForm
+          venueId={venueId}
+          weekStart={weekStart}
+          shift={shift}
+          onDone={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -77,14 +77,12 @@ export function EditShiftDialog({ times, staffMember, ...formProps }: EditShiftD
 
 function EditShiftForm({
   venueId,
-  timeZone,
   weekStart,
-  staffMembers,
-  shifts,
   shift,
   onDone,
-}: Omit<EditShiftDialogProps, 'times' | 'staffMember'> & { onDone: () => void }) {
+}: Omit<EditShiftDialogProps, 'times'> & { onDone: () => void }) {
   const { t } = useTranslation();
+  const { shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
   const queryClient = useQueryClient();
   const otherShifts = shifts.filter((other) => other.id !== shift.id);
   const form = useForm({
