@@ -59,6 +59,7 @@ function RotaPage() {
             <p className="text-sm text-muted-foreground">{t('rota.noStaff')}</p>
           ) : (
             <RotaGrid
+              venueId={venueId}
               weekStart={rota.weekStart}
               timeZone={venue.timeZone}
               staffMembers={staffMembers}

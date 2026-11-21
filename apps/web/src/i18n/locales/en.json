@@ -91,14 +91,23 @@
     "goToThisWeek": "Go to this Week",
     "staffMember": "Staff Member",
     "noStaff": "Add Staff Members to start building the Rota.",
-    "addShift": {
-      "title": "Add a Shift",
+    "shift": {
       "chooseStaffMember": "Choose a Staff Member",
       "chooseTime": "Choose a time",
       "day": "Day",
       "startTime": "Start",
-      "endTime": "End",
+      "endTime": "End"
+    },
+    "addShift": {
+      "title": "Add a Shift",
       "submit": "Add Shift"
+    },
+    "editShift": {
+      "label": "Edit {{name}}'s Shift on {{day}}, {{times}}",
+      "title": "Edit Shift",
+      "description": "{{name}}, {{day}}, {{times}}",
+      "submit": "Save changes",
+      "cancel": "Cancel"
     },
     "status": {
       "draft": "Draft",

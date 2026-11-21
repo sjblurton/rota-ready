@@ -8,16 +8,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { EditShiftDialog } from '@/features/rota/edit-shift-dialog';
 import { layOutShifts } from '@/features/rota/shift-layout';
 
 interface RotaGridProps {
+  venueId: string;
   weekStart: string;
   timeZone: string;
   staffMembers: StaffMember[];
   shifts: Shift[];
 }
 
-export function RotaGrid({ weekStart, timeZone, staffMembers, shifts }: RotaGridProps) {
+export function RotaGrid({ venueId, weekStart, timeZone, staffMembers, shifts }: RotaGridProps) {
   const { t } = useTranslation();
   const days = weekDays(weekStart);
   const shiftsIn = layOutShifts(shifts, timeZone);
@@ -38,8 +40,19 @@ export function RotaGrid({ weekStart, timeZone, staffMembers, shifts }: RotaGrid
             <TableCell className="font-medium">{staffMember.name}</TableCell>
             {days.map((day) => (
               <TableCell key={day} className="align-top">
-                {shiftsIn(staffMember.id, day).map((shift) => (
-                  <div key={shift.id}>{shift.times}</div>
+                {shiftsIn(staffMember.id, day).map(({ shift, times }) => (
+                  <div key={shift.id}>
+                    <EditShiftDialog
+                      venueId={venueId}
+                      timeZone={timeZone}
+                      weekStart={weekStart}
+                      staffMembers={staffMembers}
+                      shifts={shifts}
+                      shift={shift}
+                      times={times}
+                      staffMember={staffMember}
+                    />
+                  </div>
                 ))}
               </TableCell>
             ))}

@@ -29,6 +29,24 @@ export function addShiftToRota(
   );
 }
 
+export function shiftPath(venueId: string, weekStart: string, shiftId: string) {
+  return `${shiftsPath(venueId, weekStart)}/${shiftId}`;
+}
+
+export function replaceShiftInRota(
+  queryClient: QueryClient,
+  venueId: string,
+  weekStart: string,
+  shift: Shift,
+) {
+  queryClient.setQueryData(rotaQuery(venueId, weekStart).queryKey, (rota) =>
+    rota && {
+      ...rota,
+      shifts: rota.shifts.map((existing) => (existing.id === shift.id ? shift : existing)),
+    },
+  );
+}
+
 export function publishPath(venueId: string, weekStart: string) {
   return `${rotaPath(venueId, weekStart)}/publish`;
 }

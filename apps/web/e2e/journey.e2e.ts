@@ -342,6 +342,50 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeHidden();
   });
 
+  test("opens a Shift's details from the grid", async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page
+      .getByRole('button', {
+        name: `Edit Sam Jones's Shift on ${formatLocalDate(nextWeek)}, 09:00–17:00`,
+      })
+      .click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByLabel('Staff Member').locator('option:checked')).toHaveText(
+      'Sam Jones',
+    );
+    await expect(dialog.getByLabel('Day')).toHaveValue(nextWeek);
+    await expect(dialog.getByLabel('Start')).toHaveValue('09:00');
+    await expect(dialog.getByLabel('End')).toHaveValue('17:00');
+  });
+
+  test('refuses to move a Shift onto a time its new Staff Member is already working', async () => {
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(
+      dialog.getByText('This Staff Member already has a Shift at that time.'),
+    ).toBeVisible();
+  });
+
+  test('moves the Shift to another Staff Member and another day', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    const tuesday = addDays(nextWeek, 1);
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Day').selectOption({ label: formatLocalDate(tuesday) });
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(rotaCell('Alex Smith', tuesday, nextWeek)).toHaveText('09:00–17:00');
+    await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText('');
+  });
+
+  test('keeps the moved Shift after a reload', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    const tuesday = addDays(nextWeek, 1);
+    await page.reload();
+    await expect(rotaCell('Alex Smith', tuesday, nextWeek)).toHaveText('09:00–17:00');
+    await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText('');
+  });
+
   test('asks for confirmation before Publishing this Week', async () => {
     await page.getByRole('link', { name: 'Previous Week' }).click();
     await expect(weekHeading(thisWeek)).toBeVisible();

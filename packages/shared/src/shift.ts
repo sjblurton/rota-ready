@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { formatTime } from './date-time.js';
 import { validationMessage, type ValidationMessageKey } from './validation.js';
-import { addDays, isLocalDate, isWeekStart, zonedTimeToUtc } from './week.js';
+import { addDays, isLocalDate, isWeekStart, localDateOf, zonedTimeToUtc } from './week.js';
 
 export const MAX_SHIFT_HOURS = 16;
 export const QUARTER_HOUR_MINUTES = 15;
@@ -73,7 +74,7 @@ const shiftInstantSchema = z.iso.datetime().refine((value) => {
   );
 }, validationMessage.shiftQuarterHour);
 
-export const createShiftRequestSchema = z
+export const shiftRequestSchema = z
   .object({
     staffMemberId: z.uuid(),
     startsAt: shiftInstantSchema,
@@ -81,9 +82,9 @@ export const createShiftRequestSchema = z
   })
   .superRefine(refineShiftTimes('endsAt'));
 
-export type CreateShiftRequest = z.output<typeof createShiftRequestSchema>;
+export type ShiftRequest = z.output<typeof shiftRequestSchema>;
 
-export function addShiftFormSchema(
+export function shiftFormSchema(
   timeZone: string,
   existingShifts: Pick<Shift, 'staffMemberId' | 'startsAt' | 'endsAt'>[] = [],
 ) {
@@ -113,6 +114,16 @@ export function addShiftFormSchema(
         });
       }
     });
+}
+
+export function shiftFormValues(shift: Shift, timeZone: string) {
+  const startsAt = new Date(shift.startsAt);
+  return {
+    staffMemberId: shift.staffMemberId,
+    date: localDateOf(startsAt, timeZone),
+    startTime: formatTime(startsAt, { timeZone }),
+    endTime: formatTime(new Date(shift.endsAt), { timeZone }),
+  };
 }
 
 export const shiftSchema = z.object({
