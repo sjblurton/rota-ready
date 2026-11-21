@@ -9,6 +9,7 @@ export const apiErrorCodeSchema = z.enum([
   'staff_member_email_taken',
   'shift_overlaps',
   'rota_already_published',
+  'shift_started',
   'internal_error',
 ]);
 

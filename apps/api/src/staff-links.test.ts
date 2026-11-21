@@ -155,6 +155,17 @@ describe('GET /api/staff-links/:token', () => {
       expect(await returnedShiftIds()).not.toContain(shifts.joThursday.id);
     });
 
+    it('lets Sam answer only the Shifts that have not started', async () => {
+      const { shifts: returned } = (await response.json()) as {
+        shifts: { id: string; canRespond: boolean }[];
+      };
+      expect(returned.map(({ id, canRespond }) => ({ id, canRespond }))).toEqual([
+        { id: shifts.inProgress.id, canRespond: false },
+        { id: shifts.thursday.id, canRespond: true },
+        { id: shifts.sunday.id, canRespond: true },
+      ]);
+    });
+
     describe('when the clock moves past the end of the Thursday Shift', () => {
       beforeEach(async () => {
         app.setClock('2026-11-19T17:00:00.000Z');

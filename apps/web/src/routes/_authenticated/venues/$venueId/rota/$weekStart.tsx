@@ -63,6 +63,7 @@ function RotaPage() {
               timeZone={venue.timeZone}
               staffMembers={staffMembers}
               shifts={rota.shifts}
+              showResponses={rota.status === 'published'}
             />
           )}
         </CardContent>

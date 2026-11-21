@@ -18,12 +18,14 @@ function toDbDate(localDate: string): Date {
   return new Date(`${localDate}T00:00:00Z`);
 }
 
-export function toShift({ id, staffMemberId, startsAt, endsAt }: Shift) {
+export function toShift({ id, staffMemberId, startsAt, endsAt, response, declineReason }: Shift) {
   return shiftSchema.parse({
     id,
     staffMemberId,
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
+    response,
+    declineReason,
   });
 }
 

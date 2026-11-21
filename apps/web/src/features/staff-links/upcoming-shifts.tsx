@@ -1,13 +1,16 @@
 import { formatDate, formatShiftTimes, type StaffLinkShift } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
+import { RespondToShift } from '@/features/staff-links/respond-to-shift';
+import { ShiftResponseBadge } from '@/features/staff-links/shift-response-badge';
 
 interface UpcomingShiftsProps {
+  token: string;
   shifts: StaffLinkShift[];
   timeZone: string;
 }
 
-export function UpcomingShifts({ shifts, timeZone }: UpcomingShiftsProps) {
+export function UpcomingShifts({ token, shifts, timeZone }: UpcomingShiftsProps) {
   const { t } = useTranslation();
 
   if (shifts.length === 0) {
@@ -18,14 +21,23 @@ export function UpcomingShifts({ shifts, timeZone }: UpcomingShiftsProps) {
     <ul aria-label={t('staffLink.page.shifts')} className="flex flex-col gap-2">
       {shifts.map((shift) => {
         const startsAt = new Date(shift.startsAt);
+        const day = formatDate(startsAt, { timeZone });
+        const times = formatShiftTimes(startsAt, new Date(shift.endsAt), { timeZone });
         return (
           <li key={shift.id}>
             <Card size="sm">
-              <CardContent className="flex items-baseline justify-between gap-4">
-                <span className="font-medium">{formatDate(startsAt, { timeZone })}</span>
-                <span className="tabular-nums">
-                  {formatShiftTimes(startsAt, new Date(shift.endsAt), { timeZone })}
-                </span>
+              <CardContent className="flex flex-col gap-3">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="font-medium">{day}</span>
+                  <span className="tabular-nums">{times}</span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <ShiftResponseBadge response={shift.response} />
+                  <RespondToShift token={token} shift={shift} day={day} times={times} />
+                </div>
+                {shift.declineReason && (
+                  <p className="text-sm text-muted-foreground">{shift.declineReason}</p>
+                )}
               </CardContent>
             </Card>
           </li>

@@ -292,12 +292,14 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
       expect(response.status).toBe(201);
     });
 
-    it('returns the Shift', async () => {
+    it('returns the Shift, Pending with no Decline Reason', async () => {
       expect(await response.json()).toEqual({
         id: expect.any(String),
         staffMemberId: sam.id,
         startsAt: '2026-11-22T20:00:00.000Z',
         endsAt: '2026-11-23T02:00:00.000Z',
+        response: 'pending',
+        declineReason: null,
       });
     });
 

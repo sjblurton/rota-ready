@@ -51,8 +51,8 @@ export function apiGet<Schema extends z.ZodType>(path: string, schema: Schema) {
   return apiRequest('GET', path, schema);
 }
 
-export function apiPut<Schema extends z.ZodType>(path: string, schema: Schema) {
-  return apiRequest('PUT', path, schema);
+export function apiPut<Schema extends z.ZodType>(path: string, body: unknown, schema: Schema) {
+  return apiRequest('PUT', path, schema, body);
 }
 
 export function apiPost<Schema extends z.ZodType>(path: string, body: unknown, schema: Schema) {

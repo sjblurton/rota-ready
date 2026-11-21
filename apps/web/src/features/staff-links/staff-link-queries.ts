@@ -1,4 +1,9 @@
-import { staffLinkPageSchema, staffLinkSchema, type StaffLink } from '@rota-ready/shared';
+import {
+  staffLinkPageSchema,
+  staffLinkSchema,
+  type StaffLink,
+  type StaffLinkShift,
+} from '@rota-ready/shared';
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
 import { staffMemberPath } from '@/features/staff-members/staff-member-queries';
 import { apiGet, hasErrorCode } from '@/lib/api';
@@ -30,11 +35,32 @@ export function staffLinkUrl(token: string) {
   return new URL(`/s/${token}`, window.location.origin).href;
 }
 
+function staffLinkPagePath(token: string) {
+  return `/api/staff-links/${encodeURIComponent(token)}`;
+}
+
 export function staffLinkPageQuery(token: string) {
   return queryOptions({
     queryKey: ['staff-links', token],
-    queryFn: () => apiGet(`/api/staff-links/${encodeURIComponent(token)}`, staffLinkPageSchema),
+    queryFn: () => apiGet(staffLinkPagePath(token), staffLinkPageSchema),
     staleTime: 'static',
     retry: (failureCount, error) => !hasErrorCode(error, 'not_found') && failureCount < MAX_RETRIES,
   });
+}
+
+export function shiftResponsePath(token: string, shiftId: string) {
+  return `${staffLinkPagePath(token)}/shifts/${shiftId}/response`;
+}
+
+export function replaceStaffLinkShift(
+  queryClient: QueryClient,
+  token: string,
+  shift: StaffLinkShift,
+) {
+  queryClient.setQueryData(staffLinkPageQuery(token).queryKey, (page) =>
+    page && {
+      ...page,
+      shifts: page.shifts.map((existing) => (existing.id === shift.id ? shift : existing)),
+    },
+  );
 }

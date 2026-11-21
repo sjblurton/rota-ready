@@ -9,15 +9,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { layOutShifts } from '@/features/rota/shift-layout';
+import { ShiftResponseWithReason } from '@/features/staff-links/shift-response-badge';
 
 interface RotaGridProps {
   weekStart: string;
   timeZone: string;
   staffMembers: StaffMember[];
   shifts: Shift[];
+  showResponses: boolean;
 }
 
-export function RotaGrid({ weekStart, timeZone, staffMembers, shifts }: RotaGridProps) {
+export function RotaGrid({
+  weekStart,
+  timeZone,
+  staffMembers,
+  shifts,
+  showResponses,
+}: RotaGridProps) {
   const { t } = useTranslation();
   const days = weekDays(weekStart);
   const shiftsIn = layOutShifts(shifts, timeZone);
@@ -38,8 +46,16 @@ export function RotaGrid({ weekStart, timeZone, staffMembers, shifts }: RotaGrid
             <TableCell className="font-medium">{staffMember.name}</TableCell>
             {days.map((day) => (
               <TableCell key={day} className="align-top">
-                {shiftsIn(staffMember.id, day).map((shift) => (
-                  <div key={shift.id}>{shift.times}</div>
+                {shiftsIn(staffMember.id, day).map(({ shift, times }) => (
+                  <div key={shift.id} className="flex flex-col items-start gap-1">
+                    <span>{times}</span>
+                    {showResponses && (
+                      <ShiftResponseWithReason
+                        response={shift.response}
+                        declineReason={shift.declineReason}
+                      />
+                    )}
+                  </div>
                 ))}
               </TableCell>
             ))}

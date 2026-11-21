@@ -115,11 +115,17 @@ export function addShiftFormSchema(
     });
 }
 
+export const shiftResponseSchema = z.enum(['pending', 'confirmed', 'declined']);
+
+export type ShiftResponse = z.infer<typeof shiftResponseSchema>;
+
 export const shiftSchema = z.object({
   id: z.uuid(),
   staffMemberId: z.uuid(),
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
+  response: shiftResponseSchema,
+  declineReason: z.string().nullable(),
 });
 
 export type Shift = z.infer<typeof shiftSchema>;
