@@ -169,8 +169,8 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#4](https://github.com/sjblurton/rota-ready/issues/4) Sign up, log in, log out
 - [x] [#5](https://github.com/sjblurton/rota-ready/issues/5) Create and rename the venue
 - [x] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
-- [ ] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members
-- [ ] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
+- [x] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members
+- [x] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
 - [ ] [#9](https://github.com/sjblurton/rota-ready/issues/9) Edit and delete shifts
 - [x] [#10](https://github.com/sjblurton/rota-ready/issues/10) Publish and the staff link page
 - [ ] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
