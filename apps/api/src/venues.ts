@@ -20,7 +20,7 @@ function toVenue({ id, name, timeZone }: Venue) {
   return venueSchema.parse({ id, name, timeZone });
 }
 
-export function venueRoutes(db: Db, authConfig: AuthConfig): Router {
+export function venueRoutes(db: Db, authConfig: AuthConfig, staffLinkKey: Buffer): Router {
   const router = Router();
 
   router.post(
@@ -70,7 +70,7 @@ export function venueRoutes(db: Db, authConfig: AuthConfig): Router {
   const venue = Router();
   venue.get('/', getVenue);
   venue.patch('/', renameVenue);
-  venue.use('/staff-members', staffMemberRoutes(db));
+  venue.use('/staff-members', staffMemberRoutes(db, staffLinkKey));
   venue.use('/rotas', rotaRoutes(db));
 
   router.use('/:venueId', requireVenueMember(authConfig, db), venue);

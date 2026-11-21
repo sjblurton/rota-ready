@@ -41,6 +41,7 @@ jobs:
             echo "SUPABASE_URL=$api_url"
             echo "VITE_SUPABASE_URL=$api_url"
             echo "VITE_SUPABASE_PUBLISHABLE_KEY=$publishable_key"
+            echo "STAFF_LINK_KEY=$(openssl rand -base64 32)"
           } >> "$GITHUB_ENV"
 
       - name: Apply migrations to a fresh Supabase database

@@ -143,9 +143,10 @@ Secrets live in the hosts' secret stores, never in the repo:
 | GitHub `production` environment (variable, not secret) | `RENDER_API_SERVICE_ID`, `RENDER_WEB_SERVICE_ID` | The `srv-…` IDs of `rota-ready-api` and `rota-ready` |
 | Render `rota-ready-api` | `DATABASE_URL` | Same session pooler connection string |
 | Render `rota-ready-api` | `SUPABASE_URL` | `https://<project-ref>.supabase.co`; the API checks tokens against its JWKS |
+| Render `rota-ready-api` | `STAFF_LINK_KEY` | 32 random bytes, base64 (`openssl rand -base64 32`), encrypting stored Staff Link tokens ([ADR-0002](docs/adr/0002-staff-link-tokens-hashed-and-encrypted.md)). The API won't start without it, and losing it means regenerating every Staff Link |
 | Render `rota-ready` | `VITE_SUPABASE_URL` | Same Supabase URL, built into the web app |
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
-| Later | SMTP credentials (#11), Staff Link encryption key (#10) | Added to Render `rota-ready-api` when those tickets land |
+| Later | SMTP credentials (#11) | Added to Render `rota-ready-api` when that ticket lands |
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 

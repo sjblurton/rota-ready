@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { AddStaffMemberForm } from '@/features/staff-members/add-staff-member-form';
 import { ArchiveStaffMemberDialog } from '@/features/staff-members/archive-staff-member-dialog';
 import { EditStaffMemberForm } from '@/features/staff-members/edit-staff-member-form';
+import { StaffLinkDialog } from '@/features/staff-links/staff-link-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,6 +88,7 @@ function StaffPage() {
                           >
                             {t('staff.edit.button')}
                           </Button>
+                          <StaffLinkDialog venueId={venueId} staffMember={staffMember} />
                           <ArchiveStaffMemberDialog venueId={venueId} staffMember={staffMember} />
                         </div>
                       </TableCell>

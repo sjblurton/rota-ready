@@ -48,6 +48,8 @@ describe('/api/venues/:venueId/staff-members', () => {
     { method: 'POST', route: '/staff-members' },
     { method: 'PATCH', route: '/staff-members/:staffMemberId' },
     { method: 'POST', route: '/staff-members/:staffMemberId/archive' },
+    { method: 'GET', route: '/staff-members/:staffMemberId/staff-link' },
+    { method: 'POST', route: '/staff-members/:staffMemberId/staff-link/regenerate' },
   ] as const)('$method $route', ({ method, route }) => {
     let ownStaffMemberId: string;
     let otherStaffMemberId: string;
@@ -104,10 +106,12 @@ describe('/api/venues/:venueId/staff-members', () => {
   describe.each([
     { method: 'PATCH', route: '/staff-members/:staffMemberId' },
     { method: 'POST', route: '/staff-members/:staffMemberId/archive' },
+    { method: 'GET', route: '/staff-members/:staffMemberId/staff-link' },
+    { method: 'POST', route: '/staff-members/:staffMemberId/staff-link/regenerate' },
   ] as const)('$method $route', ({ method, route }) => {
     function send(staffMemberId: string) {
       const path = `/api/venues/${ownVenue.id}${route.replace(':staffMemberId', staffMemberId)}`;
-      return app.request(method, path, { as: OWNER, body: ALEX });
+      return app.request(method, path, { as: OWNER, body: method === 'GET' ? undefined : ALEX });
     }
 
     describe("when the Owner sends another venue's Staff Member ID through their own venue's URL", () => {
@@ -226,6 +230,19 @@ describe('/api/venues/:venueId/staff-members', () => {
             select: { venueId: true, name: true, role: true, email: true, phone: true },
           }),
         ).toEqual([{ venueId: ownVenue.id, ...ALEX }]);
+      });
+
+      it('gives them a Staff Link, stored as a hash and an encrypted copy', async () => {
+        expect(
+          await app.db.staffMember.findMany({
+            select: { staffLinkTokenHash: true, staffLinkTokenCiphertext: true },
+          }),
+        ).toEqual([
+          {
+            staffLinkTokenHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+            staffLinkTokenCiphertext: expect.any(String),
+          },
+        ]);
       });
     });
 
