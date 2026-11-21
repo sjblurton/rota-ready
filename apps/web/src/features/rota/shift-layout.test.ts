@@ -22,7 +22,9 @@ describe('layOutShifts', () => {
     });
 
     it("shows it in the Staff Member's row on that day", () => {
-      expect(shiftsIn(SAM, '2026-11-16')).toEqual([{ id: 'day', times: '09:00–17:00' }]);
+      expect(shiftsIn(SAM, '2026-11-16')).toEqual([
+        { shift: expect.objectContaining({ id: 'day' }), times: '09:00–17:00' },
+      ]);
     });
 
     it("leaves other Staff Members' rows empty", () => {
@@ -40,7 +42,7 @@ describe('layOutShifts', () => {
 
     it('shows it on Tuesday, marked (+1)', () => {
       expect(shiftsIn(SAM, '2026-11-17')).toEqual([
-        { id: 'overnight', times: '20:00–02:00 (+1)' },
+        { shift: expect.objectContaining({ id: 'overnight' }), times: '20:00–02:00 (+1)' },
       ]);
     });
 
@@ -58,7 +60,9 @@ describe('layOutShifts', () => {
     });
 
     it('shows it on the local day it starts', () => {
-      expect(shiftsIn(SAM, '2026-07-13')).toEqual([{ id: 'early', times: '00:30–08:30' }]);
+      expect(shiftsIn(SAM, '2026-07-13')).toEqual([
+        { shift: expect.objectContaining({ id: 'early' }), times: '00:30–08:30' },
+      ]);
     });
 
     it('leaves the UTC day before empty', () => {
@@ -87,7 +91,9 @@ describe('layOutShifts', () => {
     });
 
     it('shows local wall-clock times on the Saturday it starts', () => {
-      expect(shiftsIn(SAM, day)).toEqual([{ id: 'across', times }]);
+      expect(shiftsIn(SAM, day)).toEqual([
+        { shift: expect.objectContaining({ id: 'across' }), times },
+      ]);
     });
   });
 
@@ -103,7 +109,10 @@ describe('layOutShifts', () => {
     });
 
     it('lists them earliest first', () => {
-      expect(shiftsIn(SAM, '2026-11-16').map(({ id }) => id)).toEqual(['morning', 'evening']);
+      expect(shiftsIn(SAM, '2026-11-16').map(({ shift }) => shift.id)).toEqual([
+        'morning',
+        'evening',
+      ]);
     });
   });
 });

@@ -1,7 +1,7 @@
 import { formatShiftTimes, localDateOf, type Shift } from '@rota-ready/shared';
 
 export interface ShiftInCell {
-  id: string;
+  shift: Shift;
   times: string;
 }
 
@@ -12,7 +12,7 @@ export function layOutShifts(shifts: Shift[], timeZone: string) {
     const startsAt = new Date(shift.startsAt);
     const key = cellKey(shift.staffMemberId, localDateOf(startsAt, timeZone));
     const times = formatShiftTimes(startsAt, new Date(shift.endsAt), { timeZone });
-    cells.set(key, [...(cells.get(key) ?? []), { id: shift.id, times }]);
+    cells.set(key, [...(cells.get(key) ?? []), { shift, times }]);
   }
   return (staffMemberId: string, day: string): ShiftInCell[] =>
     cells.get(cellKey(staffMemberId, day)) ?? [];
