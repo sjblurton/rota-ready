@@ -11,6 +11,7 @@ const messageKeys = {
   staff_member_email_taken: 'validation.staffMemberEmailTaken',
   shift_overlaps: 'validation.shiftOverlaps',
   rota_already_published: 'errors.rotaAlreadyPublished',
+  shift_started: 'errors.shiftStarted',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

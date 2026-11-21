@@ -27,6 +27,7 @@ test.describe.serial('MVP journey', () => {
   let page: Page;
   let thisWeek: string;
   let samsLink: string;
+  let samsNewLink: string;
   let privateWindow: BrowserContext;
   let staffLinkPage: Page;
 
@@ -64,6 +65,10 @@ test.describe.serial('MVP journey', () => {
       .getByRole('row', { name: staffMemberName })
       .getByRole('cell')
       .nth(1 + daysBetween(weekStart, day));
+  }
+
+  function staffLinkShift(day: string) {
+    return staffLinkPage.getByRole('listitem').filter({ hasText: formatLocalDate(day) });
   }
 
   function staffRows() {
@@ -405,7 +410,11 @@ test.describe.serial('MVP journey', () => {
   test('keeps this Week Published after a reload', async () => {
     await page.reload();
     await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
-    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toHaveText('20:00–02:00 (+1)');
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('20:00–02:00 (+1)');
+  });
+
+  test('shows each Shift in the Published Rota as Pending', async () => {
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('Pending');
   });
 
   test('keeps the next Week a Draft with a Publish button', async () => {
@@ -463,19 +472,86 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("opens Sam's page from the new Staff Link", async () => {
-    const newLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
+    samsNewLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
     staffLinkPage = await privateWindow.newPage();
-    await staffLinkPage.goto(newLink);
+    await staffLinkPage.goto(samsNewLink);
     await expect(staffLinkPage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
   });
 
   test("shows only Sam's upcoming Published Shift, not next Week's Draft ones", async () => {
     await expect(
       staffLinkPage.getByRole('list', { name: 'Your upcoming Shifts' }).getByRole('listitem'),
-    ).toHaveText([`${formatLocalDate(addDays(thisWeek, 6))}20:00–02:00 (+1)`]);
+    ).toContainText([`${formatLocalDate(addDays(thisWeek, 6))}20:00–02:00 (+1)`]);
     await privateWindow.close();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
+  });
+
+  test('Publishes next Week with a Wednesday Shift for Sam', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(nextWeek)).toBeVisible();
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Day').selectOption({ label: formatLocalDate(addDays(nextWeek, 2)) });
+    await page.getByLabel('Start').selectOption('12:00');
+    await page.getByLabel('End').selectOption('18:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Sam Jones', addDays(nextWeek, 2), nextWeek)).toHaveText('12:00–18:00');
+    await page.getByRole('button', { name: 'Publish' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
+    await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
+  });
+
+  test("Confirms Sunday's Shift from Sam's Staff Link page", async ({ browser }) => {
+    const sunday = addDays(thisWeek, 6);
+    privateWindow = await browser.newContext();
+    staffLinkPage = await privateWindow.newPage();
+    await staffLinkPage.goto(samsNewLink);
+    await staffLinkPage
+      .getByRole('button', { name: `Confirm your Shift on ${formatLocalDate(sunday)}` })
+      .click();
+    await expect(staffLinkShift(sunday)).toContainText('Confirmed');
+    await expect(staffLinkShift(sunday).getByRole('button', { name: /^Confirm/ })).toHaveCount(0);
+  });
+
+  test("Declines next Wednesday's Shift with a Decline Reason", async () => {
+    const wednesday = addDays(thisWeek, 9);
+    await staffLinkPage
+      .getByRole('button', { name: `Decline your Shift on ${formatLocalDate(wednesday)}` })
+      .click();
+    const dialog = staffLinkPage.getByRole('dialog');
+    await expect(dialog).toContainText(`Decline your Shift on ${formatLocalDate(wednesday)}?`);
+    await dialog.getByLabel('Reason (optional)').fill('Dentist appointment');
+    await dialog.getByRole('button', { name: 'Decline Shift' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(staffLinkShift(wednesday)).toContainText('Declined');
+    await expect(staffLinkShift(wednesday)).toContainText('Dentist appointment');
+  });
+
+  test("keeps Sam's answers after a reload", async () => {
+    await staffLinkPage.reload();
+    await expect(staffLinkShift(addDays(thisWeek, 6))).toContainText('Confirmed');
+    await expect(staffLinkShift(addDays(thisWeek, 9))).toContainText('Declined');
+    await privateWindow.close();
+  });
+
+  test("shows the Decline and its reason on the Owner's grid within 30 seconds, without a reload", async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.clock.fastForward(30_000);
+    const wednesday = rotaCell('Sam Jones', addDays(nextWeek, 2), nextWeek);
+    await wednesday.getByRole('button', { name: 'Declined: see the Decline Reason' }).click();
+    await expect(page.getByRole('dialog')).toHaveText('Dentist appointment');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+  });
+
+  test("shows the Confirm on the Owner's grid after the next refresh", async () => {
+    await page.getByRole('link', { name: 'Previous Week' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.clock.fastForward(30_000);
+    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('Confirmed');
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

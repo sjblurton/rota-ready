@@ -7,7 +7,15 @@ const JO = 'a1b2c3d4-0000-4000-8000-000000000002';
 const LONDON = 'Europe/London';
 
 function shift(id: string, staffMemberId: string, startsAt: string, endsAt: string): Shift {
-  return { id, staffMemberId, startsAt, endsAt };
+  return {
+    id,
+    staffMemberId,
+    startsAt,
+    endsAt,
+    response: 'pending',
+    declineReason: null,
+    started: false,
+  };
 }
 
 describe('layOutShifts', () => {

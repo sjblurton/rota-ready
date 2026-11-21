@@ -329,7 +329,6 @@ describe('shiftFormValues', () => {
     beforeEach(() => {
       values = shiftFormValues(
         {
-          id: '3e2d1c0b-9a8f-4e7d-8c6b-5a4f3e2d1c0b',
           staffMemberId: STAFF_MEMBER_ID,
           startsAt: '2026-07-15T19:00:00.000Z',
           endsAt: '2026-07-16T01:00:00.000Z',

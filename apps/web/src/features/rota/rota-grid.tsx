@@ -11,6 +11,7 @@ import {
 import { EditShiftDialog } from '@/features/rota/edit-shift-dialog';
 import { useRotaWeek } from '@/features/rota/rota-queries';
 import { layOutShifts } from '@/features/rota/shift-layout';
+import { ShiftResponseWithReason } from '@/features/staff-links/shift-response-badge';
 
 interface RotaGridProps {
   venueId: string;
@@ -19,7 +20,8 @@ interface RotaGridProps {
 
 export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
   const { t } = useTranslation();
-  const { shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
+  const { status, shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
+  const showResponses = status === 'published';
   const days = weekDays(weekStart);
   const shiftsIn = layOutShifts(shifts, timeZone);
 
@@ -40,13 +42,20 @@ export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
             {days.map((day) => (
               <TableCell key={day} className="align-top">
                 {shiftsIn(staffMember.id, day).map(({ shift, times }) => (
-                  <div key={shift.id}>
+                  <div key={shift.id} className="flex flex-col items-start gap-1">
                     <EditShiftDialog
                       venueId={venueId}
                       weekStart={weekStart}
                       shift={shift}
                       times={times}
                     />
+                    {showResponses && (
+                      <ShiftResponseWithReason
+                        response={shift.response}
+                        started={shift.started}
+                        declineReason={shift.declineReason}
+                      />
+                    )}
                   </div>
                 ))}
               </TableCell>

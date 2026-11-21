@@ -116,7 +116,10 @@ export function shiftFormSchema(
     });
 }
 
-export function shiftFormValues(shift: Shift, timeZone: string) {
+export function shiftFormValues(
+  shift: Pick<Shift, 'staffMemberId' | 'startsAt' | 'endsAt'>,
+  timeZone: string,
+) {
   const startsAt = new Date(shift.startsAt);
   return {
     staffMemberId: shift.staffMemberId,
@@ -126,11 +129,18 @@ export function shiftFormValues(shift: Shift, timeZone: string) {
   };
 }
 
+export const shiftResponseSchema = z.enum(['pending', 'confirmed', 'declined']);
+
+export type ShiftResponse = z.infer<typeof shiftResponseSchema>;
+
 export const shiftSchema = z.object({
   id: z.uuid(),
   staffMemberId: z.uuid(),
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
+  response: shiftResponseSchema,
+  declineReason: z.string().nullable(),
+  started: z.boolean(),
 });
 
 export type Shift = z.infer<typeof shiftSchema>;

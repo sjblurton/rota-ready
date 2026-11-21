@@ -12,7 +12,7 @@ import {
 } from './auth.js';
 import type { Clock } from './clock.js';
 import type { Db } from './db.js';
-import { Prisma, type Venue } from './generated/prisma/client.js';
+import { MemberRole, Prisma, type Venue } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
 import { rotaRoutes } from './rotas.js';
 import { staffMemberRoutes } from './staff-members.js';
@@ -36,7 +36,7 @@ export function venueRoutes(
       if (!body) return;
       try {
         const venue = await db.venue.create({
-          data: { ...body, members: { create: { userId: user.id, role: 'owner' } } },
+          data: { ...body, members: { create: { userId: user.id, role: MemberRole.owner } } },
         });
         res.status(201).json(toVenue(venue));
       } catch (error) {

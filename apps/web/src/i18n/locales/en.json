@@ -20,7 +20,8 @@
     "unauthorized": "Your session has ended. Please log in again.",
     "forbidden": "You don't have access to this.",
     "venueAlreadyExists": "You already have a venue. Reload the page to open it.",
-    "rotaAlreadyPublished": "This Week's Rota is already Published."
+    "rotaAlreadyPublished": "This Week's Rota is already Published.",
+    "shiftStarted": "This Shift has already started, so you can't change your answer."
   },
   "validation": {
     "required": "This field is required.",
@@ -36,7 +37,8 @@
     "shiftEndsBeforeStart": "The end must be after the start.",
     "shiftTooLong": "Shifts can be at most {{maxShiftHours}} hours.",
     "shiftQuarterHour": "Use a time on the hour, quarter past, half past or quarter to.",
-    "shiftOverlaps": "This Staff Member already has a Shift at that time."
+    "shiftOverlaps": "This Staff Member already has a Shift at that time.",
+    "declineReasonTooLong": "$t(validation.tooLong, {\"count\": {{declineReasonMaxLength}} })"
   },
   "auth": {
     "email": "Email",
@@ -149,6 +151,13 @@
       "cancel": "Cancel"
     }
   },
+  "shiftResponse": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "declined": "Declined",
+    "noReply": "No reply",
+    "showReason": "{{response}}: see the Decline Reason"
+  },
   "staffLink": {
     "button": "Staff Link",
     "label": "Staff Link for {{name}}",
@@ -171,6 +180,16 @@
       "description": "This is your Staff Link for {{venueName}}. Keep it to yourself: anyone with it can see your Shifts.",
       "shifts": "Your upcoming Shifts",
       "noShifts": "You have no upcoming Shifts.",
+      "confirm": "Confirm",
+      "confirmLabel": "Confirm your Shift on {{day}}",
+      "decline": "Decline",
+      "declineLabel": "Decline your Shift on {{day}}",
+      "declineTitle": "Decline your Shift on {{day}}?",
+      "declineDescription": "Your manager will see that you can't work {{times}}.",
+      "declineReason": "Reason (optional)",
+      "declineSubmit": "Decline Shift",
+      "declineCancel": "Cancel",
+      "started": "This Shift has started.",
       "invalidTitle": "This link isn't valid",
       "invalidDescription": "Ask your manager for a new link.",
       "tryAgain": "Try again"

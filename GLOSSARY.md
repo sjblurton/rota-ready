@@ -82,6 +82,10 @@ _Avoid_: Status (too broad), RSVP, acceptance
 **Decline Reason**:
 An optional note a Staff Member gives when Declining a Shift.
 
+**No Reply**:
+How a Shift shows once it has started while its Shift Response is still Pending. It is not a fourth Shift Response: the stored answer stays Pending, but the Staff Member can no longer answer.
+_Avoid_: Missed, expired, no-show (it says nothing about whether they turned up)
+
 **Changed Shift**:
 A Shift in a Published Rota whose date, time or Staff Member has been changed since the affected staff were last told. A change of this kind resets the Shift Response to Pending; changing notes or Role does not.
 _Avoid_: Edited shift, dirty shift

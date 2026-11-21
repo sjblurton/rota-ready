@@ -4,11 +4,15 @@ import { staffMembersQuery } from '@/features/staff-members/staff-member-queries
 import { venueQuery } from '@/features/venues/venue-queries';
 import { apiGet } from '@/lib/api';
 
+const PUBLISHED_ROTA_REFRESH_MS = 30_000;
+
 export function rotaQuery(venueId: string, weekStart: string) {
   return queryOptions({
     queryKey: ['venues', venueId, 'rotas', weekStart],
     queryFn: () => apiGet(rotaPath(venueId, weekStart), rotaSchema),
     staleTime: 'static',
+    refetchInterval: (query) =>
+      query.state.data?.status === 'published' ? PUBLISHED_ROTA_REFRESH_MS : false,
   });
 }
 
@@ -16,7 +20,7 @@ export function useRotaWeek(venueId: string, weekStart: string) {
   const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
   const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
-  return { shifts: rota.shifts, staffMembers, timeZone: venue.timeZone };
+  return { status: rota.status, shifts: rota.shifts, staffMembers, timeZone: venue.timeZone };
 }
 
 function rotaPath(venueId: string, weekStart: string) {
