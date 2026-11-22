@@ -39,7 +39,8 @@
     "shiftTooLong": "Shifts can be at most {{maxShiftHours}} hours.",
     "shiftQuarterHour": "Use a time on the hour, quarter past, half past or quarter to.",
     "shiftOverlaps": "This Staff Member already has a Shift at that time.",
-    "declineReasonTooLong": "$t(validation.tooLong, {\"count\": {{declineReasonMaxLength}} })"
+    "declineReasonTooLong": "$t(validation.tooLong, {\"count\": {{declineReasonMaxLength}} })",
+    "shiftNotesTooLong": "$t(validation.tooLong, {\"count\": {{shiftNotesMaxLength}} })"
   },
   "auth": {
     "email": "Email",
@@ -99,7 +100,9 @@
       "chooseTime": "Choose a time",
       "day": "Day",
       "startTime": "Start",
-      "endTime": "End"
+      "endTime": "End",
+      "role": "Role (optional)",
+      "notes": "Notes (optional)"
     },
     "addShift": {
       "title": "Add a Shift",

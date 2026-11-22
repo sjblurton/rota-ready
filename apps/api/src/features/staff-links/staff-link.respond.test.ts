@@ -77,6 +77,8 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
         {
           id: thursday.id,
           ...THURSDAY_9_TO_5,
+          role: null,
+          notes: null,
           response: 'confirmed',
           declineReason: null,
           started: false,
@@ -125,6 +127,8 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
         {
           id: thursday.id,
           ...THURSDAY_9_TO_5,
+          role: null,
+          notes: null,
           response: 'declined',
           declineReason: 'Dentist appointment',
           started: false,

@@ -309,12 +309,14 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
       expect(response.status).toBe(201);
     });
 
-    it('returns the Shift, Pending with no Decline Reason', async () => {
+    it('returns the Shift, Pending, with no Role, notes or Decline Reason', async () => {
       expect(await response.json()).toEqual({
         id: expect.any(String),
         staffMemberId: sam.id,
         startsAt: '2026-11-22T20:00:00.000Z',
         endsAt: '2026-11-23T02:00:00.000Z',
+        role: null,
+        notes: null,
         response: 'pending',
         declineReason: null,
         started: false,
@@ -368,6 +370,83 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
       it('still stores only one Rota', async () => {
         expect(await app.db.rota.count()).toBe(1);
       });
+    });
+  });
+
+  describe('when the Owner adds a Shift with a Role and notes', () => {
+    beforeEach(async () => {
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-17T17:00:00.000Z',
+          endsAt: '2026-11-17T23:00:00.000Z',
+          role: '  Bar  ',
+          notes: ' Cash up at close ',
+        },
+      });
+    });
+
+    it('responds with 201 and the Shift with its Role and notes trimmed', async () => {
+      expect([response.status, await response.json()]).toEqual([
+        201,
+        expect.objectContaining({ role: 'Bar', notes: 'Cash up at close' }),
+      ]);
+    });
+
+    it('stores the Role and notes', async () => {
+      expect(
+        await app.db.shift.findFirst({ select: { role: true, notes: true } }),
+      ).toEqual({ role: 'Bar', notes: 'Cash up at close' });
+    });
+  });
+
+  describe('when the Owner adds a Shift with a blank Role and blank notes', () => {
+    beforeEach(async () => {
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-17T17:00:00.000Z',
+          endsAt: '2026-11-17T23:00:00.000Z',
+          role: '   ',
+          notes: '',
+        },
+      });
+    });
+
+    it('stores no Role and no notes', async () => {
+      expect(
+        await app.db.shift.findFirst({ select: { role: true, notes: true } }),
+      ).toEqual({ role: null, notes: null });
+    });
+  });
+
+  describe.each([
+    { field: 'role', value: 'B'.repeat(51) },
+    { field: 'notes', value: 'N'.repeat(501) },
+  ])('when the $field is longer than allowed', ({ field, value }) => {
+    beforeEach(async () => {
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-17T17:00:00.000Z',
+          endsAt: '2026-11-17T23:00:00.000Z',
+          [field]: value,
+        },
+      });
+    });
+
+    it('responds with 400 and the invalid_request code', async () => {
+      expect([response.status, await response.json()]).toEqual([
+        400,
+        { code: 'invalid_request' },
+      ]);
+    });
+
+    it('creates no Shift', async () => {
+      expect(await app.db.shift.count()).toBe(0);
     });
   });
 

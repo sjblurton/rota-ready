@@ -11,7 +11,7 @@ export function AppHeader({ email, onLogOut }: AppHeaderProps) {
 
   return (
     <header className="border-b">
-      <div className="mx-auto flex max-w-xl items-center justify-between gap-4 px-6 py-3">
+      <div className="mx-auto flex max-w-app items-center justify-between gap-4 px-6 py-3 sm:px-10">
         <span className="font-medium">{t('app.name')}</span>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{email}</span>

@@ -15,7 +15,7 @@ function VenueSettingsPage() {
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
 
   return (
-    <Card>
+    <Card className="max-w-xl">
       <CardHeader>
         <CardTitle>
           <h2>{t('venue.rename.title')}</h2>

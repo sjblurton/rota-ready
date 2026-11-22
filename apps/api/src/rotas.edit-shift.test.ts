@@ -97,6 +97,8 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
           staffMemberId: jo.id,
           startsAt: '2026-11-18T12:00:00.000Z',
           endsAt: '2026-11-18T20:00:00.000Z',
+          role: null,
+          notes: null,
           response: 'pending',
           declineReason: null,
           started: false,
@@ -247,6 +249,94 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
           respondedAt: RESPONDED_AT,
         });
       });
+    });
+
+    describe('when the Owner changes only its Role and notes', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', declined), {
+          as: OWNER,
+          body: { staffMemberId: sam.id, ...MONDAY_23_9_TO_5, role: 'Bar', notes: 'Cover for Jo' },
+        });
+      });
+
+      it('stores the new Role and notes', async () => {
+        expect(
+          await app.db.shift.findUnique({
+            where: { id: declined.id },
+            select: { role: true, notes: true },
+          }),
+        ).toEqual({ role: 'Bar', notes: 'Cover for Jo' });
+      });
+
+      it("keeps Sam's Decline and reason", async () => {
+        expect(await storedResponse()).toEqual({
+          response: 'declined',
+          declineReason: 'Dentist',
+          respondedAt: RESPONDED_AT,
+        });
+      });
+    });
+  });
+
+  describe('when the Owner gives the Shift a Role and notes', () => {
+    beforeEach(async () => {
+      response = await app.request('PATCH', shiftPath(ownVenue, WEEK_START, shift), {
+        as: OWNER,
+        body: { staffMemberId: sam.id, ...MONDAY_9_TO_5, role: ' Kitchen ', notes: 'Prep the specials' },
+      });
+    });
+
+    it('responds with 200 and the Shift with its Role and notes', async () => {
+      expect([response.status, await response.json()]).toEqual([
+        200,
+        expect.objectContaining({ role: 'Kitchen', notes: 'Prep the specials' }),
+      ]);
+    });
+
+    describe('when the Owner then clears them', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, WEEK_START, shift), {
+          as: OWNER,
+          body: { staffMemberId: sam.id, ...MONDAY_9_TO_5, role: '', notes: null },
+        });
+      });
+
+      it('stores no Role and no notes', async () => {
+        expect(
+          await app.db.shift.findUnique({
+            where: { id: shift.id },
+            select: { role: true, notes: true },
+          }),
+        ).toEqual({ role: null, notes: null });
+      });
+    });
+  });
+
+  describe.each([
+    { field: 'role', value: 'B'.repeat(51) },
+    { field: 'notes', value: 'N'.repeat(501) },
+  ])('when the $field is longer than allowed', ({ field, value }) => {
+    beforeEach(async () => {
+      response = await app.request('PATCH', shiftPath(ownVenue, WEEK_START, shift), {
+        as: OWNER,
+        body: { staffMemberId: sam.id, ...MONDAY_9_TO_5, [field]: value },
+      });
+    });
+
+    it('responds with 400 and the invalid_request code', async () => {
+      expect([response.status, await response.json()]).toEqual([
+        400,
+        { code: 'invalid_request' },
+      ]);
+    });
+
+    it('leaves the Shift without a Role or notes', async () => {
+      expect(
+        await app.db.shift.findUnique({
+          where: { id: shift.id },
+          select: { role: true, notes: true },
+        }),
+      ).toEqual({ role: null, notes: null });
     });
   });
 

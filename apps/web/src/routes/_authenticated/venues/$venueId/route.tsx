@@ -9,7 +9,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { venueQuery } from '@/features/venues/venue-queries';
 
@@ -44,9 +43,7 @@ function VenueLayout() {
   const tab = onRotaPage ? 'rota' : onStaffPage ? 'staff' : 'settings';
 
   return (
-    <main
-      className={cn('mx-auto flex flex-col gap-6 p-6 sm:p-10', onRotaPage ? 'max-w-5xl' : 'max-w-xl')}
-    >
+    <main className="mx-auto flex max-w-app flex-col gap-6 p-6 sm:p-10">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">{venue.name}</h1>
         <p className="text-sm text-muted-foreground">

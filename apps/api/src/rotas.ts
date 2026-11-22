@@ -36,7 +36,7 @@ function toDbDate(localDate: string): Date {
 }
 
 export function toShift(
-  { id, staffMemberId, startsAt, endsAt, response, declineReason }: Shift,
+  { id, staffMemberId, startsAt, endsAt, role, notes, response, declineReason }: Shift,
   now: Date,
 ) {
   return shiftSchema.parse({
@@ -44,6 +44,8 @@ export function toShift(
     staffMemberId,
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
+    role,
+    notes,
     response,
     declineReason,
     started: startsAt <= now,
@@ -142,7 +144,15 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     const shift = await db.$transaction(
       async (tx) =>
         (await shiftRejection(tx, rota.venueId, times)) ??
-        tx.shift.create({ data: { ...times, venueId: rota.venueId, rotaId: rota.id } }),
+        tx.shift.create({
+          data: {
+            ...times,
+            role: request.role,
+            notes: request.notes,
+            venueId: rota.venueId,
+            rotaId: rota.id,
+          },
+        }),
     );
     if (typeof shift === 'string') return sendError(res, shift);
     res.status(201).json(toShift(shift, clock.now()));
@@ -157,9 +167,10 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     if (!existing) return sendError(res, 'not_found');
     const times = await resolveShiftTimesOrReject(res, weekStart, request);
     if (!times) return;
+    const details = { ...times, role: request.role, notes: request.notes };
     const data = detailsChanged(existing, times)
-      ? { ...times, response: ShiftResponse.pending, declineReason: null, respondedAt: null }
-      : times;
+      ? { ...details, response: ShiftResponse.pending, declineReason: null, respondedAt: null }
+      : details;
     const shift = await db.$transaction(
       async (tx) =>
         (await shiftRejection(tx, existing.venueId, times, existing.id)) ??

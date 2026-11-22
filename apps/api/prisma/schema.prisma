@@ -103,6 +103,8 @@ model Shift {
   staffMemberId String        @map("staff_member_id") @db.Uuid
   startsAt      DateTime      @map("starts_at") @db.Timestamptz
   endsAt        DateTime      @map("ends_at") @db.Timestamptz
+  role          String?
+  notes         String?
   response      ShiftResponse @default(pending)
   declineReason String?       @map("decline_reason")
   respondedAt   DateTime?     @map("responded_at") @db.Timestamptz

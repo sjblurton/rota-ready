@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const validationMessage = {
   required: 'validation.required',
   invalid: 'validation.invalid',
@@ -12,6 +14,16 @@ export const validationMessage = {
   shiftQuarterHour: 'validation.shiftQuarterHour',
   shiftOverlaps: 'validation.shiftOverlaps',
   declineReasonTooLong: 'validation.declineReasonTooLong',
+  shiftNotesTooLong: 'validation.shiftNotesTooLong',
 } as const;
 
 export type ValidationMessageKey = (typeof validationMessage)[keyof typeof validationMessage];
+
+export function optionalText(maxLength: number, tooLong: ValidationMessageKey) {
+  return z
+    .string()
+    .trim()
+    .max(maxLength, tooLong)
+    .nullish()
+    .transform((text) => text || null);
+}
