@@ -21,7 +21,8 @@
     "forbidden": "You don't have access to this.",
     "venueAlreadyExists": "You already have a venue. Reload the page to open it.",
     "rotaAlreadyPublished": "This Week's Rota is already Published.",
-    "shiftStarted": "This Shift has already started, so you can't change your answer."
+    "shiftStarted": "This Shift has already started, so you can't change your answer.",
+    "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them."
   },
   "validation": {
     "required": "This field is required.",
@@ -110,6 +111,13 @@
       "description": "{{name}}, {{day}}, {{times}}",
       "submit": "Save changes",
       "cancel": "Cancel"
+    },
+    "deleteShift": {
+      "button": "Delete Shift",
+      "title": "Delete this Shift?",
+      "description": "{{name}}, {{day}}, {{times}}. This can't be undone.",
+      "confirm": "Delete",
+      "cancel": "Keep it"
     },
     "status": {
       "draft": "Draft",

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createActiveStaffMember,
   createArchivedStaffMember,
+  createRotaFor,
+  createShift,
   createUser,
   createVenueFor,
 } from '../test/seed.js';
@@ -470,19 +472,32 @@ describe('/api/venues/:venueId/staff-members', () => {
 
   describe('POST /api/venues/:venueId/staff-members/:staffMemberId/archive', () => {
     let staffMemberId: string;
+    let samId: string;
+    let rota: { id: string; venueId: string };
 
     beforeEach(async () => {
       staffMemberId = (await createActiveStaffMember(app.db, ownVenue, ALEX)).id;
-      await createActiveStaffMember(app.db, ownVenue, SAM);
+      samId = (await createActiveStaffMember(app.db, ownVenue, SAM)).id;
+      rota = await createRotaFor(app.db, ownVenue, '2026-11-16');
+      app.setClock('2026-11-18T12:00:00.000Z');
     });
+
+    function archive() {
+      return app.request('POST', `${staffMembersPath(ownVenue)}/${staffMemberId}/archive`, {
+        as: OWNER,
+      });
+    }
+
+    function storedArchiveState() {
+      return app.db.staffMember.findUnique({
+        where: { id: staffMemberId },
+        select: { archivedAt: true, email: true },
+      });
+    }
 
     describe('when the Owner archives a Staff Member', () => {
       beforeEach(async () => {
-        response = await app.request(
-          'POST',
-          `${staffMembersPath(ownVenue)}/${staffMemberId}/archive`,
-          { as: OWNER },
-        );
+        response = await archive();
       });
 
       it('responds with 204', () => {
@@ -490,12 +505,10 @@ describe('/api/venues/:venueId/staff-members', () => {
       });
 
       it('keeps the Staff Member with an archived timestamp and clears their email', async () => {
-        expect(
-          await app.db.staffMember.findUnique({
-            where: { id: staffMemberId },
-            select: { archivedAt: true, email: true },
-          }),
-        ).toEqual({ archivedAt: expect.any(Date), email: null });
+        expect(await storedArchiveState()).toEqual({
+          archivedAt: new Date('2026-11-18T12:00:00.000Z'),
+          email: null,
+        });
       });
 
       describe('when the Owner then lists Staff Members', () => {
@@ -519,6 +532,98 @@ describe('/api/venues/:venueId/staff-members', () => {
         it('responds with 201', () => {
           expect(response.status).toBe(201);
         });
+      });
+    });
+
+    describe('when the Staff Member has a Shift on a Draft Rota that starts later', () => {
+      let shiftId: string;
+
+      beforeEach(async () => {
+        shiftId = (
+          await createShift(app.db, rota, { id: staffMemberId }, {
+            startsAt: '2026-11-19T09:00:00.000Z',
+            endsAt: '2026-11-19T17:00:00.000Z',
+          })
+        ).id;
+        response = await archive();
+      });
+
+      it('responds with 409 and the staff_member_has_upcoming_shifts code', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          409,
+          { code: 'staff_member_has_upcoming_shifts' },
+        ]);
+      });
+
+      it('keeps them active with their email', async () => {
+        expect(await storedArchiveState()).toEqual({ archivedAt: null, email: ALEX.email });
+      });
+
+      describe('when the Owner deletes the Shift and archives them again', () => {
+        beforeEach(async () => {
+          await app.request(
+            'DELETE',
+            `/api/venues/${ownVenue.id}/rotas/2026-11-16/shifts/${shiftId}`,
+            { as: OWNER },
+          );
+          response = await archive();
+        });
+
+        it('responds with 204', () => {
+          expect(response.status).toBe(204);
+        });
+      });
+    });
+
+    describe('when the Staff Member is partway through a Shift', () => {
+      beforeEach(async () => {
+        await createShift(app.db, rota, { id: staffMemberId }, {
+          startsAt: '2026-11-18T09:00:00.000Z',
+          endsAt: '2026-11-18T17:00:00.000Z',
+        });
+        response = await archive();
+      });
+
+      it('responds with 409 and the staff_member_has_upcoming_shifts code', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          409,
+          { code: 'staff_member_has_upcoming_shifts' },
+        ]);
+      });
+    });
+
+    describe('when all of the Staff Member\'s Shifts have ended', () => {
+      beforeEach(async () => {
+        await createShift(app.db, rota, { id: staffMemberId }, {
+          startsAt: '2026-11-17T09:00:00.000Z',
+          endsAt: '2026-11-17T17:00:00.000Z',
+        });
+        response = await archive();
+      });
+
+      it('responds with 204', () => {
+        expect(response.status).toBe(204);
+      });
+
+      it('archives them', async () => {
+        expect(await storedArchiveState()).toEqual({
+          archivedAt: new Date('2026-11-18T12:00:00.000Z'),
+          email: null,
+        });
+      });
+    });
+
+    describe('when another Staff Member has a Shift that starts later', () => {
+      beforeEach(async () => {
+        await createShift(app.db, rota, { id: samId }, {
+          startsAt: '2026-11-19T09:00:00.000Z',
+          endsAt: '2026-11-19T17:00:00.000Z',
+        });
+        response = await archive();
+      });
+
+      it('responds with 204', () => {
+        expect(response.status).toBe(204);
       });
     });
   });

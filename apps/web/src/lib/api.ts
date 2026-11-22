@@ -27,7 +27,7 @@ async function errorCodeOf(response: Response): Promise<ApiErrorCode | undefined
 }
 
 async function apiRequest<Schema extends z.ZodType>(
-  method: 'GET' | 'PUT' | 'POST' | 'PATCH',
+  method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   schema: Schema,
   body?: unknown,
@@ -61,4 +61,8 @@ export function apiPost<Schema extends z.ZodType>(path: string, body: unknown, s
 
 export function apiPatch<Schema extends z.ZodType>(path: string, body: unknown, schema: Schema) {
   return apiRequest('PATCH', path, schema, body);
+}
+
+export function apiDelete<Schema extends z.ZodType>(path: string, schema: Schema) {
+  return apiRequest('DELETE', path, schema);
 }

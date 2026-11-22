@@ -60,6 +60,17 @@ export function replaceShiftInRota(
   );
 }
 
+export function removeShiftFromRota(
+  queryClient: QueryClient,
+  venueId: string,
+  weekStart: string,
+  shiftId: string,
+) {
+  queryClient.setQueryData(rotaQuery(venueId, weekStart).queryKey, (rota) =>
+    rota && { ...rota, shifts: rota.shifts.filter((existing) => existing.id !== shiftId) },
+  );
+}
+
 export function publishPath(venueId: string, weekStart: string) {
   return `${rotaPath(venueId, weekStart)}/publish`;
 }
