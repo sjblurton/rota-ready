@@ -6,9 +6,9 @@ import {
 } from '@rota-ready/shared';
 import type { Response } from 'express';
 import { z } from 'zod';
-import type { StaffMember } from '../../generated/prisma/client.js';
-import { parseBody, sendError } from '../../lib/http-errors.js';
-import type { VenueMemberLocals, VenueRequestHandler } from '../venues/require-venue-member.js';
+import type { StaffMember } from '#src/generated/prisma/client.js';
+import { parseBody, sendError } from '#src/lib/http-errors.js';
+import type { VenueMemberLocals, VenueRequestHandler } from '#src/features/venues/require-venue-member.js';
 import type { StaffMemberKey } from './staff-member-data.js';
 import type { StaffMemberService } from './staff-member-service.js';
 

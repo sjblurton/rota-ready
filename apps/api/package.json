@@ -2,6 +2,10 @@
   "name": "@rota-ready/api",
   "private": true,
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test/*": "./test/*"
+  },
   "scripts": {
     "dev": "NODE_ENV=development tsx watch --env-file-if-exists=../../.env src/server.ts",
     "build": "prisma generate && tsdown",

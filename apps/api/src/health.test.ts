@@ -1,6 +1,6 @@
 import { createServer, type AddressInfo, type Socket } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { startTestApp, type TestApp } from '../test/test-app.js';
+import { startTestApp, type TestApp } from '#test/test-app.js';
 
 describe('GET /api/health', () => {
   let app: TestApp;

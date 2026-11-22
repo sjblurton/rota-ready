@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, PrismaClient } from '#src/generated/prisma/client.js';
 
 export type Db = PrismaClient;
 export type DbClient = Db | Prisma.TransactionClient;

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { withIdentity, type AuthConfig } from '../../lib/auth.js';
-import type { Db } from '../../lib/db.js';
+import { withIdentity, type AuthConfig } from '#src/lib/auth.js';
+import type { Db } from '#src/lib/db.js';
 import { withUser } from './require-user.js';
 import { userController } from './user-controller.js';
 import { createUserService } from './user-service.js';

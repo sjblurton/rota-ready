@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createUser } from '../../../test/seed.js';
-import { startTestApp, type TestApp } from '../../../test/test-app.js';
+import { createUser } from '#test/seed.js';
+import { startTestApp, type TestApp } from '#test/test-app.js';
 
 const USER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 

@@ -1,8 +1,8 @@
 import type { Request, RequestHandler, Response } from 'express';
-import type { User } from '../../generated/prisma/client.js';
-import { identify, type AuthConfig, type HandlerWith } from '../../lib/auth.js';
-import type { Db } from '../../lib/db.js';
-import { sendError } from '../../lib/http-errors.js';
+import type { User } from '#src/generated/prisma/client.js';
+import { identify, type AuthConfig, type HandlerWith } from '#src/lib/auth.js';
+import type { Db } from '#src/lib/db.js';
+import { sendError } from '#src/lib/http-errors.js';
 import { createUserService } from './user-service.js';
 
 export async function authenticatedUser(

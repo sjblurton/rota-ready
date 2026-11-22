@@ -1,5 +1,5 @@
-import type { Identity } from '../../lib/auth.js';
-import type { Db } from '../../lib/db.js';
+import type { Identity } from '#src/lib/auth.js';
+import type { Db } from '#src/lib/db.js';
 import { findUser, upsertUser } from './user-data.js';
 
 export function createUserService({ db }: { db: Db }) {

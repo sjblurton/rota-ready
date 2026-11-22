@@ -1,10 +1,10 @@
 import type { Request, RequestHandler } from 'express';
 import { z } from 'zod';
-import type { Venue } from '../../generated/prisma/client.js';
-import type { AuthConfig } from '../../lib/auth.js';
-import type { Db } from '../../lib/db.js';
-import { sendError } from '../../lib/http-errors.js';
-import { authenticatedUser } from '../users/require-user.js';
+import type { Venue } from '#src/generated/prisma/client.js';
+import type { AuthConfig } from '#src/lib/auth.js';
+import type { Db } from '#src/lib/db.js';
+import { sendError } from '#src/lib/http-errors.js';
+import { authenticatedUser } from '#src/features/users/require-user.js';
 import { createVenueService } from './venue-service.js';
 
 export interface VenueMemberLocals {

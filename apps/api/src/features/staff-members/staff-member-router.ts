@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import type { Clock } from '../../lib/clock.js';
-import type { Db } from '../../lib/db.js';
+import type { Clock } from '#src/lib/clock.js';
+import type { Db } from '#src/lib/db.js';
 import { staffMemberController } from './staff-member-controller.js';
 import { createStaffMemberService } from './staff-member-service.js';
 

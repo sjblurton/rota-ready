@@ -1,5 +1,5 @@
-import type { Prisma } from '../../generated/prisma/client.js';
-import type { DbClient } from '../../lib/db.js';
+import type { Prisma } from '#src/generated/prisma/client.js';
+import type { DbClient } from '#src/lib/db.js';
 
 export interface StaffMemberKey {
   id: string;

@@ -6,10 +6,10 @@ import {
 } from '@rota-ready/shared';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import type { Shift } from '../../generated/prisma/client.js';
-import type { Clock } from '../../lib/clock.js';
-import { parseBody, sendError } from '../../lib/http-errors.js';
-import { toShift } from '../../rotas.js';
+import type { Shift } from '#src/generated/prisma/client.js';
+import type { Clock } from '#src/lib/clock.js';
+import { parseBody, sendError } from '#src/lib/http-errors.js';
+import { toShift } from '#src/rotas.js';
 import type { StaffLinkService } from './staff-link-service.js';
 
 const shiftIdSchema = z.uuid();

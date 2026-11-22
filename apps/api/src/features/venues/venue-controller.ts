@@ -4,8 +4,8 @@ import {
   venueSchema,
 } from '@rota-ready/shared';
 import type { Request, Response } from 'express';
-import type { User, Venue } from '../../generated/prisma/client.js';
-import { parseBody, sendError } from '../../lib/http-errors.js';
+import type { User, Venue } from '#src/generated/prisma/client.js';
+import { parseBody, sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from './require-venue-member.js';
 import type { VenueService } from './venue-service.js';
 

@@ -1,8 +1,8 @@
 import type { ShiftResponseRequest } from '@rota-ready/shared';
-import { ShiftResponse, type Shift } from '../../generated/prisma/client.js';
-import type { Clock } from '../../lib/clock.js';
-import type { Db } from '../../lib/db.js';
-import { refuse, type Refused } from '../../lib/service-result.js';
+import { ShiftResponse, type Shift } from '#src/generated/prisma/client.js';
+import type { Clock } from '#src/lib/clock.js';
+import type { Db } from '#src/lib/db.js';
+import { refuse, type Refused } from '#src/lib/service-result.js';
 import {
   answerPublishedShiftStartingAfter,
   findPublishedShiftsEndingAfter,

@@ -1,7 +1,7 @@
 import type { CreateVenueRequest } from '@rota-ready/shared';
-import type { Venue } from '../../generated/prisma/client.js';
-import { isPrismaError, type Db } from '../../lib/db.js';
-import { refuse, type Refused } from '../../lib/service-result.js';
+import type { Venue } from '#src/generated/prisma/client.js';
+import { isPrismaError, type Db } from '#src/lib/db.js';
+import { refuse, type Refused } from '#src/lib/service-result.js';
 import {
   createVenueOwnedBy,
   findVenueMembership,

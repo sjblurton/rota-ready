@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import type { AuthConfig } from '../../lib/auth.js';
-import type { Clock } from '../../lib/clock.js';
-import type { Db } from '../../lib/db.js';
-import { rotaRoutes } from '../../rotas.js';
-import { staffMemberRouter } from '../staff-members/staff-member-router.js';
-import { withUser } from '../users/require-user.js';
+import type { AuthConfig } from '#src/lib/auth.js';
+import type { Clock } from '#src/lib/clock.js';
+import type { Db } from '#src/lib/db.js';
+import { rotaRoutes } from '#src/rotas.js';
+import { staffMemberRouter } from '#src/features/staff-members/staff-member-router.js';
+import { withUser } from '#src/features/users/require-user.js';
 import { requireVenueMember } from './require-venue-member.js';
 import { venueController } from './venue-controller.js';
 import { createVenueService } from './venue-service.js';

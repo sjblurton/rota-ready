@@ -31,6 +31,10 @@ const noExpressImport = {
   allowTypeImports: true,
   message: 'Services and data functions know nothing about HTTP (ADR-0010).',
 };
+const noCrossFolderRelativeImport = {
+  regex: '^\\.\\.?/[^/]+/|^\\.\\./',
+  message: "Import from another folder through '#src/…' or '#test/…'. Only same-folder imports use './'.",
+};
 function noApiLayerImport(layer) {
   return {
     regex: `-${layer}(\\.js)?$`,
@@ -60,6 +64,15 @@ export default defineConfig([
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['apps/api/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { patterns: [noCrossFolderRelativeImport] },
+      ],
+    },
+  },
+  {
     files: [
       'apps/api/src/features/**/*-router.ts',
       'apps/api/src/features/**/*-controller.ts',
@@ -68,7 +81,14 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-restricted-imports': [
         'error',
-        { patterns: [noPrismaClientImport, noDbImport, noApiLayerImport('data')] },
+        {
+          patterns: [
+            noCrossFolderRelativeImport,
+            noPrismaClientImport,
+            noDbImport,
+            noApiLayerImport('data'),
+          ],
+        },
       ],
     },
   },
@@ -79,7 +99,11 @@ export default defineConfig([
         'error',
         {
           paths: [noExpressImport],
-          patterns: [noApiLayerImport('controller'), noApiLayerImport('router')],
+          patterns: [
+            noCrossFolderRelativeImport,
+            noApiLayerImport('controller'),
+            noApiLayerImport('router'),
+          ],
         },
       ],
     },
@@ -91,7 +115,10 @@ export default defineConfig([
         'error',
         {
           paths: [noExpressImport],
-          patterns: ['service', 'controller', 'router'].map(noApiLayerImport),
+          patterns: [
+            noCrossFolderRelativeImport,
+            ...['service', 'controller', 'router'].map(noApiLayerImport),
+          ],
         },
       ],
     },
@@ -103,6 +130,7 @@ export default defineConfig([
         'error',
         {
           patterns: [
+            noCrossFolderRelativeImport,
             {
               ...noFeaturesImport,
               message: 'lib/ holds infrastructure with no glossary concept, so it cannot import from features/.',

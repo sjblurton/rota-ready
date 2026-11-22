@@ -1,7 +1,7 @@
 import { currentUserSchema } from '@rota-ready/shared';
 import type { Request, Response } from 'express';
-import type { User } from '../../generated/prisma/client.js';
-import type { Identity } from '../../lib/auth.js';
+import type { User } from '#src/generated/prisma/client.js';
+import type { Identity } from '#src/lib/auth.js';
 import type { UserService } from './user-service.js';
 
 function toCurrentUser({ id, email }: User) {

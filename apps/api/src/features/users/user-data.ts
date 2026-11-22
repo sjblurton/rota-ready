@@ -1,5 +1,5 @@
-import type { Identity } from '../../lib/auth.js';
-import type { DbClient } from '../../lib/db.js';
+import type { Identity } from '#src/lib/auth.js';
+import type { DbClient } from '#src/lib/db.js';
 
 export function findUser(db: DbClient, id: string) {
   return db.user.findUnique({ where: { id } });

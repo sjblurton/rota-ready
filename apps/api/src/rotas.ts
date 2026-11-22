@@ -9,21 +9,21 @@ import {
 } from '@rota-ready/shared';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { lockActiveStaffMemberUntilCommit } from './features/staff-members/staff-member-data.js';
+import { lockActiveStaffMemberUntilCommit } from '#src/features/staff-members/staff-member-data.js';
 import type {
   VenueMemberLocals,
   VenueRequestHandler,
-} from './features/venues/require-venue-member.js';
+} from '#src/features/venues/require-venue-member.js';
 import {
   RotaStatus,
   ShiftResponse,
   type Prisma,
   type Shift,
   type Venue,
-} from './generated/prisma/client.js';
-import type { Clock } from './lib/clock.js';
-import type { Db } from './lib/db.js';
-import { parseBody, sendError } from './lib/http-errors.js';
+} from '#src/generated/prisma/client.js';
+import type { Clock } from '#src/lib/clock.js';
+import type { Db } from '#src/lib/db.js';
+import { parseBody, sendError } from '#src/lib/http-errors.js';
 
 type RotaRequestHandler = VenueRequestHandler<{ weekStart: string }>;
 type ShiftRequestHandler = VenueRequestHandler<{ weekStart: string; shiftId: string }>;

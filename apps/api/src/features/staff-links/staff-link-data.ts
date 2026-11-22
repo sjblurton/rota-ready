@@ -1,5 +1,5 @@
-import { RotaStatus, type Prisma } from '../../generated/prisma/client.js';
-import type { DbClient } from '../../lib/db.js';
+import { RotaStatus, type Prisma } from '#src/generated/prisma/client.js';
+import type { DbClient } from '#src/lib/db.js';
 
 export function findStaffMemberByTokenHash(db: DbClient, staffLinkTokenHash: string) {
   return db.staffMember.findUnique({ where: { staffLinkTokenHash }, include: { venue: true } });

@@ -1,6 +1,6 @@
 import type { CreateVenueRequest } from '@rota-ready/shared';
-import { MemberRole } from '../../generated/prisma/client.js';
-import type { DbClient } from '../../lib/db.js';
+import { MemberRole } from '#src/generated/prisma/client.js';
+import type { DbClient } from '#src/lib/db.js';
 
 export function createVenueOwnedBy(db: DbClient, userId: string, details: CreateVenueRequest) {
   return db.venue.create({
