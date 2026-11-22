@@ -11,6 +11,7 @@ import type { Clock } from './clock.js';
 import type { Db } from './db.js';
 import { Prisma, type StaffMember } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
+import { lockActiveStaffMemberUntilCommit } from './staff-member-lock.js';
 import {
   decryptStaffLinkToken,
   encryptStaffLinkToken,
@@ -111,11 +112,7 @@ export function staffMemberRoutes(db: Db, staffLinkKey: Buffer, clock: Clock): R
     if (!where) return sendError(res, 'not_found');
     const now = clock.now();
     const outcome = await db.$transaction(async (tx) => {
-      const locked = await tx.$queryRaw<unknown[]>`
-        SELECT 1 FROM staff_members
-        WHERE id = ${where.id}::uuid AND venue_id = ${where.venueId}::uuid AND archived_at IS NULL
-        FOR UPDATE`;
-      if (locked.length === 0) return 'not_found';
+      if (!(await lockActiveStaffMemberUntilCommit(tx, where))) return 'not_found';
       const upcoming = await tx.shift.findFirst({
         where: { staffMemberId: where.id, endsAt: { gt: now } },
       });

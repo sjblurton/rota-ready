@@ -20,6 +20,7 @@ import {
   type Venue,
 } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
+import { lockActiveStaffMemberUntilCommit } from './staff-member-lock.js';
 
 type RotaRequestHandler = VenueRequestHandler<{ weekStart: string }>;
 type ShiftRequestHandler = VenueRequestHandler<{ weekStart: string; shiftId: string }>;
@@ -52,17 +53,6 @@ function detailsChanged(before: ShiftTimes, after: ShiftTimes) {
     before.startsAt.getTime() !== after.startsAt.getTime() ||
     before.endsAt.getTime() !== after.endsAt.getTime()
   );
-}
-
-async function lockActiveStaffMemberUntilCommit(
-  tx: Prisma.TransactionClient,
-  staffMemberId: string,
-) {
-  const rows = await tx.$queryRaw<unknown[]>`
-    SELECT 1 FROM staff_members
-    WHERE id = ${staffMemberId}::uuid AND archived_at IS NULL
-    FOR UPDATE`;
-  return rows.length === 1;
 }
 
 function shiftInWeekWhere(venueId: string, weekStart: string, shiftId: string) {
@@ -121,10 +111,13 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
 
   async function shiftRejection(
     tx: Prisma.TransactionClient,
+    venueId: string,
     { staffMemberId, startsAt, endsAt }: ShiftTimes,
     exceptShiftId?: string,
   ): Promise<ApiErrorCode | null> {
-    if (!(await lockActiveStaffMemberUntilCommit(tx, staffMemberId))) return 'not_found';
+    if (!(await lockActiveStaffMemberUntilCommit(tx, { id: staffMemberId, venueId }))) {
+      return 'not_found';
+    }
     const overlapping = await tx.shift.findFirst({
       where: {
         staffMemberId,
@@ -145,7 +138,7 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     const rota = await findOrCreateRota(res.locals.venue, weekStart);
     const shift = await db.$transaction(
       async (tx) =>
-        (await shiftRejection(tx, times)) ??
+        (await shiftRejection(tx, rota.venueId, times)) ??
         tx.shift.create({ data: { ...times, venueId: rota.venueId, rotaId: rota.id } }),
     );
     if (typeof shift === 'string') return sendError(res, shift);
@@ -166,7 +159,7 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
       : times;
     const shift = await db.$transaction(
       async (tx) =>
-        (await shiftRejection(tx, times, existing.id)) ??
+        (await shiftRejection(tx, existing.venueId, times, existing.id)) ??
         tx.shift.update({ where: { id: existing.id }, data }),
     );
     if (typeof shift === 'string') return sendError(res, shift);
