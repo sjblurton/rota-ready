@@ -43,7 +43,7 @@ function AuthenticatedLayout() {
     <>
       <AppHeader email={currentUser.email} onLogOut={logOut} />
       <Outlet />
-      <footer className="mx-auto flex max-w-xl px-6 pb-6">
+      <footer className="mx-auto flex max-w-app px-6 pb-6 sm:px-10">
         <HealthStatus />
       </footer>
     </>
