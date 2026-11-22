@@ -1,3 +1,4 @@
+import { apiErrorCode } from '@rota-ready/shared';
 import type { Request, RequestHandler } from 'express';
 import { z } from 'zod';
 import type { Venue } from '#src/generated/prisma/client.js';
@@ -30,7 +31,7 @@ export function requireVenueMember(config: AuthConfig, db: Db): VenueRequestHand
     const membership = venueId.success
       ? await venues.membershipOf(user.id, venueId.data)
       : null;
-    if (!membership) return sendError(res, 'not_found');
+    if (!membership) return sendError(res, apiErrorCode.not_found);
     res.locals.venue = membership.venue;
     next();
   };

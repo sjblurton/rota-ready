@@ -1,4 +1,4 @@
-import { emailStatusSchema, firstNameOf, formatLocalDate, type EmailStatus } from '@rota-ready/shared';
+import { apiErrorCode, emailStatusSchema, firstNameOf, formatLocalDate, type EmailStatus } from '@rota-ready/shared';
 import type { Logger } from 'pino';
 import type { StaffMember, Venue } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
@@ -73,7 +73,7 @@ export function createRotaService({
     ): Promise<{ ok: true; emails: StaffLinkEmailResult[] } | Refused<'rota_already_published'>> {
       const rota = await findOrCreateRota(db, venue.id, weekStart);
       if (!(await publishDraftRota(db, rota.id, clock.now()))) {
-        return refuse('rota_already_published');
+        return refuse(apiErrorCode.rota_already_published);
       }
       const onRota = await findActiveStaffMembersOnRota(db, rota.id);
       const emails = await Promise.all(

@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   declineFormSchema,
   staffLinkShiftSchema,
   type ShiftResponseRequest,
@@ -47,7 +48,7 @@ function useRespondToShift(token: string, shift: StaffLinkShift, onDone?: () => 
     },
     onError: (error) => {
       toast.error(apiErrorMessage(t, error));
-      if (hasErrorCode(error, 'shift_started')) {
+      if (hasErrorCode(error, apiErrorCode.shift_started)) {
         replaceStaffLinkShift(queryClient, token, { ...shift, started: true });
         onDone?.();
       }

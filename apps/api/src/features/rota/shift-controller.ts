@@ -1,4 +1,4 @@
-import { shiftRequestSchema, shiftSchema } from '@rota-ready/shared';
+import { apiErrorCode, shiftRequestSchema, shiftSchema } from '@rota-ready/shared';
 import { z } from 'zod';
 import type { Shift } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
@@ -41,7 +41,7 @@ export function shiftController(shifts: ShiftService, clock: Clock) {
     const request = parseBody(shiftRequestSchema, req.body, res);
     if (!request) return;
     const id = shiftIdSchema.safeParse(req.params.shiftId);
-    if (!id.success) return sendError(res, 'not_found');
+    if (!id.success) return sendError(res, apiErrorCode.not_found);
     const result = await shifts.edit(res.locals.venue, req.params.weekStart, id.data, request);
     if (!result.ok) return sendError(res, result.code);
     res.json(toShift(result.shift, clock.now()));
@@ -49,7 +49,7 @@ export function shiftController(shifts: ShiftService, clock: Clock) {
 
   const deleteShift: ShiftRequestHandler = async (req, res) => {
     const id = shiftIdSchema.safeParse(req.params.shiftId);
-    if (!id.success) return sendError(res, 'not_found');
+    if (!id.success) return sendError(res, apiErrorCode.not_found);
     const result = await shifts.delete(res.locals.venue.id, req.params.weekStart, id.data);
     if (!result.ok) return sendError(res, result.code);
     res.status(204).end();

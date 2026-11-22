@@ -1,4 +1,4 @@
-import type { StaffMemberDetails } from '@rota-ready/shared';
+import { apiErrorCode, type StaffMemberDetails } from '@rota-ready/shared';
 import type { Prisma, StaffMember } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { isPrismaError, type Db } from '#src/lib/db.js';
@@ -50,8 +50,8 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
     try {
       return { ok: true, staffMember: await updateActiveStaffMember(db, key, data) };
     } catch (error) {
-      if (isPrismaError(error, 'P2025')) return refuse('not_found');
-      if (isPrismaError(error, 'P2002')) return refuse('staff_member_email_taken');
+      if (isPrismaError(error, 'P2025')) return refuse(apiErrorCode.not_found);
+      if (isPrismaError(error, 'P2002')) return refuse(apiErrorCode.staff_member_email_taken);
       throw error;
     }
   }
@@ -84,7 +84,7 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
         });
         return { ok: true, staffMember };
       } catch (error) {
-        if (isPrismaError(error, 'P2002')) return refuse('staff_member_email_taken');
+        if (isPrismaError(error, 'P2002')) return refuse(apiErrorCode.staff_member_email_taken);
         throw error;
       }
     },
@@ -98,9 +98,9 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
     ): Promise<{ ok: true } | Refused<'not_found' | 'staff_member_has_upcoming_shifts'>> {
       const now = clock.now();
       return db.$transaction(async (tx) => {
-        if (!(await lockActiveStaffMemberUntilCommit(tx, key))) return refuse('not_found');
+        if (!(await lockActiveStaffMemberUntilCommit(tx, key))) return refuse(apiErrorCode.not_found);
         if (await hasShiftEndingAfter(tx, key.id, now)) {
-          return refuse('staff_member_has_upcoming_shifts');
+          return refuse(apiErrorCode.staff_member_has_upcoming_shifts);
         }
         await updateActiveStaffMember(tx, key, { archivedAt: now, email: null });
         return { ok: true };
@@ -109,7 +109,7 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
 
     async staffLink(key: StaffMemberKey): Promise<{ ok: true; token: string } | Refused<'not_found'>> {
       const staffMember = await findActiveStaffMember(db, key);
-      if (!staffMember) return refuse('not_found');
+      if (!staffMember) return refuse(apiErrorCode.not_found);
       return { ok: true, token: await staffLinkTokenOf(staffMember) };
     },
 

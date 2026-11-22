@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   staffLinkPageSchema,
   staffLinkSchema,
   type StaffLink,
@@ -44,7 +45,7 @@ export function staffLinkPageQuery(token: string) {
     queryKey: ['staff-links', token],
     queryFn: () => apiGet(staffLinkPagePath(token), staffLinkPageSchema),
     staleTime: 'static',
-    retry: (failureCount, error) => !hasErrorCode(error, 'not_found') && failureCount < MAX_RETRIES,
+    retry: (failureCount, error) => !hasErrorCode(error, apiErrorCode.not_found) && failureCount < MAX_RETRIES,
   });
 }
 

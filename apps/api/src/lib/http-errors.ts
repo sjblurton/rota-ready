@@ -1,4 +1,4 @@
-import type { ApiErrorCode, ApiErrorResponse } from '@rota-ready/shared';
+import { apiErrorCode, type ApiErrorCode, type ApiErrorResponse } from '@rota-ready/shared';
 import type { ErrorRequestHandler, Response } from 'express';
 import type { z } from 'zod';
 
@@ -27,7 +27,7 @@ export function parseBody<Schema extends z.ZodType>(
 ): z.output<Schema> | undefined {
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    sendError(res, 'invalid_request');
+    sendError(res, apiErrorCode.invalid_request);
     return undefined;
   }
   return parsed.data;
@@ -35,7 +35,7 @@ export function parseBody<Schema extends z.ZodType>(
 
 export const handleMalformedJson: ErrorRequestHandler = (error, _req, res, next) => {
   if (error instanceof SyntaxError && 'type' in error && error.type === 'entity.parse.failed') {
-    return sendError(res, 'invalid_request');
+    return sendError(res, apiErrorCode.invalid_request);
   }
   next(error);
 };
@@ -43,5 +43,5 @@ export const handleMalformedJson: ErrorRequestHandler = (error, _req, res, next)
 export const handleUnexpectedError: ErrorRequestHandler = (error, _req, res, next) => {
   if (res.headersSent) return next(error);
   res.err = error;
-  sendError(res, 'internal_error');
+  sendError(res, apiErrorCode.internal_error);
 };

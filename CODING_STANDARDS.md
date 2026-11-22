@@ -7,10 +7,10 @@ The judgement calls a reviewer checks in every diff. Each one comes from review 
 A value from a fixed set comes from the thing that defines the set:
 
 - **A Prisma enum:** `ShiftResponse.pending`, `RotaStatus.draft`.
-- **A shared zod enum:** `apiErrorCodeSchema.enum.not_found`.
+- **A shared zod enum:** `apiErrorCode.not_found`, which is `apiErrorCodeSchema.enum`.
 - **A `const` object** for a set that exists only in one place, such as the variants of a badge.
 
-A string literal is still fine in a test assertion, because there it checks what goes over the wire. API error codes move to `apiErrorCodeSchema.enum` in #74. Until that lands, `sendError(res, '…')` with a literal is accepted.
+A string literal is still fine in a test assertion, because there it checks what goes over the wire. It is also fine in a type position such as `Refused<'not_found'>`, where `typeof apiErrorCode.not_found` would only add noise.
 
 ## Use the library's own setup
 

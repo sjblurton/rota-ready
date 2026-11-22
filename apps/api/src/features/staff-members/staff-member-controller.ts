@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   byStaffMemberName,
   staffLinkSchema,
   staffMemberDetailsSchema,
@@ -26,7 +27,7 @@ function staffMemberKeyOrReject(
 ): StaffMemberKey | undefined {
   const id = staffMemberIdSchema.safeParse(staffMemberId);
   if (!id.success) {
-    sendError(res, 'not_found');
+    sendError(res, apiErrorCode.not_found);
     return undefined;
   }
   return { id: id.data, venueId: res.locals.venue.id };

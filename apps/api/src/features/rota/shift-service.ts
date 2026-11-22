@@ -1,4 +1,4 @@
-import { weekStartOf, type ShiftRequest } from '@rota-ready/shared';
+import { apiErrorCode, weekStartOf, type ShiftRequest } from '@rota-ready/shared';
 import { ShiftResponse, type Prisma, type Shift, type Venue } from '#src/generated/prisma/client.js';
 import type { Db } from '#src/lib/db.js';
 import { refuse, type Refused } from '#src/lib/service-result.js';
@@ -33,12 +33,12 @@ export function createShiftService({ db }: { db: Db }) {
     request: ShiftRequest,
   ): Promise<{ ok: true; times: ShiftTimes } | Refused<'not_found' | 'invalid_request'>> {
     const startsAt = new Date(request.startsAt);
-    if (weekStartOf(startsAt, venue.timeZone) !== weekStart) return refuse('invalid_request');
+    if (weekStartOf(startsAt, venue.timeZone) !== weekStart) return refuse(apiErrorCode.invalid_request);
     const staffMember = await findActiveStaffMember(db, {
       id: request.staffMemberId,
       venueId: venue.id,
     });
-    if (!staffMember) return refuse('not_found');
+    if (!staffMember) return refuse(apiErrorCode.not_found);
     return {
       ok: true,
       times: { staffMemberId: staffMember.id, startsAt, endsAt: new Date(request.endsAt) },
@@ -52,9 +52,9 @@ export function createShiftService({ db }: { db: Db }) {
     exceptShiftId?: string,
   ) {
     if (!(await lockActiveStaffMemberUntilCommit(tx, { id: times.staffMemberId, venueId }))) {
-      return refuse('not_found');
+      return refuse(apiErrorCode.not_found);
     }
-    if (await hasOverlappingShift(tx, times, exceptShiftId)) return refuse('shift_overlaps');
+    if (await hasOverlappingShift(tx, times, exceptShiftId)) return refuse(apiErrorCode.shift_overlaps);
     return null;
   }
 
@@ -86,7 +86,7 @@ export function createShiftService({ db }: { db: Db }) {
       request: ShiftRequest,
     ): Promise<ShiftResult> {
       const existing = await findShiftInWeek(db, { id: shiftId, venueId: venue.id, weekStart });
-      if (!existing) return refuse('not_found');
+      if (!existing) return refuse(apiErrorCode.not_found);
       const resolved = await resolveTimes(venue, weekStart, request);
       if (!resolved.ok) return resolved;
       const { times } = resolved;
@@ -109,7 +109,7 @@ export function createShiftService({ db }: { db: Db }) {
       shiftId: string,
     ): Promise<{ ok: true } | Refused<'not_found'>> {
       const deleted = await deleteShiftInWeek(db, { id: shiftId, venueId, weekStart });
-      return deleted ? { ok: true } : refuse('not_found');
+      return deleted ? { ok: true } : refuse(apiErrorCode.not_found);
     },
   };
 }

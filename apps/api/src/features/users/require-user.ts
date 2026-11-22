@@ -1,3 +1,4 @@
+import { apiErrorCode } from '@rota-ready/shared';
 import type { Request, RequestHandler, Response } from 'express';
 import type { User } from '#src/generated/prisma/client.js';
 import { identify, type AuthConfig, type HandlerWith } from '#src/lib/auth.js';
@@ -13,12 +14,12 @@ export async function authenticatedUser(
 ): Promise<User | undefined> {
   const identity = await identify(req, config);
   if (!identity) {
-    sendError(res, 'unauthorized');
+    sendError(res, apiErrorCode.unauthorized);
     return undefined;
   }
   const user = await createUserService({ db }).find(identity.userId);
   if (!user) {
-    sendError(res, 'forbidden');
+    sendError(res, apiErrorCode.forbidden);
     return undefined;
   }
   return user;

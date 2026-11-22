@@ -1,7 +1,7 @@
 import express, { type Express } from 'express';
 import type { Logger } from 'pino';
 import { pinoHttp } from 'pino-http';
-import { healthResponseSchema } from '@rota-ready/shared';
+import { apiErrorCode, healthResponseSchema } from '@rota-ready/shared';
 import { staffLinkRouter } from '#src/features/staff-links/staff-link-router.js';
 import { withoutStaffLinkToken } from '#src/features/staff-links/staff-link-token.js';
 import { userRouter } from '#src/features/users/user-router.js';
@@ -57,7 +57,7 @@ export function createApp(dependencies: AppDependencies): Express {
   app.use('/api/venues', venueRouter(dependencies));
   app.use('/api/staff-links', staffLinkRouter({ db, clock }));
 
-  app.use((_req, res) => sendError(res, 'not_found'));
+  app.use((_req, res) => sendError(res, apiErrorCode.not_found));
   app.use(handleMalformedJson);
   app.use(handleUnexpectedError);
 

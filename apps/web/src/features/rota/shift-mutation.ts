@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   validationMessage,
   type Shift,
   type shiftFormSchema,
@@ -26,7 +27,7 @@ export function useShiftMutation({ form, send, onSuccess }: UseShiftMutationOpti
     mutationFn: send,
     onSuccess,
     onError: (error) => {
-      if (hasErrorCode(error, 'shift_overlaps')) {
+      if (hasErrorCode(error, apiErrorCode.shift_overlaps)) {
         form.setError('root', { message: validationMessage.shiftOverlaps });
       } else {
         toast.error(apiErrorMessage(t, error));
