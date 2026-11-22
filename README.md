@@ -188,7 +188,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#10](https://github.com/sjblurton/rota-ready/issues/10) Publish and the staff link page
 - [x] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
 - [x] [#12](https://github.com/sjblurton/rota-ready/issues/12) Confirm and decline
-- [ ] [#13](https://github.com/sjblurton/rota-ready/issues/13) Changes after publishing
+- [x] [#13](https://github.com/sjblurton/rota-ready/issues/13) Changes after publishing
 - [ ] [#14](https://github.com/sjblurton/rota-ready/issues/14) Send updates
 
 Stretch goals:
