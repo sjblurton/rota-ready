@@ -454,6 +454,7 @@ test.describe.serial('MVP journey', () => {
     await page.getByRole('link', { name: 'Next Week' }).click();
     await expect(weekHeading(nextWeek)).toBeVisible();
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await expect(page.getByLabel('Role (optional)')).toHaveAttribute('placeholder', 'Floor');
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(thursday) });
     await page.getByLabel('Start').selectOption('18:00');
     await page.getByLabel('End').selectOption('23:00');

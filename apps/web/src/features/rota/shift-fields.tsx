@@ -6,7 +6,7 @@ import {
   type StaffMember,
 } from '@rota-ready/shared';
 import { useId } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { z } from 'zod';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
@@ -24,9 +24,11 @@ const times = quarterHourTimes();
 export function ShiftFields({ weekStart, staffMembers }: ShiftFieldsProps) {
   const { t } = useTranslation();
   const id = useId();
-  const { register, formState, clearErrors } =
+  const { register, formState, clearErrors, control } =
     useFormContext<z.input<ReturnType<typeof shiftFormSchema>>>();
   const { errors } = formState;
+  const staffMemberId = useWatch({ control, name: 'staffMemberId' });
+  const usualRole = staffMembers.find((staffMember) => staffMember.id === staffMemberId)?.role;
 
   function clearFormError() {
     clearErrors('root');
@@ -75,6 +77,7 @@ export function ShiftFields({ weekStart, staffMembers }: ShiftFieldsProps) {
         <FieldLabel htmlFor={`${id}-role`}>{t('rota.shift.role')}</FieldLabel>
         <Input
           id={`${id}-role`}
+          placeholder={usualRole}
           aria-invalid={!!errors.role}
           aria-describedby={`${id}-role-error`}
           {...register('role')}
