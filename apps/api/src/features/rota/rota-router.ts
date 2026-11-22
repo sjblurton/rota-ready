@@ -1,4 +1,4 @@
-import { isWeekStart } from '@rota-ready/shared';
+import { apiErrorCode, isWeekStart } from '@rota-ready/shared';
 import { Router } from 'express';
 import type { RotaServiceDependencies } from './rota-service.js';
 import { sendError } from '#src/lib/http-errors.js';
@@ -13,7 +13,7 @@ export function rotaRouter(dependencies: RotaServiceDependencies): Router {
   const shifts = shiftController(createShiftService({ db }), clock);
   const router = Router();
   router.param('weekStart', (_req, res, next, weekStart: string) => {
-    if (!isWeekStart(weekStart)) return sendError(res, 'not_found');
+    if (!isWeekStart(weekStart)) return sendError(res, apiErrorCode.not_found);
     next();
   });
   router.get('/:weekStart', rotas.getRota);

@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   staffMemberDetailsSchema,
   staffMemberSchema,
   validationMessage,
@@ -34,7 +35,7 @@ export function AddStaffMemberForm({ venueId }: { venueId: string }) {
       form.setFocus('name');
     },
     onError: (error) => {
-      if (hasErrorCode(error, 'staff_member_email_taken')) {
+      if (hasErrorCode(error, apiErrorCode.staff_member_email_taken)) {
         form.setError('email', { message: validationMessage.staffMemberEmailTaken });
       } else {
         toast.error(apiErrorMessage(t, error));

@@ -14,6 +14,8 @@ export const apiErrorCodeSchema = z.enum([
   'internal_error',
 ]);
 
+export const apiErrorCode = apiErrorCodeSchema.enum;
+
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
 
 export const apiErrorResponseSchema = z.object({

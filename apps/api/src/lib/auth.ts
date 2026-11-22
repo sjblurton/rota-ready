@@ -1,3 +1,4 @@
+import { apiErrorCode } from '@rota-ready/shared';
 import type { Request, RequestHandler, Response } from 'express';
 import { createRemoteJWKSet, errors, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { sendError } from './http-errors.js';
@@ -57,7 +58,7 @@ export function withIdentity(
 ): RequestHandler {
   return async (req, res) => {
     const identity = await identify(req, config);
-    if (!identity) return sendError(res, 'unauthorized');
+    if (!identity) return sendError(res, apiErrorCode.unauthorized);
     await handler(req, res, identity);
   };
 }

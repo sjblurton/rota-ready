@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   firstNameOf,
   shiftResponseRequestSchema,
   staffLinkPageSchema,
@@ -41,7 +42,7 @@ export function staffLinkController(staffLinks: StaffLinkService, clock: Clock) 
       const request = parseBody(shiftResponseRequestSchema, req.body, res);
       if (!request) return;
       const shiftId = shiftIdSchema.safeParse(req.params.shiftId);
-      if (!shiftId.success) return sendError(res, 'not_found');
+      if (!shiftId.success) return sendError(res, apiErrorCode.not_found);
       const result = await staffLinks.respond(found.staffMember, shiftId.data, request);
       if (!result.ok) return sendError(res, result.code);
       res.json(toStaffLinkShift(result.shift));

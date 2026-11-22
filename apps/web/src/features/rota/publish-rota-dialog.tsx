@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   emailStatusSchema,
   formatLocalDate,
   publishResultSchema,
@@ -45,7 +46,7 @@ export function PublishRotaDialog({ venueId, weekStart, published }: PublishRota
       markRotaPublished(queryClient, venueId, weekStart);
     },
     onError: (error) => {
-      if (hasErrorCode(error, 'rota_already_published')) {
+      if (hasErrorCode(error, apiErrorCode.rota_already_published)) {
         setOpen(false);
         markRotaPublished(queryClient, venueId, weekStart);
       } else {

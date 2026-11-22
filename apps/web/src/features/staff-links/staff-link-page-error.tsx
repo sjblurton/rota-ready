@@ -1,3 +1,4 @@
+import { apiErrorCode } from '@rota-ready/shared';
 import { useRouter, type ErrorComponentProps } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ export function StaffLinkPageError({ error }: ErrorComponentProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
-  if (hasErrorCode(error, 'not_found')) {
+  if (hasErrorCode(error, apiErrorCode.not_found)) {
     return (
       <main className="mx-auto flex max-w-md flex-col gap-2 p-6">
         <h1 className="text-xl font-semibold">{t('staffLink.page.invalidTitle')}</h1>

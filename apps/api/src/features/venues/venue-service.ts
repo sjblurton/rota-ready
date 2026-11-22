@@ -1,4 +1,4 @@
-import type { CreateVenueRequest } from '@rota-ready/shared';
+import { apiErrorCode, type CreateVenueRequest } from '@rota-ready/shared';
 import type { Venue } from '#src/generated/prisma/client.js';
 import { isPrismaError, type Db } from '#src/lib/db.js';
 import { refuse, type Refused } from '#src/lib/service-result.js';
@@ -18,7 +18,7 @@ export function createVenueService({ db }: { db: Db }) {
       try {
         return { ok: true, venue: await createVenueOwnedBy(db, userId, details) };
       } catch (error) {
-        if (isPrismaError(error, 'P2002')) return refuse('venue_already_exists');
+        if (isPrismaError(error, 'P2002')) return refuse(apiErrorCode.venue_already_exists);
         throw error;
       }
     },

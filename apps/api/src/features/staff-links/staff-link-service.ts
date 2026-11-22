@@ -1,4 +1,4 @@
-import type { ShiftResponseRequest } from '@rota-ready/shared';
+import { apiErrorCode, type ShiftResponseRequest } from '@rota-ready/shared';
 import { ShiftResponse, type Shift } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import type { Db } from '#src/lib/db.js';
@@ -20,7 +20,7 @@ export function createStaffLinkService({ db, clock }: { db: Db; clock: Clock }) 
       token: string,
     ): Promise<{ ok: true; staffMember: LinkedStaffMember } | Refused<'not_found'>> {
       const staffMember = await findStaffMemberByTokenHash(db, hashStaffLinkToken(token));
-      if (!staffMember || staffMember.archivedAt) return refuse('not_found');
+      if (!staffMember || staffMember.archivedAt) return refuse(apiErrorCode.not_found);
       return { ok: true, staffMember };
     },
 
@@ -46,7 +46,7 @@ export function createStaffLinkService({ db, clock }: { db: Db; clock: Clock }) 
       );
       if (!answered) {
         const exists = await publishedShiftExists(db, staffMember.id, shiftId);
-        return refuse(exists ? 'shift_started' : 'not_found');
+        return refuse(exists ? apiErrorCode.shift_started : apiErrorCode.not_found);
       }
       return { ok: true, shift: await findShift(db, shiftId) };
     },

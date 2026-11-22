@@ -1,4 +1,5 @@
 import {
+  apiErrorCode,
   staffMemberDetailsSchema,
   staffMemberSchema,
   validationMessage,
@@ -45,7 +46,7 @@ export function EditStaffMemberForm({ venueId, staffMember, onDone }: EditStaffM
       onDone();
     },
     onError: (error) => {
-      if (hasErrorCode(error, 'staff_member_email_taken')) {
+      if (hasErrorCode(error, apiErrorCode.staff_member_email_taken)) {
         form.setError('email', { message: validationMessage.staffMemberEmailTaken });
       } else {
         toast.error(apiErrorMessage(t, error));

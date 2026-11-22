@@ -35,6 +35,16 @@ const noCrossFolderRelativeImport = {
   regex: '^\\.\\.?/[^/]+/|^\\.\\./',
   message: "Import from another folder through '#src/…' or '#test/…'. Only same-folder imports use './'.",
 };
+const errorCodeCallee = 'CallExpression[callee.name=/^(sendError|hasErrorCode|refuse)$/]';
+const noLiteralErrorCode = [
+  `${errorCodeCallee} > :matches(Literal, TemplateLiteral)`,
+  `${errorCodeCallee} > ConditionalExpression > :matches(Literal, TemplateLiteral).consequent`,
+  `${errorCodeCallee} > ConditionalExpression > :matches(Literal, TemplateLiteral).alternate`,
+].map((selector) => ({
+  selector,
+  message: 'Name an error code as apiErrorCode.<code>, not a string literal.',
+}));
+
 function noApiLayerImport(layer) {
   return {
     regex: `-${layer}(\\.js)?$`,
@@ -63,6 +73,11 @@ export default defineConfig([
   {
     files: ['apps/api/**/*.ts', 'packages/**/*.ts', '*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['apps/*/src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: { 'no-restricted-syntax': ['error', ...noLiteralErrorCode] },
   },
   {
     files: ['apps/api/**/*.ts'],
