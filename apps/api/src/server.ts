@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import { parseStaffLinkKey } from '#src/features/staff-links/staff-link-token.js';
 import { supabaseAuthConfig } from '#src/lib/auth.js';
 import { createDb } from '#src/lib/db.js';
+import { smtpEmailSender } from '#src/lib/email-sender.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is not set');
@@ -12,6 +13,15 @@ if (!supabaseUrl) throw new Error('SUPABASE_URL is not set');
 
 const staffLinkKey = process.env.STAFF_LINK_KEY;
 if (!staffLinkKey) throw new Error('STAFF_LINK_KEY is not set');
+
+const smtpUrl = process.env.SMTP_URL;
+if (!smtpUrl) throw new Error('SMTP_URL is not set');
+
+const emailFrom = process.env.EMAIL_FROM;
+if (!emailFrom) throw new Error('EMAIL_FROM is not set');
+
+const webUrl = process.env.WEB_URL;
+if (!webUrl) throw new Error('WEB_URL is not set');
 
 const port = Number(process.env.PORT ?? 3000);
 const logger = pino({
@@ -25,6 +35,8 @@ createApp({
   authConfig: supabaseAuthConfig(supabaseUrl),
   logger,
   staffLinkKey: parseStaffLinkKey(staffLinkKey),
+  emailSender: smtpEmailSender({ url: smtpUrl, from: emailFrom }),
+  webUrl,
 }).listen(port, () => {
   logger.info({ port }, 'API listening');
 });

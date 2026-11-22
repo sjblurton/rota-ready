@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import type { Logger } from 'pino';
 import type { AuthConfig } from '#src/lib/auth.js';
 import type { Clock } from '#src/lib/clock.js';
 import type { Db } from '#src/lib/db.js';
+import type { EmailSender } from '#src/lib/email-sender.js';
 import { rotaRouter } from '#src/features/rota/rota-router.js';
 import { staffMemberRouter } from '#src/features/staff-members/staff-member-router.js';
 import { withUser } from '#src/features/users/require-user.js';
@@ -14,9 +16,13 @@ interface VenueRouterDependencies {
   clock: Clock;
   authConfig: AuthConfig;
   staffLinkKey: Buffer;
+  emailSender: EmailSender;
+  webUrl: string;
+  logger: Logger;
 }
 
-export function venueRouter({ db, clock, authConfig, staffLinkKey }: VenueRouterDependencies): Router {
+export function venueRouter(dependencies: VenueRouterDependencies): Router {
+  const { db, clock, authConfig, staffLinkKey } = dependencies;
   const controller = venueController(createVenueService({ db }));
   const router = Router();
   router.post('/', withUser(authConfig, db, controller.createVenue));
@@ -26,7 +32,7 @@ export function venueRouter({ db, clock, authConfig, staffLinkKey }: VenueRouter
   venue.get('/', controller.getVenue);
   venue.patch('/', controller.renameVenue);
   venue.use('/staff-members', staffMemberRouter({ db, clock, staffLinkKey }));
-  venue.use('/rotas', rotaRouter({ db, clock }));
+  venue.use('/rotas', rotaRouter(dependencies));
 
   router.use('/:venueId', requireVenueMember(authConfig, db), venue);
   return router;

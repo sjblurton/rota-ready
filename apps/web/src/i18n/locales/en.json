@@ -131,7 +131,17 @@
       "title": "Publish the Week of {{date}}?",
       "description": "You can still change Shifts afterwards, but you can't unpublish a Rota.",
       "confirm": "Publish",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "publishedTitle": "Published the Week of {{date}}",
+      "emailsSent": "Each Staff Member with Shifts this Week was emailed their Staff Link.",
+      "noEmails": "Nobody has Shifts this Week, so no one was emailed.",
+      "emailsLabel": "Staff Link emails",
+      "emailStatus": {
+        "sent": "Sent",
+        "failed": "Failed"
+      },
+      "someFailed": "Some emails didn't send. Copy those Staff Links from the Staff page and send them another way.",
+      "done": "Done"
     }
   },
   "staff": {

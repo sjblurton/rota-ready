@@ -170,3 +170,19 @@ export const rotaSchema = z.object({
 });
 
 export type Rota = z.infer<typeof rotaSchema>;
+
+export const emailStatusSchema = z.enum(['sent', 'failed']);
+
+export type EmailStatus = z.infer<typeof emailStatusSchema>;
+
+export const publishResultSchema = z.object({
+  emails: z.array(
+    z.object({
+      staffMemberId: z.uuid(),
+      name: z.string(),
+      status: emailStatusSchema,
+    }),
+  ),
+});
+
+export type PublishResult = z.infer<typeof publishResultSchema>;

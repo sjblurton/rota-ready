@@ -5,9 +5,11 @@ import { pino } from 'pino';
 import { inject } from 'vitest';
 import { createApp } from '#src/app.js';
 import { createDb, type Db } from '#src/lib/db.js';
+import type { Email, EmailSender } from '#src/lib/email-sender.js';
 
 const ISSUER = 'http://auth.test/auth/v1';
 const KEY_ID = 'test-key';
+const WEB_URL = 'http://web.test';
 
 interface TokenSubject {
   id: string;
@@ -28,17 +30,38 @@ interface RequestOptions {
 
 export type TestApp = Awaited<ReturnType<typeof startTestApp>>;
 
+function createEmailOutbox() {
+  const sent: Email[] = [];
+  const failingAddresses = new Set<string>();
+  const sender: EmailSender = {
+    async send(email) {
+      if (failingAddresses.has(email.to)) throw new Error(`SMTP refused ${email.to}`);
+      sent.push(email);
+    },
+  };
+  return {
+    sender,
+    sent,
+    failFor(address: string) {
+      failingAddresses.add(address);
+    },
+  };
+}
+
 export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {}) {
   const { publicKey, privateKey } = await generateKeyPair('ES256');
   const publicJwk = { ...(await exportJWK(publicKey)), kid: KEY_ID, alg: 'ES256' };
   const db: Db = createDb(databaseUrl);
   const logLines: string[] = [];
   let now: Date | undefined;
+  const outbox = createEmailOutbox();
   const server = createApp({
     db,
     clock: { now: () => now ?? new Date() },
     logger: pino({}, { write: (line: string) => logLines.push(line) }),
     staffLinkKey: randomBytes(32),
+    emailSender: outbox.sender,
+    webUrl: WEB_URL,
     authConfig: {
       keys: createLocalJWKSet({ keys: [publicJwk] }),
       issuer: ISSUER,
@@ -106,6 +129,8 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
 
   return {
     db,
+    outbox,
+    webUrl: WEB_URL,
     logs,
     setClock,
     request,

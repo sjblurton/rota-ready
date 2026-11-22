@@ -9,6 +9,7 @@ import { venueRouter } from '#src/features/venues/venue-router.js';
 import type { AuthConfig } from '#src/lib/auth.js';
 import type { Clock } from '#src/lib/clock.js';
 import type { Db } from '#src/lib/db.js';
+import type { EmailSender } from '#src/lib/email-sender.js';
 import { handleMalformedJson, handleUnexpectedError, sendError } from '#src/lib/http-errors.js';
 
 export interface AppDependencies {
@@ -17,6 +18,8 @@ export interface AppDependencies {
   authConfig: AuthConfig;
   logger: Logger;
   staffLinkKey: Buffer;
+  emailSender: EmailSender;
+  webUrl: string;
 }
 
 const DB_HEALTH_TIMEOUT_MS = 1_000;
@@ -32,13 +35,8 @@ function checkDb(db: Db): Promise<'ok' | 'down'> {
   return Promise.race([query, timeout]);
 }
 
-export function createApp({
-  db,
-  clock,
-  authConfig,
-  logger,
-  staffLinkKey,
-}: AppDependencies): Express {
+export function createApp(dependencies: AppDependencies): Express {
+  const { db, clock, authConfig, logger } = dependencies;
   const app = express();
   app.disable('x-powered-by');
   app.use(
@@ -56,7 +54,7 @@ export function createApp({
   });
 
   app.use('/api/me', userRouter({ db, authConfig }));
-  app.use('/api/venues', venueRouter({ db, clock, authConfig, staffLinkKey }));
+  app.use('/api/venues', venueRouter(dependencies));
   app.use('/api/staff-links', staffLinkRouter({ db, clock }));
 
   app.use((_req, res) => sendError(res, 'not_found'));

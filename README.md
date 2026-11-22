@@ -72,7 +72,7 @@ This repo is set up so that bug can't hide:
 | API | Express 5, Zod (shared with the web app) |
 | Data | Prisma 7 on Supabase Postgres (local stack via the Supabase CLI) |
 | Auth | Supabase Auth (email and password), JWTs checked by the API against Supabase's signing keys |
-| Email | nodemailer over SMTP: local Supabase inbox in dev, Resend in production _(from #11)_ |
+| Email | nodemailer over SMTP: local Supabase inbox (Mailpit) in dev and Playwright, Resend in production |
 | Tests | Vitest, Playwright |
 | Tooling | pnpm workspaces, TypeScript strict, ESLint, mise (Node 26), GitHub Actions |
 
@@ -166,7 +166,9 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready-api` | `STAFF_LINK_KEY` | 32 random bytes, base64 (`openssl rand -base64 32`), encrypting stored Staff Link tokens ([ADR-0002](docs/adr/0002-staff-link-tokens-hashed-and-encrypted.md)). The API won't start without it, and losing it means regenerating every Staff Link |
 | Render `rota-ready` | `VITE_SUPABASE_URL` | Same Supabase URL, built into the web app |
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
-| Later | SMTP credentials (#11) | Added to Render `rota-ready-api` when that ticket lands |
+| Render `rota-ready-api` | `SMTP_URL` | Resend's SMTP endpoint with the API key as the password: `smtps://resend:<api-key>@smtp.resend.com:465` |
+| Render `rota-ready-api` | `EMAIL_FROM` | The sender, on a domain verified in Resend, e.g. `Rota Ready <rota@yourdomain>` |
+| Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 
@@ -184,7 +186,7 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
 - [x] [#9](https://github.com/sjblurton/rota-ready/issues/9) Edit and delete shifts
 - [x] [#10](https://github.com/sjblurton/rota-ready/issues/10) Publish and the staff link page
-- [ ] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
+- [x] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
 - [x] [#12](https://github.com/sjblurton/rota-ready/issues/12) Confirm and decline
 - [ ] [#13](https://github.com/sjblurton/rota-ready/issues/13) Changes after publishing
 - [ ] [#14](https://github.com/sjblurton/rota-ready/issues/14) Send updates
