@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { afterEach, beforeEach, describe, expect, inject, it } from 'vitest';
-import { createDb, type Db } from './db.js';
+import { createDb, type Db } from '#src/lib/db.js';
 
 const CLIENT_ROLES = ['anon', 'authenticated'];
 

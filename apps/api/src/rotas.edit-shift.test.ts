@@ -7,8 +7,8 @@ import {
   createShift,
   createUser,
   createVenueFor,
-} from '../test/seed.js';
-import { startTestApp, type TestApp } from '../test/test-app.js';
+} from '#test/seed.js';
+import { startTestApp, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 const OTHER_OWNER = {

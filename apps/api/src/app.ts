@@ -1,14 +1,15 @@
 import express, { type Express } from 'express';
 import type { Logger } from 'pino';
 import { pinoHttp } from 'pino-http';
-import { currentUserSchema, healthResponseSchema } from '@rota-ready/shared';
-import { withIdentity, withUser, type AuthConfig } from './auth.js';
-import type { Clock } from './clock.js';
-import type { Db } from './db.js';
-import type { User } from './generated/prisma/client.js';
-import { handleMalformedJson, handleUnexpectedError, sendError } from './http-errors.js';
-import { staffLinkRoutes, withoutStaffLinkToken } from './staff-links.js';
-import { venueRoutes } from './venues.js';
+import { healthResponseSchema } from '@rota-ready/shared';
+import { staffLinkRouter } from '#src/features/staff-links/staff-link-router.js';
+import { withoutStaffLinkToken } from '#src/features/staff-links/staff-link-token.js';
+import { userRouter } from '#src/features/users/user-router.js';
+import { venueRouter } from '#src/features/venues/venue-router.js';
+import type { AuthConfig } from '#src/lib/auth.js';
+import type { Clock } from '#src/lib/clock.js';
+import type { Db } from '#src/lib/db.js';
+import { handleMalformedJson, handleUnexpectedError, sendError } from '#src/lib/http-errors.js';
 
 export interface AppDependencies {
   db: Db;
@@ -29,10 +30,6 @@ function checkDb(db: Db): Promise<'ok' | 'down'> {
     () => 'down' as const,
   );
   return Promise.race([query, timeout]);
-}
-
-function toCurrentUser({ id, email }: User) {
-  return currentUserSchema.parse({ id, email });
 }
 
 export function createApp({
@@ -58,27 +55,9 @@ export function createApp({
     res.json(healthResponseSchema.parse({ api: 'ok', db: await checkDb(db) }));
   });
 
-  app.put(
-    '/api/me',
-    withIdentity(authConfig, async (_req, res, { userId, email }) => {
-      const user = await db.user.upsert({
-        where: { id: userId },
-        create: { id: userId, email },
-        update: { email },
-      });
-      res.json(toCurrentUser(user));
-    }),
-  );
-
-  app.get(
-    '/api/me',
-    withUser(authConfig, db, (_req, res, user) => {
-      res.json(toCurrentUser(user));
-    }),
-  );
-
-  app.use('/api/venues', venueRoutes(db, authConfig, staffLinkKey, clock));
-  app.use('/api/staff-links', staffLinkRoutes(db, clock));
+  app.use('/api/me', userRouter({ db, authConfig }));
+  app.use('/api/venues', venueRouter({ db, clock, authConfig, staffLinkKey }));
+  app.use('/api/staff-links', staffLinkRouter({ db, clock }));
 
   app.use((_req, res) => sendError(res, 'not_found'));
   app.use(handleMalformedJson);
