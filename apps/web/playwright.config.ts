@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { JOURNEY_NOW } from './e2e/journey-clock';
 
 const isolated = process.env.E2E_ISOLATED === 'true';
 const apiPort = isolated ? 3200 : 3000;
 const webPort = isolated ? 5273 : 5173;
-const reuseExistingServer = !process.env.CI && !isolated;
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,14 +20,18 @@ export default defineConfig({
     {
       command: 'pnpm --filter @rota-ready/api dev',
       url: `http://localhost:${apiPort}/api/health`,
-      env: { PORT: String(apiPort), WEB_URL: `http://localhost:${webPort}` },
-      reuseExistingServer,
+      env: {
+        PORT: String(apiPort),
+        WEB_URL: `http://localhost:${webPort}`,
+        CLOCK_FIXED_AT: JOURNEY_NOW,
+      },
+      reuseExistingServer: false,
     },
     {
       command: `pnpm --filter @rota-ready/web exec vite --port ${webPort} --strictPort`,
       url: `http://localhost:${webPort}`,
       env: { API_PROXY_TARGET: `http://localhost:${apiPort}` },
-      reuseExistingServer,
+      reuseExistingServer: false,
     },
   ],
 });

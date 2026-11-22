@@ -10,6 +10,7 @@ import type { Email, EmailSender } from '#src/lib/email-sender.js';
 const ISSUER = 'http://auth.test/auth/v1';
 const KEY_ID = 'test-key';
 const WEB_URL = 'http://web.test';
+const DEFAULT_NOW = new Date('2026-01-05T12:00:00.000Z');
 
 interface TokenSubject {
   id: string;
@@ -57,7 +58,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   const outbox = createEmailOutbox();
   const server = createApp({
     db,
-    clock: { now: () => now ?? new Date() },
+    clock: { now: () => new Date(now ?? DEFAULT_NOW) },
     logger: pino({}, { write: (line: string) => logLines.push(line) }),
     staffLinkKey: randomBytes(32),
     emailSender: outbox.sender,

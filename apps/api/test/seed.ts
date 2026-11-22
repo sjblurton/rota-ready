@@ -37,7 +37,7 @@ export function createArchivedStaffMember(
   details: Omit<StaffMemberDetails, 'email'>,
 ) {
   return db.staffMember.create({
-    data: { ...details, email: null, venueId: venue.id, archivedAt: new Date() },
+    data: { ...details, email: null, venueId: venue.id, archivedAt: new Date('2026-01-01T00:00:00.000Z') },
   });
 }
 

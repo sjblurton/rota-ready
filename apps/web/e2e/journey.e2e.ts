@@ -1,5 +1,6 @@
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
+import { JOURNEY_NOW } from './journey-clock';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
@@ -26,6 +27,12 @@ async function latestEmailTextTo(address: string, since: Date): Promise<string |
   if (!latest || new Date(latest.Created) < since) return undefined;
   const message = await fetch(`${mailpitUrl}/api/v1/message/${latest.ID}`);
   return ((await message.json()) as { Text: string }).Text;
+}
+
+async function newContextAtJourneyTime(browser: Browser): Promise<BrowserContext> {
+  const context = await browser.newContext();
+  await context.clock.install({ time: new Date(JOURNEY_NOW) });
+  return context;
 }
 
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
@@ -107,7 +114,7 @@ test.describe.serial('MVP journey', () => {
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.clock.install();
+    await page.clock.install({ time: new Date(JOURNEY_NOW) });
   });
 
   test.afterAll(async () => {
@@ -550,7 +557,7 @@ test.describe.serial('MVP journey', () => {
       .toMatch(/\/s\/[\w-]{43}/);
     const text = await latestEmailTextTo('sam@example.com', publishedThisWeekAt);
     samsEmailedLink = text?.match(/https?:\/\/\S+\/s\/[\w-]{43}/)?.[0] ?? '';
-    const emailWindow = await browser.newContext();
+    const emailWindow = await newContextAtJourneyTime(browser);
     const emailPage = await emailWindow.newPage();
     await emailPage.goto(samsEmailedLink);
     await expect(emailPage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
@@ -593,7 +600,7 @@ test.describe.serial('MVP journey', () => {
   test("opens Sam's page from the Staff Link in a private window, without logging in", async ({
     browser,
   }) => {
-    privateWindow = await browser.newContext();
+    privateWindow = await newContextAtJourneyTime(browser);
     const privatePage = await privateWindow.newPage();
     await privatePage.goto(samsLink);
     await expect(privatePage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
@@ -658,7 +665,7 @@ test.describe.serial('MVP journey', () => {
 
   test("Confirms Sunday's Shift from Sam's Staff Link page", async ({ browser }) => {
     const sunday = addDays(thisWeek, 6);
-    privateWindow = await browser.newContext();
+    privateWindow = await newContextAtJourneyTime(browser);
     staffLinkPage = await privateWindow.newPage();
     await staffLinkPage.goto(samsNewLink);
     await staffLinkPage
@@ -753,7 +760,7 @@ test.describe.serial('MVP journey', () => {
 
   test("shows the reassigned Shift as Removed on Sam's Staff Link page", async ({ browser }) => {
     const thursday = addDays(thisWeek, 10);
-    privateWindow = await browser.newContext();
+    privateWindow = await newContextAtJourneyTime(browser);
     staffLinkPage = await privateWindow.newPage();
     await staffLinkPage.goto(samsNewLink);
     await expect(

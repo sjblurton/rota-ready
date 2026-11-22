@@ -2,6 +2,7 @@ import { pino } from 'pino';
 import { createApp } from './app.js';
 import { parseStaffLinkKey } from '#src/features/staff-links/staff-link-token.js';
 import { supabaseAuthConfig } from '#src/lib/auth.js';
+import { serverClock } from '#src/server-clock.js';
 import { createDb } from '#src/lib/db.js';
 import { smtpEmailSender } from '#src/lib/email-sender.js';
 
@@ -31,7 +32,7 @@ const logger = pino({
 
 createApp({
   db: createDb(databaseUrl),
-  clock: { now: () => new Date() },
+  clock: serverClock(process.env),
   authConfig: supabaseAuthConfig(supabaseUrl),
   logger,
   staffLinkKey: parseStaffLinkKey(staffLinkKey),

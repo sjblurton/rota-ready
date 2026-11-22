@@ -52,7 +52,7 @@ The first version had 100% test coverage and still had serious bugs, because the
 This repo is set up so that bug can't hide:
 
 - **Access is checked in one place.** Every venue route lives under `/api/venues/:venueId/...`, behind a single membership check that returns 404 to anyone who isn't a member ([ADR-0001](docs/adr/0001-venue-membership-and-404-scoping.md)).
-- **Tests run the real code.** The API is built by a single `createApp()` factory that tests and production share, with no `NODE_ENV` switches. As the database, clock, email and auth arrive in later tickets, they're passed into `createApp` as dependencies (ADR-0004), so tests use the same auth and membership checks as production.
+- **Tests run the real code.** The API is built by a single `createApp()` factory that tests and production share, with no `NODE_ENV` switches inside it. As the database, clock, email and auth arrive in later tickets, they're passed into `createApp` as dependencies (ADR-0004), so tests use the same auth and membership checks as production.
 - **The rule is enforced in review.** A cross-venue test is required for every venue route, and the PR template checks for it.
 
 ### Skills used
@@ -113,7 +113,7 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 | --- | --- | --- |
 | HTTP API | Almost all behaviour, including auth failures and cross-venue 404s | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
 | Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
-| Clock | "Upcoming", "has started", March/October clock changes | Fixed clock passed into `createApp` from #10 |
+| Clock | "Upcoming", "has started", March/October clock changes | Tests never read real time: a fixed clock passed into `createApp`, and a fixed instant for the journey's API (`CLOCK_FIXED_AT`, development servers only) and browser |
 | Shared logic | Week attribution, time validation, token encryption | Vitest unit tests in `packages/shared` |
 | End to end | One growing journey through the real stack | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`) |
 
@@ -137,8 +137,8 @@ Every email the app sends locally, such as the Staff Link email from Publish, la
 | Command | What it does |
 | --- | --- |
 | `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
-| `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts the API and web dev servers itself (or reuses running ones); needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
-| `pnpm --filter @rota-ready/web e2e:isolated` | The same journey on its own servers (API `:3200`, web `:5273`), so it never tests dev servers already running from another branch. Add `E2E_SCREENSHOTS=<dir>` to either command to save a screenshot after every step. |
+| `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts its own API and web dev servers on `:3000` and `:5173`, with the API clock fixed to the journey's instant, so stop `pnpm dev` first; needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
+| `pnpm --filter @rota-ready/web e2e:isolated` | The same journey on other ports (API `:3200`, web `:5273`), so it can run while `pnpm dev` is up. Add `E2E_SCREENSHOTS=<dir>` to either command to save a screenshot after every step. |
 | `pnpm lint` | ESLint, including the React Compiler rules, with warnings treated as errors |
 | `pnpm typecheck` | TypeScript in every package |
 | `pnpm build` | Production builds of the web app and the API |
