@@ -76,7 +76,7 @@ export function venueRoutes(
   const venue = Router();
   venue.get('/', getVenue);
   venue.patch('/', renameVenue);
-  venue.use('/staff-members', staffMemberRoutes(db, staffLinkKey));
+  venue.use('/staff-members', staffMemberRoutes(db, staffLinkKey, clock));
   venue.use('/rotas', rotaRoutes(db, clock));
 
   router.use('/:venueId', requireVenueMember(authConfig, db), venue);

@@ -74,7 +74,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   }
 
   async function request(
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
     { as, token, body }: RequestOptions = {},
   ) {

@@ -25,7 +25,7 @@ A person who works shifts at a Venue. Staff Members never log in; they reach the
 _Avoid_: Employee, worker, user, team member
 
 **Archive**:
-What the Owner does when a Staff Member stops working at the Venue. An archived Staff Member drops off the staff list and future Rotas, and their email address is removed, so the same person can be added again later.
+What the Owner does when a Staff Member stops working at the Venue. The Owner can archive someone only once none of their Shifts is still to come, so no Shift is left with a person who has gone. An archived Staff Member drops off the staff list and future Rotas, and their email address is removed, so the same person can be added again later.
 _Avoid_: Delete, remove, deactivate
 
 **Role**:

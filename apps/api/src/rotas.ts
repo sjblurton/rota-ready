@@ -4,6 +4,7 @@ import {
   shiftRequestSchema,
   shiftSchema,
   weekStartOf,
+  type ApiErrorCode,
   type ShiftRequest,
 } from '@rota-ready/shared';
 import { Router, type Response } from 'express';
@@ -19,6 +20,7 @@ import {
   type Venue,
 } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
+import { lockActiveStaffMemberUntilCommit } from './staff-member-lock.js';
 
 type RotaRequestHandler = VenueRequestHandler<{ weekStart: string }>;
 type ShiftRequestHandler = VenueRequestHandler<{ weekStart: string; shiftId: string }>;
@@ -53,8 +55,11 @@ function detailsChanged(before: ShiftTimes, after: ShiftTimes) {
   );
 }
 
-async function lockStaffMemberUntilCommit(tx: Prisma.TransactionClient, staffMemberId: string) {
-  await tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`;
+function shiftInWeekWhere(venueId: string, weekStart: string, shiftId: string) {
+  const id = shiftIdSchema.safeParse(shiftId);
+  return id.success
+    ? { id: id.data, venueId, rota: { weekStart: toDbDate(weekStart) } }
+    : null;
 }
 
 export function rotaRoutes(db: Db, clock: Clock): Router {
@@ -104,12 +109,15 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     return { staffMemberId: staffMember.id, startsAt, endsAt: new Date(request.endsAt) };
   }
 
-  async function overlapsOtherShift(
+  async function shiftRejection(
     tx: Prisma.TransactionClient,
+    venueId: string,
     { staffMemberId, startsAt, endsAt }: ShiftTimes,
     exceptShiftId?: string,
-  ) {
-    await lockStaffMemberUntilCommit(tx, staffMemberId);
+  ): Promise<ApiErrorCode | null> {
+    if (!(await lockActiveStaffMemberUntilCommit(tx, { id: staffMemberId, venueId }))) {
+      return 'not_found';
+    }
     const overlapping = await tx.shift.findFirst({
       where: {
         staffMemberId,
@@ -118,7 +126,7 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
         ...(exceptShiftId && { id: { not: exceptShiftId } }),
       },
     });
-    return overlapping !== null;
+    return overlapping ? 'shift_overlaps' : null;
   }
 
   const addShift: RotaRequestHandler = async (req, res) => {
@@ -128,11 +136,12 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     const times = await resolveShiftTimesOrReject(res, weekStart, request);
     if (!times) return;
     const rota = await findOrCreateRota(res.locals.venue, weekStart);
-    const shift = await db.$transaction(async (tx) => {
-      if (await overlapsOtherShift(tx, times)) return null;
-      return tx.shift.create({ data: { ...times, venueId: rota.venueId, rotaId: rota.id } });
-    });
-    if (!shift) return sendError(res, 'shift_overlaps');
+    const shift = await db.$transaction(
+      async (tx) =>
+        (await shiftRejection(tx, rota.venueId, times)) ??
+        tx.shift.create({ data: { ...times, venueId: rota.venueId, rotaId: rota.id } }),
+    );
+    if (typeof shift === 'string') return sendError(res, shift);
     res.status(201).json(toShift(shift, clock.now()));
   };
 
@@ -140,28 +149,29 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
     const { weekStart, shiftId } = req.params;
     const request = parseBody(shiftRequestSchema, req.body, res);
     if (!request) return;
-    const id = shiftIdSchema.safeParse(shiftId);
-    const existing =
-      id.success &&
-      (await db.shift.findFirst({
-        where: {
-          id: id.data,
-          venueId: res.locals.venue.id,
-          rota: { weekStart: toDbDate(weekStart) },
-        },
-      }));
+    const where = shiftInWeekWhere(res.locals.venue.id, weekStart, shiftId);
+    const existing = where && (await db.shift.findFirst({ where }));
     if (!existing) return sendError(res, 'not_found');
     const times = await resolveShiftTimesOrReject(res, weekStart, request);
     if (!times) return;
     const data = detailsChanged(existing, times)
       ? { ...times, response: ShiftResponse.pending, declineReason: null, respondedAt: null }
       : times;
-    const shift = await db.$transaction(async (tx) => {
-      if (await overlapsOtherShift(tx, times, existing.id)) return null;
-      return tx.shift.update({ where: { id: existing.id }, data });
-    });
-    if (!shift) return sendError(res, 'shift_overlaps');
+    const shift = await db.$transaction(
+      async (tx) =>
+        (await shiftRejection(tx, existing.venueId, times, existing.id)) ??
+        tx.shift.update({ where: { id: existing.id }, data }),
+    );
+    if (typeof shift === 'string') return sendError(res, shift);
     res.json(toShift(shift, clock.now()));
+  };
+
+  const deleteShift: ShiftRequestHandler = async (req, res) => {
+    const { weekStart, shiftId } = req.params;
+    const where = shiftInWeekWhere(res.locals.venue.id, weekStart, shiftId);
+    const { count } = where ? await db.shift.deleteMany({ where }) : { count: 0 };
+    if (count === 0) return sendError(res, 'not_found');
+    res.status(204).end();
   };
 
   const publishRota: RotaRequestHandler = async (req, res) => {
@@ -181,6 +191,7 @@ export function rotaRoutes(db: Db, clock: Clock): Router {
   router.get('/:weekStart', getRota);
   router.post('/:weekStart/shifts', addShift);
   router.patch('/:weekStart/shifts/:shiftId', editShift);
+  router.delete('/:weekStart/shifts/:shiftId', deleteShift);
   router.post('/:weekStart/publish', publishRota);
 
   return router;

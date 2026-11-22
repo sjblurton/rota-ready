@@ -67,6 +67,12 @@ test.describe.serial('MVP journey', () => {
       .nth(1 + daysBetween(weekStart, day));
   }
 
+  function editShiftButton(staffMemberName: string, day: string, times = '09:00–17:00') {
+    return page.getByRole('button', {
+      name: `Edit ${staffMemberName}'s Shift on ${formatLocalDate(day)}, ${times}`,
+    });
+  }
+
   function staffLinkShift(day: string) {
     return staffLinkPage.getByRole('listitem').filter({ hasText: formatLocalDate(day) });
   }
@@ -349,11 +355,7 @@ test.describe.serial('MVP journey', () => {
 
   test("opens a Shift's details from the grid", async () => {
     const nextWeek = addDays(thisWeek, 7);
-    await page
-      .getByRole('button', {
-        name: `Edit Sam Jones's Shift on ${formatLocalDate(nextWeek)}, 09:00–17:00`,
-      })
-      .click();
+    await editShiftButton('Sam Jones', nextWeek).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByLabel('Staff Member').locator('option:checked')).toHaveText(
       'Sam Jones',
@@ -391,7 +393,64 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText('');
   });
 
+  test('asks for confirmation before deleting a Shift', async () => {
+    const tuesday = addDays(thisWeek, 8);
+    await editShiftButton('Alex Smith', tuesday).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete Shift' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText(
+      `Alex Smith, ${formatLocalDate(tuesday)}, 09:00–17:00. This can't be undone.`,
+    );
+  });
+
+  test('deletes the Shift and takes it off the grid', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(rotaCell('Alex Smith', addDays(nextWeek, 1), nextWeek)).toHaveText('');
+  });
+
+  test('keeps the Shift deleted after a reload', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.reload();
+    await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('09:00–17:00');
+    await expect(rotaCell('Alex Smith', addDays(nextWeek, 1), nextWeek)).toHaveText('');
+  });
+
+  test('refuses to archive a Staff Member with an upcoming Shift, and says why', async () => {
+    await page.getByRole('tab', { name: 'Staff' }).click();
+    await page.getByRole('button', { name: 'Archive Alex Smith' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
+    await expect(toast()).toHaveText(
+      'They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them.',
+    );
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expect(staffRows()).toHaveText([/Alex Smith/, /Sam Jones/]);
+    await dismissToasts();
+  });
+
+  test('archives the Staff Member once their upcoming Shift is deleted from the Rota', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await editShiftButton('Alex Smith', nextWeek).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete Shift' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
+    await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('');
+    await page.getByRole('tab', { name: 'Staff' }).click();
+    await page.getByRole('button', { name: 'Archive Alex Smith' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expect(staffRows()).toHaveText([/Sam Jones/]);
+  });
+
   test('asks for confirmation before Publishing this Week', async () => {
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
     await page.getByRole('link', { name: 'Previous Week' }).click();
     await expect(weekHeading(thisWeek)).toBeVisible();
     await page.getByRole('button', { name: 'Publish' }).click();

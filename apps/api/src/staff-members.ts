@@ -7,9 +7,11 @@ import {
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import type { VenueMemberLocals, VenueRequestHandler } from './auth.js';
+import type { Clock } from './clock.js';
 import type { Db } from './db.js';
 import { Prisma, type StaffMember } from './generated/prisma/client.js';
 import { parseBody, sendError } from './http-errors.js';
+import { lockActiveStaffMemberUntilCommit } from './staff-member-lock.js';
 import {
   decryptStaffLinkToken,
   encryptStaffLinkToken,
@@ -45,7 +47,7 @@ function toStaffMember({ id, name, role, email, phone }: StaffMember) {
   return staffMemberSchema.parse({ id, name, role, email, phone });
 }
 
-export function staffMemberRoutes(db: Db, staffLinkKey: Buffer): Router {
+export function staffMemberRoutes(db: Db, staffLinkKey: Buffer, clock: Clock): Router {
   const router = Router();
 
   const listStaffMembers: VenueRequestHandler<object> = async (_req, res) => {
@@ -106,11 +108,20 @@ export function staffMemberRoutes(db: Db, staffLinkKey: Buffer): Router {
   };
 
   const archiveStaffMember: StaffMemberRequestHandler = async (req, res) => {
-    const archived = await updateActiveStaffMember(res, req.params.staffMemberId, {
-      archivedAt: new Date(),
-      email: null,
+    const where = activeStaffMemberWhere(res.locals.venue.id, req.params.staffMemberId);
+    if (!where) return sendError(res, 'not_found');
+    const now = clock.now();
+    const outcome = await db.$transaction(async (tx) => {
+      if (!(await lockActiveStaffMemberUntilCommit(tx, where))) return 'not_found';
+      const upcoming = await tx.shift.findFirst({
+        where: { staffMemberId: where.id, endsAt: { gt: now } },
+      });
+      if (upcoming) return 'staff_member_has_upcoming_shifts';
+      await tx.staffMember.update({ where: { id: where.id }, data: { archivedAt: now, email: null } });
+      return null;
     });
-    if (archived) res.status(204).end();
+    if (outcome) return sendError(res, outcome);
+    res.status(204).end();
   };
 
   async function staffLinkTokenOf(staffMember: StaffMember): Promise<string> {

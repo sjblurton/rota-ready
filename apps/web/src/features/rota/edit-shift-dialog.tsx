@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { FieldError, FieldGroup } from '@/components/ui/field';
+import { DeleteShiftDialog, type ShiftSummary } from '@/features/rota/delete-shift-dialog';
 import { replaceShiftInRota, shiftPath, useRotaWeek } from '@/features/rota/rota-queries';
 import { ShiftFields } from '@/features/rota/shift-fields';
 import { useShiftMutation } from '@/features/rota/shift-mutation';
@@ -39,7 +40,7 @@ export function EditShiftDialog({ venueId, weekStart, shift, times }: EditShiftD
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
-  const summary = {
+  const summary: ShiftSummary = {
     name: staffMembers.find((staffMember) => staffMember.id === shift.staffMemberId)?.name,
     day: formatLocalDate(shiftFormValues(shift, timeZone).date),
     times,
@@ -66,6 +67,7 @@ export function EditShiftDialog({ venueId, weekStart, shift, times }: EditShiftD
           venueId={venueId}
           weekStart={weekStart}
           shift={shift}
+          summary={summary}
           onDone={() => setOpen(false)}
         />
       </DialogContent>
@@ -77,8 +79,12 @@ function EditShiftForm({
   venueId,
   weekStart,
   shift,
+  summary,
   onDone,
-}: Omit<EditShiftDialogProps, 'times'> & { onDone: () => void }) {
+}: Omit<EditShiftDialogProps, 'times'> & {
+  summary: ShiftSummary;
+  onDone: () => void;
+}) {
   const { t } = useTranslation();
   const { shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
   const queryClient = useQueryClient();
@@ -108,6 +114,12 @@ function EditShiftForm({
           <FieldError errors={[form.formState.errors.root]} />
         </FieldGroup>
         <DialogFooter>
+          <DeleteShiftDialog
+            venueId={venueId}
+            weekStart={weekStart}
+            shiftId={shift.id}
+            summary={summary}
+          />
           <DialogClose asChild>
             <Button type="button" variant="outline">
               {t('rota.editShift.cancel')}
