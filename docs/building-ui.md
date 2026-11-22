@@ -142,4 +142,4 @@ Use the first option that works. Each one costs more at upgrade time than the on
 4. **Add to the component file.** For example, a new `cva` variant or size.
 5. **Change the component's existing code.** Avoid this.
 
-Options 4 and 5 change generated shadcn code, which the CLI overwrites when a component is re-added or upgraded. Keep such changes small, and check them again after every upgrade.
+Options 4 and 5 change generated shadcn code, which the CLI overwrites when a component is re-added or upgraded. CI fails a pull request that edits an existing file in `components/ui/`, so take option 4 or 5 only with the user's agreement. A pull request that upgrades components with the CLI carries the `shadcn-upgrade` label, which skips that check.

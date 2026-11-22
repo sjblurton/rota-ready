@@ -45,6 +45,7 @@ function noApiLayerImport(layer) {
 
 export default defineConfig([
   globalIgnores(['**/dist', '**/routeTree.gen.ts', '**/coverage', '**/generated']),
+  { linterOptions: { noInlineConfig: true } },
   js.configs.recommended,
   tseslint.configs.strict,
   {

@@ -2,6 +2,8 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
+`gh` posts as the user, so start every comment or reply an agent writes on an issue or pull request with `> *Written by Claude Code.*`. Skills with their own opening line, such as triage, use theirs instead.
+
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.

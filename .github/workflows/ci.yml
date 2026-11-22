@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Keep shadcn components as CLI output
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'shadcn-upgrade')
+        run: .github/scripts/check-shadcn-untouched.sh "origin/${{ github.base_ref }}"
 
       - uses: jdx/mise-action@v2
 
@@ -55,6 +61,17 @@ jobs:
 
       - name: Run the Playwright journey against the real stack
         run: pnpm --filter @rota-ready/web e2e
+        env:
+          E2E_SCREENSHOTS: ${{ github.workspace }}/journey-screenshots
+
+      - name: Upload a screenshot of every journey step
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: journey-screenshots
+          path: journey-screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload the Playwright report
         if: failure()
