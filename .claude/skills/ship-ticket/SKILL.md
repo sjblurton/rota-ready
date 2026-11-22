@@ -71,7 +71,9 @@ Done when every finding is either fixed or listed with a reason it stays.
 - **Check every claim in the body against the code or a command's output before publishing it.** Edit the body afterwards if one turns out wrong.
 - **Name any conflict with other open PRs** that touch the same files (`gh pr list`, then `gh pr diff <n> --name-only`). Say which PR needs the follow-up edit.
 
-Done when the PR is open, and its body contains only claims you checked.
+- **Wait for CI** with `gh pr checks <n> --watch`. When it passes, add a link to the run's `journey-screenshots` artifact to the PR body: `https://github.com/<owner>/<repo>/actions/runs/<run>/artifacts/<id>`, with the run from `gh pr checks <n> --json link` and the id from `gh api repos/<owner>/<repo>/actions/runs/<run>/artifacts`. When CI fails, fix the cause and push again.
+
+Done when the PR is open, CI passes, and its body links the screenshots and contains only claims you checked.
 
 ## 7. Hand back
 
