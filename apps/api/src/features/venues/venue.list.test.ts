@@ -1,0 +1,107 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createUser, createVenueFor } from '../../../test/seed.js';
+import { startTestApp, type TestApp } from '../../../test/test-app.js';
+
+const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
+const OTHER_OWNER = {
+  id: '7c0d9a54-1e2b-4f3a-8b6c-5d4e3f2a1b0c',
+  email: 'other@example.com',
+};
+const USER_WITHOUT_ROW = {
+  id: '0b7e4a2c-9d3f-4e1a-b5c6-8f2d1e0a9b3c',
+  email: 'nobody@example.com',
+};
+
+describe('/api/venues', () => {
+  let app: TestApp;
+  let response: Response;
+
+  beforeEach(async () => {
+    app = await startTestApp();
+    await createUser(app.db, OWNER);
+    await createUser(app.db, OTHER_OWNER);
+  });
+
+  afterEach(() => app.close());
+
+  describe.each([
+    { method: 'GET', route: '/api/venues' },
+  ] as const)('$method $route auth', ({ method, route }) => {
+    let path: string;
+
+    beforeEach(async () => {
+      const venue = await createVenueFor(app.db, OWNER, {
+        name: 'The Crown',
+        timeZone: 'Europe/London',
+      });
+      path = route.replace(':venueId', venue.id);
+    });
+
+    function send(token: string) {
+      return app.request(method, path, { token });
+    }
+
+    describe('when the token is signed with the wrong key', () => {
+      beforeEach(async () => {
+        response = await send(await app.signTokenWithAnotherKey(OWNER));
+      });
+
+      it('responds with 401', () => {
+        expect(response.status).toBe(401);
+      });
+    });
+
+    describe('when the token has expired', () => {
+      beforeEach(async () => {
+        response = await send(await app.signExpiredToken(OWNER));
+      });
+
+      it('responds with 401', () => {
+        expect(response.status).toBe(401);
+      });
+    });
+
+    describe('when the token is valid but no User row exists', () => {
+      beforeEach(async () => {
+        response = await send(await app.signToken(USER_WITHOUT_ROW));
+      });
+
+      it('responds with 403', () => {
+        expect(response.status).toBe(403);
+      });
+
+      it('carries the forbidden code', async () => {
+        expect(await response.json()).toEqual({ code: 'forbidden' });
+      });
+    });
+  });
+
+  describe('GET /api/venues', () => {
+    describe('when the User has no Venue', () => {
+      beforeEach(async () => {
+        response = await app.request('GET', '/api/venues', { as: OWNER });
+      });
+
+      it('returns an empty list', async () => {
+        expect(await response.json()).toEqual([]);
+      });
+    });
+
+    describe('when the User and another User each have a Venue', () => {
+      beforeEach(async () => {
+        await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' });
+        await createVenueFor(app.db, OTHER_OWNER, {
+          name: 'The Anchor',
+          timeZone: 'Europe/London',
+        });
+        response = await app.request('GET', '/api/venues', { as: OWNER });
+      });
+
+      it('returns only the Venue the User is a member of', async () => {
+        expect(await response.json()).toEqual([
+          { id: expect.any(String), name: 'The Crown', timeZone: 'Europe/London' },
+        ]);
+      });
+    });
+  });
+});

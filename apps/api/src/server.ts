@@ -1,8 +1,8 @@
 import { pino } from 'pino';
 import { createApp } from './app.js';
-import { supabaseAuthConfig } from './auth.js';
-import { createDb } from './db.js';
-import { parseStaffLinkKey } from './staff-link-token.js';
+import { parseStaffLinkKey } from './features/staff-links/staff-link-token.js';
+import { supabaseAuthConfig } from './lib/auth.js';
+import { createDb } from './lib/db.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is not set');

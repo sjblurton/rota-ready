@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { StaffMemberDetails } from '@rota-ready/shared';
-import type { Db } from '../src/db.js';
+import type { Db } from '../src/lib/db.js';
 
 export function createUser(
   db: Db,

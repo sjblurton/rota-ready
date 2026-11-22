@@ -16,6 +16,29 @@ const noFeaturesImport = {
   message: 'components/ and lib/ hold app-wide code with no glossary concept, so they cannot import from features/.',
 };
 
+const noPrismaClientImport = {
+  regex: '/generated/prisma/',
+  allowTypeImports: true,
+  message: 'Routers and controllers reach the database only through a service (ADR-0010).',
+};
+const noDbImport = {
+  regex: '/lib/db(\\.js)?$',
+  allowTypeImports: true,
+  message: 'Routers and controllers reach the database only through a service (ADR-0010).',
+};
+const noExpressImport = {
+  name: 'express',
+  allowTypeImports: true,
+  message: 'Services and data functions know nothing about HTTP (ADR-0010).',
+};
+function noApiLayerImport(layer) {
+  return {
+    regex: `-${layer}(\\.js)?$`,
+    allowTypeImports: true,
+    message: `This layer cannot import a ${layer} file (ADR-0010).`,
+  };
+}
+
 export default defineConfig([
   globalIgnores(['**/dist', '**/routeTree.gen.ts', '**/coverage', '**/generated']),
   js.configs.recommended,
@@ -35,6 +58,59 @@ export default defineConfig([
   {
     files: ['apps/api/**/*.ts', 'packages/**/*.ts', '*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: [
+      'apps/api/src/features/**/*-router.ts',
+      'apps/api/src/features/**/*-controller.ts',
+      'apps/api/src/features/**/require-*.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { patterns: [noPrismaClientImport, noDbImport, noApiLayerImport('data')] },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/features/**/*-service.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [noExpressImport],
+          patterns: [noApiLayerImport('controller'), noApiLayerImport('router')],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/features/**/*-data.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [noExpressImport],
+          patterns: ['service', 'controller', 'router'].map(noApiLayerImport),
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/lib/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              ...noFeaturesImport,
+              message: 'lib/ holds infrastructure with no glossary concept, so it cannot import from features/.',
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     files: ['apps/web/**/*.{ts,tsx}'],

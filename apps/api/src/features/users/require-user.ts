@@ -1,0 +1,36 @@
+import type { Request, RequestHandler, Response } from 'express';
+import type { User } from '../../generated/prisma/client.js';
+import { identify, type AuthConfig, type HandlerWith } from '../../lib/auth.js';
+import type { Db } from '../../lib/db.js';
+import { sendError } from '../../lib/http-errors.js';
+import { createUserService } from './user-service.js';
+
+export async function authenticatedUser(
+  req: Request,
+  res: Response,
+  config: AuthConfig,
+  db: Db,
+): Promise<User | undefined> {
+  const identity = await identify(req, config);
+  if (!identity) {
+    sendError(res, 'unauthorized');
+    return undefined;
+  }
+  const user = await createUserService({ db }).find(identity.userId);
+  if (!user) {
+    sendError(res, 'forbidden');
+    return undefined;
+  }
+  return user;
+}
+
+export function withUser(
+  config: AuthConfig,
+  db: Db,
+  handler: HandlerWith<User>,
+): RequestHandler {
+  return async (req, res) => {
+    const user = await authenticatedUser(req, res, config, db);
+    if (user) await handler(req, res, user);
+  };
+}

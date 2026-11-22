@@ -5,6 +5,7 @@ const KEY_BYTES = 32;
 const IV_BYTES = 12;
 const AUTH_TAG_BYTES = 16;
 const CIPHER = 'aes-256-gcm';
+const STAFF_LINK_PATH = /^\/api\/staff-links\/[^/?]+/;
 
 export function parseStaffLinkKey(base64Key: string): Buffer {
   const key = Buffer.from(base64Key, 'base64');
@@ -39,4 +40,8 @@ export function decryptStaffLinkToken(ciphertext: string, key: Buffer): string {
     decipher.update(bytes.subarray(IV_BYTES + AUTH_TAG_BYTES)),
     decipher.final(),
   ]).toString('utf8');
+}
+
+export function withoutStaffLinkToken(url: string): string {
+  return url.replace(STAFF_LINK_PATH, '/api/staff-links/[token]');
 }

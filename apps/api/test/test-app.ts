@@ -4,7 +4,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type CryptoKey 
 import { pino } from 'pino';
 import { inject } from 'vitest';
 import { createApp } from '../src/app.js';
-import { createDb, type Db } from '../src/db.js';
+import { createDb, type Db } from '../src/lib/db.js';
 
 const ISSUER = 'http://auth.test/auth/v1';
 const KEY_ID = 'test-key';
