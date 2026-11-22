@@ -45,6 +45,31 @@ const noLiteralErrorCode = [
   message: 'Name an error code as apiErrorCode.<code>, not a string literal.',
 }));
 
+const codeStyle = {
+  rules: {
+    'no-comments': {
+      meta: {
+        type: 'suggestion',
+        messages: {
+          comment:
+            'Code comments are banned (ADR-0011). Make the code say it with a name, a smaller function or a test; put the reason in the PR or docs/.',
+        },
+      },
+      create(context) {
+        return {
+          Program() {
+            for (const comment of context.sourceCode.getAllComments()) {
+              const isTripleSlashDirective =
+                comment.type === 'Line' && comment.value.startsWith('/ <reference ');
+              if (!isTripleSlashDirective) context.report({ loc: comment.loc, messageId: 'comment' });
+            }
+          },
+        };
+      },
+    },
+  },
+};
+
 function noApiLayerImport(layer) {
   return {
     regex: `-${layer}(\\.js)?$`,
@@ -58,6 +83,11 @@ export default defineConfig([
   { linterOptions: { noInlineConfig: true } },
   js.configs.recommended,
   tseslint.configs.strict,
+  {
+    ignores: ['apps/web/src/components/ui/**'],
+    plugins: { 'code-style': codeStyle },
+    rules: { 'code-style/no-comments': 'error' },
+  },
   {
     rules: {
       '@typescript-eslint/no-unused-vars': [

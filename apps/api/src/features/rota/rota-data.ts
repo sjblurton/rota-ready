@@ -1,4 +1,4 @@
-import { RotaStatus } from '#src/generated/prisma/client.js';
+import { RotaStatus, type Prisma } from '#src/generated/prisma/client.js';
 import type { DbClient } from '#src/lib/db.js';
 
 export function weekStartDate(weekStart: string): Date {
@@ -9,6 +9,17 @@ export async function findOrCreateRota(db: DbClient, venueId: string, weekStart:
   const key = { venueId, weekStart: weekStartDate(weekStart) };
   await db.rota.createMany({ data: [key], skipDuplicates: true });
   return db.rota.findUniqueOrThrow({ where: { venueId_weekStart: key } });
+}
+
+export async function lockRotaUntilCommit(
+  tx: Prisma.TransactionClient,
+  venueId: string,
+  weekStart: string,
+) {
+  await tx.$queryRaw`
+    SELECT 1 FROM rotas
+    WHERE venue_id = ${venueId}::uuid AND week_start = ${weekStart}::date
+    FOR NO KEY UPDATE`;
 }
 
 export async function publishDraftRota(db: DbClient, rotaId: string, publishedAt: Date) {
@@ -25,7 +36,6 @@ export function findActiveStaffMembersOnRota(db: DbClient, rotaId: string) {
   });
 }
 
-// Prisma's updateMany can't copy one column into another, so this is raw SQL.
 export function markShiftsOfRotaTold(db: DbClient, rotaId: string) {
   return db.$executeRaw`
     UPDATE shifts

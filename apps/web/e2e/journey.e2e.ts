@@ -720,10 +720,10 @@ test.describe.serial('MVP journey', () => {
     const sunday = addDays(thisWeek, 6);
     await editShiftButton('Sam Jones', sunday, '20:00–02:00 (+1)').click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByLabel('Start').selectOption('19:00');
+    await dialog.getByLabel('Start').selectOption('21:00');
     await dialog.getByRole('button', { name: 'Save changes' }).click();
     await expect(dialog).toBeHidden();
-    await expect(rotaCell('Sam Jones', sunday)).toHaveText('19:00–02:00 (+1)Lock upPendingChanged');
+    await expect(rotaCell('Sam Jones', sunday)).toHaveText('21:00–02:00 (+1)Lock upPendingChanged');
   });
 
   test('reassigns a published Shift, marking it Changed for the new Staff Member and Removed for Sam', async () => {

@@ -14,7 +14,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ## React
 
-- The React Compiler is on (ADR-0004). Don't add `useMemo`, `useCallback` or `React.memo` by default. Only add one with a comment explaining why the compiler isn't enough.
+- The React Compiler is on (ADR-0004). Don't add `useMemo`, `useCallback` or `React.memo` by default. Only add one when the compiler isn't enough, and say why in the PR description.
 - Follow the Rules of React: components and hooks are pure, so never mutate props, state or values used in render while rendering. `eslint-plugin-react-hooks` enforces this as errors; fix the code rather than disabling the rule.
 - Before adding or changing a component, read `docs/building-ui.md`: compose shadcn components rather than wrapping them, and give product components a closed API.
 
@@ -28,4 +28,4 @@ Every Vitest and Playwright test follows `.claude/skills/scenario-tests/SKILL.md
 
 ## Code comments
 
-Keep comments rare. Write one only when the *why* isn't obvious from the code (e.g. an ordering constraint that breaks the build). Don't add docstrings that restate the function name, or comments that point to ADRs or describe future tickets.
+Code carries its own meaning, and TS/JS has no comments (ADR-0011, enforced by `code-style/no-comments`). When something needs explaining, rename it, split it, restructure so the constraint can't be broken, or add a test that goes red when it is. Put any reason the code can't hold in the PR description or `docs/`. New migrations add no comments beyond Prisma's generated headers.

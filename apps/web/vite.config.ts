@@ -10,7 +10,6 @@ const envDir = fileURLToPath(new URL('../..', import.meta.url));
 export default defineConfig(({ mode }) => ({
   envDir,
   plugins: [
-    // The router plugin must come before the React plugin.
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
     babel({ presets: [reactCompilerPreset()] }),

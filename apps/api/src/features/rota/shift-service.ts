@@ -13,10 +13,11 @@ import {
   findActiveStaffMember,
   lockActiveStaffMemberUntilCommit,
 } from '#src/features/staff-members/staff-member-data.js';
-import { findOrCreateRota } from './rota-data.js';
+import { findOrCreateRota, lockRotaUntilCommit } from './rota-data.js';
 import {
   createShift,
-  deleteShiftInWeek,
+  hardDeleteShift,
+  softDeleteShift,
   findShiftInWeek,
   hasOverlappingShift,
   updateLiveShift,
@@ -140,12 +141,14 @@ export function createShiftService({ db, clock }: { db: Db; clock: Clock }) {
       weekStart: string,
       shiftId: string,
     ): Promise<{ ok: true } | Refused<'not_found'>> {
-      const deleted = await deleteShiftInWeek(
-        db,
-        { id: shiftId, venueId, weekStart },
-        clock.now(),
-      );
-      return deleted ? { ok: true } : refuse(apiErrorCode.not_found);
+      return db.$transaction(async (tx) => {
+        await lockRotaUntilCommit(tx, venueId, weekStart);
+        const shift = await findShiftInWeek(tx, { id: shiftId, venueId, weekStart });
+        if (!shift) return refuse(apiErrorCode.not_found);
+        if (toldTimesOf(shift)) await softDeleteShift(tx, shift.id, clock.now());
+        else await hardDeleteShift(tx, shift.id);
+        return { ok: true as const };
+      });
     },
   };
 }
