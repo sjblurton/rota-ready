@@ -1,6 +1,13 @@
 import { apiErrorCode, weekStartOf, type ShiftRequest } from '@rota-ready/shared';
-import { ShiftResponse, type Prisma, type Shift, type Venue } from '#src/generated/prisma/client.js';
-import type { Db } from '#src/lib/db.js';
+import {
+  RotaStatus,
+  ShiftResponse,
+  type Prisma,
+  type Shift,
+  type Venue,
+} from '#src/generated/prisma/client.js';
+import type { Clock } from '#src/lib/clock.js';
+import { isPrismaError, type Db } from '#src/lib/db.js';
 import { refuse, type Refused } from '#src/lib/service-result.js';
 import {
   findActiveStaffMember,
@@ -12,11 +19,13 @@ import {
   deleteShiftInWeek,
   findShiftInWeek,
   hasOverlappingShift,
-  updateShift,
+  updateLiveShift,
   type ShiftTimes,
 } from './shift-data.js';
 
-type ShiftResult = { ok: true; shift: Shift } | Refused<'not_found' | 'invalid_request' | 'shift_overlaps'>;
+type ShiftResult =
+  | { ok: true; shift: Shift; rotaStatus: RotaStatus }
+  | Refused<'not_found' | 'invalid_request' | 'shift_overlaps'>;
 
 function detailsChanged(before: ShiftTimes, after: ShiftTimes) {
   return (
@@ -26,7 +35,23 @@ function detailsChanged(before: ShiftTimes, after: ShiftTimes) {
   );
 }
 
-export function createShiftService({ db }: { db: Db }) {
+export function toldTimesOf({ toldStaffMemberId, toldStartsAt, toldEndsAt }: Shift): ShiftTimes | null {
+  if (toldStaffMemberId === null || toldStartsAt === null || toldEndsAt === null) return null;
+  return { staffMemberId: toldStaffMemberId, startsAt: toldStartsAt, endsAt: toldEndsAt };
+}
+
+export function isChangedShift(shift: Shift, rotaStatus: RotaStatus) {
+  if (rotaStatus !== RotaStatus.published) return false;
+  const told = toldTimesOf(shift);
+  return told === null || detailsChanged(told, shift);
+}
+
+export function isRemovedShift(shift: Shift) {
+  const told = toldTimesOf(shift);
+  return told !== null && (shift.deletedAt !== null || told.staffMemberId !== shift.staffMemberId);
+}
+
+export function createShiftService({ db, clock }: { db: Db; clock: Clock }) {
   async function resolveTimes(
     venue: Venue,
     weekStart: string,
@@ -68,6 +93,7 @@ export function createShiftService({ db }: { db: Db }) {
         async (tx) =>
           (await lockAndCheckOverlap(tx, venue.id, times)) ?? {
             ok: true,
+            rotaStatus: rota.status,
             shift: await createShift(tx, {
               ...times,
               role: request.role,
@@ -94,13 +120,19 @@ export function createShiftService({ db }: { db: Db }) {
       const data = detailsChanged(existing, times)
         ? { ...details, response: ShiftResponse.pending, declineReason: null, respondedAt: null }
         : details;
-      return db.$transaction(
-        async (tx) =>
-          (await lockAndCheckOverlap(tx, venue.id, times, existing.id)) ?? {
-            ok: true,
-            shift: await updateShift(tx, existing.id, data),
-          },
-      );
+      try {
+        return await db.$transaction(
+          async (tx) =>
+            (await lockAndCheckOverlap(tx, venue.id, times, existing.id)) ?? {
+              ok: true,
+              rotaStatus: existing.rota.status,
+              shift: await updateLiveShift(tx, existing.id, data),
+            },
+        );
+      } catch (error) {
+        if (isPrismaError(error, 'P2025')) return refuse(apiErrorCode.not_found);
+        throw error;
+      }
     },
 
     async delete(
@@ -108,7 +140,11 @@ export function createShiftService({ db }: { db: Db }) {
       weekStart: string,
       shiftId: string,
     ): Promise<{ ok: true } | Refused<'not_found'>> {
-      const deleted = await deleteShiftInWeek(db, { id: shiftId, venueId, weekStart });
+      const deleted = await deleteShiftInWeek(
+        db,
+        { id: shiftId, venueId, weekStart },
+        clock.now(),
+      );
       return deleted ? { ok: true } : refuse(apiErrorCode.not_found);
     },
   };

@@ -95,6 +95,8 @@
     "goToThisWeek": "Go to this Week",
     "staffMember": "Staff Member",
     "noStaff": "Add Staff Members to start building the Rota.",
+    "changed": "Changed",
+    "removed": "Removed",
     "shift": {
       "chooseStaffMember": "Choose a Staff Member",
       "chooseTime": "Choose a time",
@@ -211,6 +213,9 @@
       "declineSubmit": "Decline Shift",
       "declineCancel": "Cancel",
       "started": "This Shift has started.",
+      "removedShifts": "Removed Shifts",
+      "removedDescription": "These Shifts aren't yours any more, so you don't need to work them.",
+      "removed": "Removed",
       "invalidTitle": "This link isn't valid",
       "invalidDescription": "Ask your manager for a new link.",
       "tryAgain": "Try again"

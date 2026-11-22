@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { removeShiftFromRota, shiftPath } from '@/features/rota/rota-queries';
+import { refetchRota, removeShiftFromRota, shiftPath } from '@/features/rota/rota-queries';
 import { apiErrorMessage } from '@/i18n/api-error-message';
 import { apiDelete } from '@/lib/api';
 
@@ -39,6 +39,7 @@ export function DeleteShiftDialog({ venueId, weekStart, shiftId, summary }: Dele
     mutationFn: () => apiDelete(shiftPath(venueId, weekStart, shiftId), z.undefined()),
     onSuccess: () => {
       removeShiftFromRota(queryClient, venueId, weekStart, shiftId);
+      refetchRota(queryClient, venueId, weekStart);
     },
     onError: (error) => {
       toast.error(apiErrorMessage(t, error));

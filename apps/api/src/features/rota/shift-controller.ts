@@ -1,21 +1,21 @@
 import { apiErrorCode, shiftRequestSchema, shiftSchema } from '@rota-ready/shared';
 import { z } from 'zod';
-import type { Shift } from '#src/generated/prisma/client.js';
+import type { RotaStatus, Shift } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from '#src/features/venues/require-venue-member.js';
 import type { RotaRequestHandler } from './rota-controller.js';
-import type { ShiftService } from './shift-service.js';
+import { isChangedShift, toldTimesOf, type ShiftService } from './shift-service.js';
 
 type ShiftRequestHandler = VenueRequestHandler<{ weekStart: string; shiftId: string }>;
 
 const shiftIdSchema = z.uuid();
 
-export function toShift(
+export function shiftFields(
   { id, staffMemberId, startsAt, endsAt, role, notes, response, declineReason }: Shift,
   now: Date,
 ) {
-  return shiftSchema.parse({
+  return {
     id,
     staffMemberId,
     startsAt: startsAt.toISOString(),
@@ -25,7 +25,24 @@ export function toShift(
     response,
     declineReason,
     started: startsAt <= now,
+  };
+}
+
+export function toShift(shift: Shift, rotaStatus: RotaStatus, now: Date) {
+  return shiftSchema.parse({
+    ...shiftFields(shift, now),
+    changed: isChangedShift(shift, rotaStatus),
   });
+}
+
+export function toRemovedShift(shift: Shift) {
+  const told = toldTimesOf(shift);
+  return {
+    id: shift.id,
+    staffMemberId: told?.staffMemberId,
+    startsAt: told?.startsAt.toISOString(),
+    endsAt: told?.endsAt.toISOString(),
+  };
 }
 
 export function shiftController(shifts: ShiftService, clock: Clock) {
@@ -34,7 +51,7 @@ export function shiftController(shifts: ShiftService, clock: Clock) {
     if (!request) return;
     const result = await shifts.add(res.locals.venue, req.params.weekStart, request);
     if (!result.ok) return sendError(res, result.code);
-    res.status(201).json(toShift(result.shift, clock.now()));
+    res.status(201).json(toShift(result.shift, result.rotaStatus, clock.now()));
   };
 
   const editShift: ShiftRequestHandler = async (req, res) => {
@@ -44,7 +61,7 @@ export function shiftController(shifts: ShiftService, clock: Clock) {
     if (!id.success) return sendError(res, apiErrorCode.not_found);
     const result = await shifts.edit(res.locals.venue, req.params.weekStart, id.data, request);
     if (!result.ok) return sendError(res, result.code);
-    res.json(toShift(result.shift, clock.now()));
+    res.json(toShift(result.shift, result.rotaStatus, clock.now()));
   };
 
   const deleteShift: ShiftRequestHandler = async (req, res) => {

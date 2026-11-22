@@ -77,7 +77,7 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
     });
   });
 
-  describe('when the Owner deletes a Shift', () => {
+  describe('when the Owner deletes a Shift in a Draft Rota', () => {
     beforeEach(async () => {
       response = await app.request('DELETE', shiftPath(ownVenue, WEEK_START, shift), {
         as: OWNER,
@@ -119,7 +119,94 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
     });
   });
 
-  describe('when the Owner deletes a Confirmed Shift in a Published Rota', () => {
+  describe('when the Owner deletes a Confirmed Shift that has been published', () => {
+    let told: { id: string };
+
+    beforeEach(async () => {
+      const draft = await createRotaFor(app.db, ownVenue, '2026-11-23');
+      told = await createShift(app.db, draft, sam, {
+        startsAt: '2026-11-23T09:00:00.000Z',
+        endsAt: '2026-11-23T17:00:00.000Z',
+      });
+      await app.request('POST', `/api/venues/${ownVenue.id}/rotas/2026-11-23/publish`, {
+        as: OWNER,
+      });
+      await app.db.shift.update({
+        where: { id: told.id },
+        data: { response: 'confirmed', respondedAt: new Date('2026-11-20T10:00:00.000Z') },
+      });
+      app.setClock('2026-11-21T08:00:00.000Z');
+      response = await app.request('DELETE', shiftPath(ownVenue, '2026-11-23', told), {
+        as: OWNER,
+      });
+    });
+
+    it('responds with 204', () => {
+      expect(response.status).toBe(204);
+    });
+
+    it('keeps the Shift, marked as deleted then, so Sam can see it was removed', async () => {
+      expect(
+        await app.db.shift.findUnique({ where: { id: told.id }, select: { deletedAt: true } }),
+      ).toEqual({ deletedAt: new Date('2026-11-21T08:00:00.000Z') });
+    });
+
+    describe('when the Owner then loads the Rota', () => {
+      beforeEach(async () => {
+        response = await app.request('GET', `/api/venues/${ownVenue.id}/rotas/2026-11-23`, {
+          as: OWNER,
+        });
+      });
+
+      it('leaves the Shift out of the Shifts', async () => {
+        expect(await response.json()).toMatchObject({ shifts: [] });
+      });
+
+      it("lists it as a Removed Shift in Sam's row", async () => {
+        expect(await response.json()).toMatchObject({
+          removedShifts: [
+            {
+              id: told.id,
+              staffMemberId: sam.id,
+              startsAt: '2026-11-23T09:00:00.000Z',
+              endsAt: '2026-11-23T17:00:00.000Z',
+            },
+          ],
+        });
+      });
+    });
+
+    describe('when the Owner deletes it again', () => {
+      beforeEach(async () => {
+        response = await app.request('DELETE', shiftPath(ownVenue, '2026-11-23', told), {
+          as: OWNER,
+        });
+      });
+
+      it('responds with 404 and the not_found code', async () => {
+        expect([response.status, await response.json()]).toEqual([404, { code: 'not_found' }]);
+      });
+    });
+
+    describe('when the Owner tries to edit it', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', told), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-23T10:00:00.000Z',
+            endsAt: '2026-11-23T17:00:00.000Z',
+          },
+        });
+      });
+
+      it('responds with 404 and the not_found code', async () => {
+        expect([response.status, await response.json()]).toEqual([404, { code: 'not_found' }]);
+      });
+    });
+  });
+
+  describe('when the Owner deletes a Confirmed Shift added to a Published Rota after it was published', () => {
     let published: { id: string };
 
     beforeEach(async () => {

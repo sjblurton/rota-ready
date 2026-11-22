@@ -64,6 +64,33 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
 
   afterEach(() => app.close());
 
+  describe('when Sam answers a Shift that was published and then deleted', () => {
+    let deleted: { id: string };
+
+    beforeEach(async () => {
+      const draft = await createRotaFor(app.db, venue, '2026-11-23');
+      deleted = await createShift(app.db, draft, sam, {
+        startsAt: '2026-11-23T09:00:00.000Z',
+        endsAt: '2026-11-23T17:00:00.000Z',
+      });
+      await app.request('POST', `/api/venues/${venue.id}/rotas/2026-11-23/publish`, { as: OWNER });
+      await app.request('DELETE', `/api/venues/${venue.id}/rotas/2026-11-23/shifts/${deleted.id}`, {
+        as: OWNER,
+      });
+      response = await app.request('PUT', responsePath(token, deleted), {
+        body: { response: 'confirmed' },
+      });
+    });
+
+    it('responds with 404 and the not_found code', async () => {
+      expect([response.status, await response.json()]).toEqual([404, { code: 'not_found' }]);
+    });
+
+    it('leaves the Shift Pending', async () => {
+      expect(await storedResponse(app, deleted)).toMatchObject({ response: 'pending' });
+    });
+  });
+
   describe('when Sam Confirms their Thursday Shift', () => {
     beforeEach(async () => {
       response = await app.request('PUT', responsePath(token, thursday), {

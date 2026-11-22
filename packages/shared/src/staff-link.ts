@@ -10,15 +10,20 @@ export const staffLinkSchema = z.object({
 
 export type StaffLink = z.infer<typeof staffLinkSchema>;
 
-export const staffLinkShiftSchema = shiftSchema.omit({ staffMemberId: true });
+export const staffLinkShiftSchema = shiftSchema.omit({ staffMemberId: true, changed: true });
 
 export type StaffLinkShift = z.infer<typeof staffLinkShiftSchema>;
+
+export const removedShiftSchema = shiftSchema.pick({ id: true, startsAt: true, endsAt: true });
+
+export type RemovedShift = z.infer<typeof removedShiftSchema>;
 
 export const staffLinkPageSchema = z.object({
   firstName: z.string(),
   venueName: z.string(),
   timeZone: z.string(),
   shifts: z.array(staffLinkShiftSchema),
+  removedShifts: z.array(removedShiftSchema),
 });
 
 export type StaffLinkPage = z.infer<typeof staffLinkPageSchema>;

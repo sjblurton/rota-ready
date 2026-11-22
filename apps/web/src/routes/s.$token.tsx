@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { StaffLinkPageError } from '@/features/staff-links/staff-link-page-error';
+import { RemovedShifts } from '@/features/staff-links/removed-shifts';
 import { staffLinkPageQuery } from '@/features/staff-links/staff-link-queries';
 import { UpcomingShifts } from '@/features/staff-links/upcoming-shifts';
 
@@ -30,6 +31,7 @@ function StaffLinkPage() {
         <h2 className="font-semibold">{t('staffLink.page.shifts')}</h2>
         <UpcomingShifts token={token} shifts={page.shifts} timeZone={page.timeZone} />
       </section>
+      <RemovedShifts removedShifts={page.removedShifts} timeZone={page.timeZone} />
     </main>
   );
 }

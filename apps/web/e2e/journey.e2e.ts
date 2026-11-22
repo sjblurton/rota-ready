@@ -706,6 +706,79 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('Confirmed');
   });
 
+  test('keeps a Confirmed Shift Confirmed and unmarked when only its notes change', async () => {
+    const sunday = addDays(thisWeek, 6);
+    await editShiftButton('Sam Jones', sunday, '20:00–02:00 (+1)').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Notes (optional)').fill('Lock up');
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(rotaCell('Sam Jones', sunday)).toHaveText('20:00–02:00 (+1)Lock upConfirmed');
+  });
+
+  test("sends a Confirmed Shift back to Pending, marked Changed, when its time changes", async () => {
+    const sunday = addDays(thisWeek, 6);
+    await editShiftButton('Sam Jones', sunday, '20:00–02:00 (+1)').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Start').selectOption('19:00');
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(rotaCell('Sam Jones', sunday)).toHaveText('19:00–02:00 (+1)Lock upPendingChanged');
+  });
+
+  test('reassigns a published Shift, marking it Changed for the new Staff Member and Removed for Sam', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    const thursday = addDays(nextWeek, 3);
+    await page.getByRole('tab', { name: 'Staff' }).click();
+    const addForm = staffForm('Add staff member');
+    await addForm.getByLabel('Name').fill('Jo Bloggs');
+    await addForm.getByLabel('Role').fill('Floor');
+    await addForm.getByLabel('Email').fill('jo@example.com');
+    await addForm.getByRole('button', { name: 'Add staff member' }).click();
+    await expect(staffTable().getByText('Jo Bloggs')).toBeVisible();
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(nextWeek)).toBeVisible();
+    await editShiftButton('Sam Jones', thursday, '18:00–23:00').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Staff Member').selectOption({ label: 'Jo Bloggs' });
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(rotaCell('Sam Jones', thursday, nextWeek)).toHaveText('18:00–23:00Removed');
+    await expect(rotaCell('Jo Bloggs', thursday, nextWeek)).toHaveText(
+      '18:00–23:00FloorOpen up at 17:45PendingChanged',
+    );
+  });
+
+  test("shows the reassigned Shift as Removed on Sam's Staff Link page", async ({ browser }) => {
+    const thursday = addDays(thisWeek, 10);
+    privateWindow = await browser.newContext();
+    staffLinkPage = await privateWindow.newPage();
+    await staffLinkPage.goto(samsNewLink);
+    await expect(
+      staffLinkPage.getByRole('list', { name: 'Removed Shifts' }).getByRole('listitem'),
+    ).toHaveText([`${formatLocalDate(thursday)}18:00–23:00Removed`]);
+    await expect(
+      staffLinkPage.getByRole('list', { name: 'Your upcoming Shifts' }),
+    ).not.toContainText(formatLocalDate(thursday));
+  });
+
+  test("shows the reassigned Shift as Pending on Jo's Staff Link page", async () => {
+    const thursday = addDays(thisWeek, 10);
+    await page.getByRole('tab', { name: 'Staff' }).click();
+    await page.getByRole('button', { name: 'Staff Link for Jo Bloggs' }).click();
+    await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
+    const josLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await staffLinkPage.goto(josLink);
+    await expect(staffLinkShift(thursday)).toContainText('18:00–23:00');
+    await expect(staffLinkShift(thursday)).toContainText('Pending');
+    await expect(staffLinkPage.getByRole('list', { name: 'Removed Shifts' })).toHaveCount(0);
+    await privateWindow.close();
+  });
+
   test('keeps a User with a Venue out of onboarding', async () => {
     await page.goto('/onboarding');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);

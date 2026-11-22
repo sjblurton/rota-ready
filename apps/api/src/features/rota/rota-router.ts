@@ -10,7 +10,7 @@ import { createShiftService } from './shift-service.js';
 export function rotaRouter(dependencies: RotaServiceDependencies): Router {
   const { db, clock } = dependencies;
   const rotas = rotaController(createRotaService(dependencies), clock);
-  const shifts = shiftController(createShiftService({ db }), clock);
+  const shifts = shiftController(createShiftService({ db, clock }), clock);
   const router = Router();
   router.param('weekStart', (_req, res, next, weekStart: string) => {
     if (!isWeekStart(weekStart)) return sendError(res, apiErrorCode.not_found);

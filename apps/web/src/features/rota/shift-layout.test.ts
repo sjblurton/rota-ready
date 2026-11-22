@@ -17,6 +17,7 @@ function shift(id: string, staffMemberId: string, startsAt: string, endsAt: stri
     response: 'pending',
     declineReason: null,
     started: false,
+    changed: false,
   };
 }
 
