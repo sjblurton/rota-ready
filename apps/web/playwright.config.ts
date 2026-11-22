@@ -1,9 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { JOURNEY_NOW } from './e2e/journey-clock';
-
-const isolated = process.env.E2E_ISOLATED === 'true';
-const apiPort = isolated ? 3200 : 3000;
-const webPort = isolated ? 5273 : 5173;
+import { apiPort, webPort } from './e2e/journey-servers';
 
 export default defineConfig({
   testDir: './e2e',
@@ -18,12 +15,12 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: 'pnpm --filter @rota-ready/api dev',
+      command: 'pnpm --filter @rota-ready/api journey-server',
       url: `http://localhost:${apiPort}/api/health`,
       env: {
         PORT: String(apiPort),
         WEB_URL: `http://localhost:${webPort}`,
-        CLOCK_FIXED_AT: JOURNEY_NOW,
+        JOURNEY_NOW,
       },
       reuseExistingServer: false,
     },

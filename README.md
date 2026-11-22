@@ -113,7 +113,7 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 | --- | --- | --- |
 | HTTP API | Almost all behaviour, including auth failures and cross-venue 404s | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
 | Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
-| Clock | "Upcoming", "has started", March/October clock changes | Tests never read real time: a fixed clock passed into `createApp`, and a fixed instant for the journey's API (`CLOCK_FIXED_AT`, development servers only) and browser |
+| Clock | "Upcoming", "has started", March/October clock changes | No test outcome depends on real time: API tests pass a fixed clock into `createApp`; the journey runs on `journey-server.ts`, whose clock it sets and moves along with the browser's |
 | Shared logic | Week attribution, time validation, token encryption | Vitest unit tests in `packages/shared` |
 | End to end | One growing journey through the real stack | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`) |
 
@@ -137,7 +137,7 @@ Every email the app sends locally, such as the Staff Link email from Publish, la
 | Command | What it does |
 | --- | --- |
 | `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
-| `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts its own API and web dev servers on `:3000` and `:5173`, with the API clock fixed to the journey's instant, so stop `pnpm dev` first; needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
+| `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts its own servers on `:3000` and `:5173` (the API through `journey-server.ts`, whose clock the journey controls), so stop `pnpm dev` first; needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
 | `pnpm --filter @rota-ready/web e2e:isolated` | The same journey on other ports (API `:3200`, web `:5273`), so it can run while `pnpm dev` is up. Add `E2E_SCREENSHOTS=<dir>` to either command to save a screenshot after every step. |
 | `pnpm lint` | ESLint, including the React Compiler rules, with warnings treated as errors |
 | `pnpm typecheck` | TypeScript in every package |

@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
-import { JOURNEY_NOW } from './journey-clock';
+import { installJourneyClock, JOURNEY_NOW, moveJourneyClockTo } from './journey-clock';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
@@ -31,7 +31,7 @@ async function latestEmailTextTo(address: string, since: Date): Promise<string |
 
 async function newContextAtJourneyTime(browser: Browser): Promise<BrowserContext> {
   const context = await browser.newContext();
-  await context.clock.install({ time: new Date(JOURNEY_NOW) });
+  await installJourneyClock(context);
   return context;
 }
 
@@ -114,7 +114,8 @@ test.describe.serial('MVP journey', () => {
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.clock.install({ time: new Date(JOURNEY_NOW) });
+    await moveJourneyClockTo(JOURNEY_NOW);
+    await installJourneyClock(page.context());
   });
 
   test.afterAll(async () => {
@@ -784,6 +785,15 @@ test.describe.serial('MVP journey', () => {
     await expect(staffLinkShift(thursday)).toContainText('Pending');
     await expect(staffLinkPage.getByRole('list', { name: 'Removed Shifts' })).toHaveCount(0);
     await privateWindow.close();
+  });
+
+  test("shows Sam's Pending Sunday Shift as No reply once its start has passed", async () => {
+    const sunday = addDays(thisWeek, 6);
+    await moveJourneyClockTo(`${sunday}T21:30:00.000Z`);
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.clock.fastForward(30_000);
+    await expect(rotaCell('Sam Jones', sunday)).toHaveText('21:00–02:00 (+1)Lock upNo replyChanged');
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {
