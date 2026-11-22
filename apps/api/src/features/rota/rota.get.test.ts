@@ -121,6 +121,7 @@ describe('GET /api/venues/:venueId/rotas/:weekStart', () => {
         weekStart: WEEK_START,
         status: 'draft',
         shifts: [],
+        removedShifts: [],
       });
     });
 

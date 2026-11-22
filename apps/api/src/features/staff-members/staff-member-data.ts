@@ -47,7 +47,7 @@ export async function setStaffLinkIfMissing(
 }
 
 export async function hasShiftEndingAfter(db: DbClient, staffMemberId: string, instant: Date) {
-  const shift = await db.shift.findFirst({ where: { staffMemberId, endsAt: { gt: instant } } });
+  const shift = await db.shift.findFirst({ where: { staffMemberId, deletedAt: null, endsAt: { gt: instant } } });
   return shift !== null;
 }
 

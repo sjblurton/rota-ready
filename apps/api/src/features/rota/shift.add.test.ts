@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createActiveStaffMember,
   createArchivedStaffMember,
+  createPublishedRotaFor,
   createRotaFor,
   createShift,
   createUser,
@@ -127,6 +128,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
         response: 'pending',
         declineReason: null,
         started: false,
+        changed: false,
       });
     });
 
@@ -254,6 +256,50 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
 
     it('creates no Shift', async () => {
       expect(await app.db.shift.count()).toBe(0);
+    });
+  });
+
+  describe('when the Owner adds a Shift to a Published Rota', () => {
+    beforeEach(async () => {
+      await createPublishedRotaFor(app.db, ownVenue, WEEK_START);
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-16T09:00:00.000Z',
+          endsAt: '2026-11-16T17:00:00.000Z',
+        },
+      });
+    });
+
+    it('returns it marked as changed, since nobody has been told about it', async () => {
+      expect(await response.json()).toMatchObject({ changed: true });
+    });
+  });
+
+  describe("when Sam's published Shift from 09:00 to 17:00 on Monday has been deleted", () => {
+    beforeEach(async () => {
+      const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      const told = await createShift(app.db, rota, sam, {
+        startsAt: '2026-11-16T09:00:00.000Z',
+        endsAt: '2026-11-16T17:00:00.000Z',
+      });
+      await app.request('POST', `${rotaPath(ownVenue, WEEK_START)}/publish`, { as: OWNER });
+      await app.request('DELETE', `${shiftsPath(ownVenue, WEEK_START)}/${told.id}`, {
+        as: OWNER,
+      });
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-16T09:00:00.000Z',
+          endsAt: '2026-11-16T17:00:00.000Z',
+        },
+      });
+    });
+
+    it('lets the Owner add a Shift for Sam at the same time', () => {
+      expect(response.status).toBe(201);
     });
   });
 

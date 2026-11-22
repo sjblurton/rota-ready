@@ -11,13 +11,34 @@ export function findPublishedShiftsEndingAfter(
   instant: Date,
 ) {
   return db.shift.findMany({
-    where: { staffMemberId, rota: { status: RotaStatus.published }, endsAt: { gt: instant } },
+    where: {
+      staffMemberId,
+      deletedAt: null,
+      rota: { status: RotaStatus.published },
+      endsAt: { gt: instant },
+    },
     orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
   });
 }
 
+export function findRemovedShiftsStartingAfter(
+  db: DbClient,
+  staffMemberId: string,
+  instant: Date,
+) {
+  return db.shift.findMany({
+    where: {
+      toldStaffMemberId: staffMemberId,
+      toldStartsAt: { gt: instant },
+      rota: { status: RotaStatus.published },
+      OR: [{ deletedAt: { not: null } }, { staffMemberId: { not: staffMemberId } }],
+    },
+    orderBy: [{ toldStartsAt: 'asc' }, { createdAt: 'asc' }],
+  });
+}
+
 function publishedShiftOf(staffMemberId: string, shiftId: string) {
-  return { id: shiftId, staffMemberId, rota: { status: RotaStatus.published } };
+  return { id: shiftId, staffMemberId, deletedAt: null, rota: { status: RotaStatus.published } };
 }
 
 export async function answerPublishedShiftStartingAfter(

@@ -2,6 +2,7 @@ import {
   apiErrorCode,
   firstNameOf,
   shiftResponseRequestSchema,
+  removedShiftSchema,
   staffLinkPageSchema,
   staffLinkShiftSchema,
 } from '@rota-ready/shared';
@@ -10,14 +11,18 @@ import { z } from 'zod';
 import type { Shift } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
-import { toShift } from '#src/features/rota/shift-controller.js';
+import { shiftFields, toRemovedShift } from '#src/features/rota/shift-controller.js';
 import type { StaffLinkService } from './staff-link-service.js';
 
 const shiftIdSchema = z.uuid();
 
 export function staffLinkController(staffLinks: StaffLinkService, clock: Clock) {
   function toStaffLinkShift(shift: Shift) {
-    return staffLinkShiftSchema.parse(toShift(shift, clock.now()));
+    return staffLinkShiftSchema.parse(shiftFields(shift, clock.now()));
+  }
+
+  function toStaffLinkRemovedShift(shift: Shift) {
+    return removedShiftSchema.parse(toRemovedShift(shift));
   }
 
   return {
@@ -25,13 +30,17 @@ export function staffLinkController(staffLinks: StaffLinkService, clock: Clock) 
       const found = await staffLinks.staffMemberFor(req.params.token);
       if (!found.ok) return sendError(res, found.code);
       const { staffMember } = found;
-      const shifts = await staffLinks.upcomingShifts(staffMember);
+      const [shifts, removedShifts] = await Promise.all([
+        staffLinks.upcomingShifts(staffMember),
+        staffLinks.removedShifts(staffMember),
+      ]);
       res.json(
         staffLinkPageSchema.parse({
           firstName: firstNameOf(staffMember.name),
           venueName: staffMember.venue.name,
           timeZone: staffMember.venue.timeZone,
           shifts: shifts.map(toStaffLinkShift),
+          removedShifts: removedShifts.map(toStaffLinkRemovedShift),
         }),
       );
     },

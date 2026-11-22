@@ -54,6 +54,7 @@ describe('GET /api/staff-links/:token', () => {
         venueName: 'The Crown',
         timeZone: 'Europe/London',
         shifts: [],
+        removedShifts: [],
       });
     });
 
@@ -174,6 +175,132 @@ describe('GET /api/staff-links/:token', () => {
 
       it('returns only the Sunday Shift', async () => {
         expect(await returnedShiftIds()).toEqual([shifts.sunday.id]);
+      });
+    });
+  });
+
+  describe('when Sam was told about Shifts on Thursday and Friday, and it is Wednesday at noon', () => {
+    const THURSDAY_9_TO_5 = {
+      startsAt: '2026-11-19T09:00:00.000Z',
+      endsAt: '2026-11-19T17:00:00.000Z',
+    };
+    const FRIDAY_6_TO_11 = {
+      startsAt: '2026-11-20T18:00:00.000Z',
+      endsAt: '2026-11-20T23:00:00.000Z',
+    };
+    let jo: { id: string };
+    let thursday: { id: string };
+    let friday: { id: string };
+
+    function shiftPath(shift: { id: string }) {
+      return `/api/venues/${venue.id}/rotas/2026-11-16/shifts/${shift.id}`;
+    }
+
+    async function staffLinkPageOf(staffMember: { id: string }) {
+      const link = await app.request(
+        'GET',
+        `/api/venues/${venue.id}/staff-members/${staffMember.id}/staff-link`,
+        { as: OWNER },
+      );
+      const { token: theirToken } = (await link.json()) as { token: string };
+      const page = await app.request('GET', `/api/staff-links/${theirToken}`);
+      return (await page.json()) as {
+        shifts: { id: string; response: string }[];
+        removedShifts: { id: string }[];
+      };
+    }
+
+    beforeEach(async () => {
+      jo = await createActiveStaffMember(app.db, venue, JO);
+      const draft = await createRotaFor(app.db, venue, '2026-11-16');
+      thursday = await createShift(app.db, draft, sam, THURSDAY_9_TO_5);
+      friday = await createShift(app.db, draft, sam, FRIDAY_6_TO_11);
+      await app.request('POST', `/api/venues/${venue.id}/rotas/2026-11-16/publish`, { as: OWNER });
+      app.setClock('2026-11-18T12:00:00.000Z');
+    });
+
+    describe('when the Owner reassigns the Thursday Shift to Jo', () => {
+      beforeEach(async () => {
+        await app.request('PATCH', shiftPath(thursday), {
+          as: OWNER,
+          body: { staffMemberId: jo.id, ...THURSDAY_9_TO_5 },
+        });
+      });
+
+      it("shows it to Sam as a Removed Shift, with the times Sam was told", async () => {
+        expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
+          { id: thursday.id, ...THURSDAY_9_TO_5 },
+        ]);
+      });
+
+      it("leaves it out of Sam's upcoming Shifts", async () => {
+        expect((await staffLinkPageOf(sam)).shifts.map(({ id }) => id)).toEqual([friday.id]);
+      });
+
+      it("shows it to Jo as Pending", async () => {
+        expect((await staffLinkPageOf(jo)).shifts).toMatchObject([
+          { id: thursday.id, response: 'pending' },
+        ]);
+      });
+
+      it('shows Jo no Removed Shifts', async () => {
+        expect((await staffLinkPageOf(jo)).removedShifts).toEqual([]);
+      });
+
+      describe('when the Owner gives it back to Sam', () => {
+        beforeEach(async () => {
+          await app.request('PATCH', shiftPath(thursday), {
+            as: OWNER,
+            body: { staffMemberId: sam.id, ...THURSDAY_9_TO_5 },
+          });
+        });
+
+        it('no longer shows Sam a Removed Shift', async () => {
+          expect((await staffLinkPageOf(sam)).removedShifts).toEqual([]);
+        });
+      });
+    });
+
+    describe('when the Owner moves the Thursday Shift an hour later for Sam', () => {
+      beforeEach(async () => {
+        await app.request('PATCH', shiftPath(thursday), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-19T10:00:00.000Z',
+            endsAt: '2026-11-19T18:00:00.000Z',
+          },
+        });
+      });
+
+      it('shows Sam no Removed Shifts', async () => {
+        expect((await staffLinkPageOf(sam)).removedShifts).toEqual([]);
+      });
+    });
+
+    describe('when the Owner deletes the Friday Shift', () => {
+      beforeEach(async () => {
+        await app.request('DELETE', shiftPath(friday), { as: OWNER });
+      });
+
+      it('shows it to Sam as a Removed Shift', async () => {
+        expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
+          { id: friday.id, ...FRIDAY_6_TO_11 },
+        ]);
+      });
+
+      it("leaves it out of Sam's upcoming Shifts", async () => {
+        expect((await staffLinkPageOf(sam)).shifts.map(({ id }) => id)).toEqual([thursday.id]);
+      });
+
+      describe('when the clock reaches the time the Friday Shift would have started', () => {
+        beforeEach(() => {
+          app.setClock(FRIDAY_6_TO_11.startsAt);
+        });
+
+        it('no longer shows Sam the Removed Shift', async () => {
+          expect((await staffLinkPageOf(sam)).removedShifts).toEqual([]);
+        });
       });
     });
   });

@@ -24,3 +24,12 @@ export function findActiveStaffMembersOnRota(db: DbClient, rotaId: string) {
     where: { archivedAt: null, shifts: { some: { rotaId } } },
   });
 }
+
+// Prisma's updateMany can't copy one column into another, so this is raw SQL.
+export function markShiftsOfRotaTold(db: DbClient, rotaId: string) {
+  return db.$executeRaw`
+    UPDATE shifts
+    SET told_staff_member_id = staff_member_id, told_starts_at = starts_at, told_ends_at = ends_at
+    WHERE rota_id = ${rotaId}::uuid
+  `;
+}

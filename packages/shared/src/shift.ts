@@ -159,14 +159,25 @@ export const shiftSchema = z.object({
   response: shiftResponseSchema,
   declineReason: z.string().nullable(),
   started: z.boolean(),
+  changed: z.boolean(),
 });
 
 export type Shift = z.infer<typeof shiftSchema>;
+
+export const rotaRemovedShiftSchema = shiftSchema.pick({
+  id: true,
+  staffMemberId: true,
+  startsAt: true,
+  endsAt: true,
+});
+
+export type RotaRemovedShift = z.infer<typeof rotaRemovedShiftSchema>;
 
 export const rotaSchema = z.object({
   weekStart: z.string().refine(isWeekStart),
   status: z.enum(['draft', 'published']),
   shifts: z.array(shiftSchema),
+  removedShifts: z.array(rotaRemovedShiftSchema),
 });
 
 export type Rota = z.infer<typeof rotaSchema>;

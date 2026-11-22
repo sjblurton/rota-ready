@@ -6,6 +6,7 @@ import { refuse, type Refused } from '#src/lib/service-result.js';
 import {
   answerPublishedShiftStartingAfter,
   findPublishedShiftsEndingAfter,
+  findRemovedShiftsStartingAfter,
   findShift,
   findStaffMemberByTokenHash,
   publishedShiftExists,
@@ -26,6 +27,10 @@ export function createStaffLinkService({ db, clock }: { db: Db; clock: Clock }) 
 
     upcomingShifts(staffMember: LinkedStaffMember) {
       return findPublishedShiftsEndingAfter(db, staffMember.id, clock.now());
+    },
+
+    removedShifts(staffMember: LinkedStaffMember) {
+      return findRemovedShiftsStartingAfter(db, staffMember.id, clock.now());
     },
 
     async respond(

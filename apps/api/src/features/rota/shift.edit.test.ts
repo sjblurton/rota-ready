@@ -102,6 +102,7 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
           response: 'pending',
           declineReason: null,
           started: false,
+          changed: false,
         },
       ]);
     });
@@ -275,6 +276,167 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
           respondedAt: RESPONDED_AT,
         });
       });
+    });
+  });
+
+  describe('when Sam has Confirmed a Shift the Owner has published', () => {
+    const PUBLISHED_WEEK = '2026-11-23';
+    const MONDAY_23_9_TO_5 = {
+      startsAt: '2026-11-23T09:00:00.000Z',
+      endsAt: '2026-11-23T17:00:00.000Z',
+    };
+    let published: { id: string };
+
+    async function changedInRota() {
+      const opened = await app.request('GET', `/api/venues/${ownVenue.id}/rotas/${PUBLISHED_WEEK}`, {
+        as: OWNER,
+      });
+      const { shifts } = (await opened.json()) as { shifts: { id: string; changed: boolean }[] };
+      return shifts.find(({ id }) => id === published.id)?.changed;
+    }
+
+    function storedResponse() {
+      return app.db.shift.findUnique({ where: { id: published.id }, select: { response: true } });
+    }
+
+    beforeEach(async () => {
+      const draft = await createRotaFor(app.db, ownVenue, PUBLISHED_WEEK);
+      published = await createShift(app.db, draft, sam, MONDAY_23_9_TO_5);
+      await app.request('POST', `/api/venues/${ownVenue.id}/rotas/${PUBLISHED_WEEK}/publish`, {
+        as: OWNER,
+      });
+      await app.db.shift.update({
+        where: { id: published.id },
+        data: { response: 'confirmed', respondedAt: new Date('2026-11-20T10:00:00.000Z') },
+      });
+    });
+
+    describe('when the Owner moves it an hour later', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-23T10:00:00.000Z',
+            endsAt: '2026-11-23T18:00:00.000Z',
+          },
+        });
+      });
+
+      it('returns it as Pending and changed', async () => {
+        expect(await response.json()).toMatchObject({ response: 'pending', changed: true });
+      });
+
+      it('marks it as changed on the Rota', async () => {
+        expect(await changedInRota()).toBe(true);
+      });
+
+      it('keeps the times Sam was told', async () => {
+        expect(
+          await app.db.shift.findUnique({
+            where: { id: published.id },
+            select: { toldStartsAt: true, toldEndsAt: true },
+          }),
+        ).toEqual({
+          toldStartsAt: new Date(MONDAY_23_9_TO_5.startsAt),
+          toldEndsAt: new Date(MONDAY_23_9_TO_5.endsAt),
+        });
+      });
+
+      describe('when the Owner moves it back to the times Sam was told', () => {
+        beforeEach(async () => {
+          response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
+            as: OWNER,
+            body: { staffMemberId: sam.id, ...MONDAY_23_9_TO_5 },
+          });
+        });
+
+        it('no longer marks it as changed', async () => {
+          expect(await changedInRota()).toBe(false);
+        });
+      });
+    });
+
+    describe('when the Owner moves it to Tuesday at the same times', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
+          as: OWNER,
+          body: {
+            staffMemberId: sam.id,
+            startsAt: '2026-11-24T09:00:00.000Z',
+            endsAt: '2026-11-24T17:00:00.000Z',
+          },
+        });
+      });
+
+      it('returns it as Pending and changed', async () => {
+        expect(await response.json()).toMatchObject({ response: 'pending', changed: true });
+      });
+    });
+
+    describe('when the Owner reassigns it to Jo', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
+          as: OWNER,
+          body: { staffMemberId: jo.id, ...MONDAY_23_9_TO_5 },
+        });
+      });
+
+      it('marks it as changed on the Rota', async () => {
+        expect(await changedInRota()).toBe(true);
+      });
+
+      it("lists it on the Rota as a Removed Shift in Sam's row, at the times Sam was told", async () => {
+        const opened = await app.request('GET', `/api/venues/${ownVenue.id}/rotas/${PUBLISHED_WEEK}`, {
+          as: OWNER,
+        });
+        expect(await opened.json()).toMatchObject({
+          removedShifts: [{ id: published.id, staffMemberId: sam.id, ...MONDAY_23_9_TO_5 }],
+        });
+      });
+    });
+
+    describe('when the Owner changes only its notes and Role', () => {
+      beforeEach(async () => {
+        response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
+          as: OWNER,
+          body: { staffMemberId: sam.id, ...MONDAY_23_9_TO_5, role: 'Bar', notes: 'Cash up' },
+        });
+      });
+
+      it("keeps Sam's Confirmed response", async () => {
+        expect(await storedResponse()).toEqual({ response: 'confirmed' });
+      });
+
+      it('does not mark it as changed', async () => {
+        expect(await changedInRota()).toBe(false);
+      });
+    });
+  });
+
+  describe('when the Owner moves a Shift in a Draft Rota an hour later', () => {
+    beforeEach(async () => {
+      response = await app.request('PATCH', shiftPath(ownVenue, WEEK_START, shift), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-16T10:00:00.000Z',
+          endsAt: '2026-11-16T18:00:00.000Z',
+        },
+      });
+    });
+
+    it('does not mark it as changed', async () => {
+      expect(await response.json()).toMatchObject({ changed: false });
+    });
+
+    it('records nobody as told', async () => {
+      expect(
+        await app.db.shift.findUnique({
+          where: { id: shift.id },
+          select: { toldStaffMemberId: true, toldStartsAt: true, toldEndsAt: true },
+        }),
+      ).toEqual({ toldStaffMemberId: null, toldStartsAt: null, toldEndsAt: null });
     });
   });
 

@@ -119,9 +119,10 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
 
   describe('when the Owner publishes a Draft Rota with a Shift', () => {
     let rota: { id: string };
+    let sam: { id: string };
 
     beforeEach(async () => {
-      const sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      sam = await createActiveStaffMember(app.db, ownVenue, SAM);
       rota = await createRotaFor(app.db, ownVenue, WEEK_START);
       await createShift(app.db, { id: rota.id, venueId: ownVenue.id }, sam, {
         startsAt: '2026-11-16T09:00:00.000Z',
@@ -143,15 +144,29 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       ]);
     });
 
+    it('records who the Shift was told to and its times', async () => {
+      expect(
+        await app.db.shift.findMany({
+          select: { toldStaffMemberId: true, toldStartsAt: true, toldEndsAt: true },
+        }),
+      ).toEqual([
+        {
+          toldStaffMemberId: sam.id,
+          toldStartsAt: new Date('2026-11-16T09:00:00.000Z'),
+          toldEndsAt: new Date('2026-11-16T17:00:00.000Z'),
+        },
+      ]);
+    });
+
     describe('when the Owner opens that Week', () => {
       beforeEach(async () => {
         response = await app.request('GET', rotaPath(ownVenue, WEEK_START), { as: OWNER });
       });
 
-      it('returns the Rota as Published, with its Shift', async () => {
+      it('returns the Rota as Published, with its Shift not marked as changed', async () => {
         expect(await response.json()).toMatchObject({
           status: 'published',
-          shifts: [{ startsAt: '2026-11-16T09:00:00.000Z' }],
+          shifts: [{ startsAt: '2026-11-16T09:00:00.000Z', changed: false }],
         });
       });
     });

@@ -61,7 +61,8 @@ model StaffMember {
   staffLinkTokenCiphertext String?   @map("staff_link_token_ciphertext")
   createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz
   venue                    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  shifts                   Shift[]
+  shifts                   Shift[]   @relation("ShiftStaffMember")
+  toldShifts               Shift[]   @relation("ShiftToldStaffMember")
 
   @@unique([venueId, email])
   @@map("staff_members")
@@ -97,23 +98,29 @@ enum ShiftResponse {
 }
 
 model Shift {
-  id            String        @id @default(uuid()) @db.Uuid
-  venueId       String        @map("venue_id") @db.Uuid
-  rotaId        String        @map("rota_id") @db.Uuid
-  staffMemberId String        @map("staff_member_id") @db.Uuid
-  startsAt      DateTime      @map("starts_at") @db.Timestamptz
-  endsAt        DateTime      @map("ends_at") @db.Timestamptz
-  role          String?
-  notes         String?
-  response      ShiftResponse @default(pending)
-  declineReason String?       @map("decline_reason")
-  respondedAt   DateTime?     @map("responded_at") @db.Timestamptz
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  venue         Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  rota          Rota          @relation(fields: [rotaId], references: [id], onDelete: Cascade)
-  staffMember   StaffMember   @relation(fields: [staffMemberId], references: [id], onDelete: Restrict)
+  id                String        @id @default(uuid()) @db.Uuid
+  venueId           String        @map("venue_id") @db.Uuid
+  rotaId            String        @map("rota_id") @db.Uuid
+  staffMemberId     String        @map("staff_member_id") @db.Uuid
+  startsAt          DateTime      @map("starts_at") @db.Timestamptz
+  endsAt            DateTime      @map("ends_at") @db.Timestamptz
+  role              String?
+  notes             String?
+  response          ShiftResponse @default(pending)
+  declineReason     String?       @map("decline_reason")
+  respondedAt       DateTime?     @map("responded_at") @db.Timestamptz
+  toldStaffMemberId String?       @map("told_staff_member_id") @db.Uuid
+  toldStartsAt      DateTime?     @map("told_starts_at") @db.Timestamptz
+  toldEndsAt        DateTime?     @map("told_ends_at") @db.Timestamptz
+  deletedAt         DateTime?     @map("deleted_at") @db.Timestamptz
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  venue             Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  rota              Rota          @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  staffMember       StaffMember   @relation("ShiftStaffMember", fields: [staffMemberId], references: [id], onDelete: Restrict)
+  toldStaffMember   StaffMember?  @relation("ShiftToldStaffMember", fields: [toldStaffMemberId], references: [id], onDelete: Restrict)
 
   @@index([rotaId, startsAt])
   @@index([staffMemberId, startsAt])
+  @@index([toldStaffMemberId, toldStartsAt])
   @@map("shifts")
 }

@@ -273,6 +273,29 @@ describe('/api/venues/:venueId/staff-members', () => {
       });
     });
 
+    describe("when the Staff Member's only later Shift was published and then deleted", () => {
+      beforeEach(async () => {
+        const later = await createRotaFor(app.db, ownVenue, '2026-11-23');
+        const shift = await createShift(app.db, later, { id: staffMemberId }, {
+          startsAt: '2026-11-23T09:00:00.000Z',
+          endsAt: '2026-11-23T17:00:00.000Z',
+        });
+        await app.request('POST', `/api/venues/${ownVenue.id}/rotas/2026-11-23/publish`, {
+          as: OWNER,
+        });
+        await app.request(
+          'DELETE',
+          `/api/venues/${ownVenue.id}/rotas/2026-11-23/shifts/${shift.id}`,
+          { as: OWNER },
+        );
+        response = await archive();
+      });
+
+      it('responds with 204', () => {
+        expect(response.status).toBe(204);
+      });
+    });
+
     describe('when the Staff Member is partway through a Shift', () => {
       beforeEach(async () => {
         await createShift(app.db, rota, { id: staffMemberId }, {

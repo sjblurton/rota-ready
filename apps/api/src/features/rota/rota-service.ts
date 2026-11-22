@@ -7,8 +7,14 @@ import type { EmailSender } from '#src/lib/email-sender.js';
 import { refuse, type Refused } from '#src/lib/service-result.js';
 import { t } from '#src/i18n/i18n.js';
 import { createStaffMemberService } from '#src/features/staff-members/staff-member-service.js';
-import { findActiveStaffMembersOnRota, findOrCreateRota, publishDraftRota } from './rota-data.js';
-import { findShiftsOfRota } from './shift-data.js';
+import {
+  findActiveStaffMembersOnRota,
+  findOrCreateRota,
+  markShiftsOfRotaTold,
+  publishDraftRota,
+} from './rota-data.js';
+import { findShiftsOfRota, findToldShiftsOfRota } from './shift-data.js';
+import { isRemovedShift } from './shift-service.js';
 
 export interface RotaServiceDependencies {
   db: Db;
@@ -64,7 +70,11 @@ export function createRotaService({
   return {
     async get(venueId: string, weekStart: string) {
       const rota = await findOrCreateRota(db, venueId, weekStart);
-      return { rota, shifts: await findShiftsOfRota(db, rota.id) };
+      const [shifts, told] = await Promise.all([
+        findShiftsOfRota(db, rota.id),
+        findToldShiftsOfRota(db, rota.id),
+      ]);
+      return { rota, shifts, removedShifts: told.filter(isRemovedShift) };
     },
 
     async publish(
@@ -72,9 +82,12 @@ export function createRotaService({
       weekStart: string,
     ): Promise<{ ok: true; emails: StaffLinkEmailResult[] } | Refused<'rota_already_published'>> {
       const rota = await findOrCreateRota(db, venue.id, weekStart);
-      if (!(await publishDraftRota(db, rota.id, clock.now()))) {
-        return refuse(apiErrorCode.rota_already_published);
-      }
+      const published = await db.$transaction(async (tx) => {
+        if (!(await publishDraftRota(tx, rota.id, clock.now()))) return false;
+        await markShiftsOfRotaTold(tx, rota.id);
+        return true;
+      });
+      if (!published) return refuse(apiErrorCode.rota_already_published);
       const onRota = await findActiveStaffMembersOnRota(db, rota.id);
       const emails = await Promise.all(
         onRota.map((staffMember) => sendStaffLink(venue, weekStart, staffMember)),

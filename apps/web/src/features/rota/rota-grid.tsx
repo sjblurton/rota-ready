@@ -1,5 +1,6 @@
 import { formatLocalDate, weekDays } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -20,10 +21,14 @@ interface RotaGridProps {
 
 export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
   const { t } = useTranslation();
-  const { status, shifts, staffMembers, timeZone } = useRotaWeek(venueId, weekStart);
+  const { status, shifts, removedShifts, staffMembers, timeZone } = useRotaWeek(
+    venueId,
+    weekStart,
+  );
   const showResponses = status === 'published';
   const days = weekDays(weekStart);
   const shiftsIn = layOutShifts(shifts, timeZone);
+  const removedShiftsIn = layOutShifts(removedShifts, timeZone);
 
   return (
     <Table aria-label={t('rota.title')}>
@@ -61,12 +66,23 @@ export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
                       </p>
                     )}
                     {showResponses && (
-                      <ShiftResponseWithReason
-                        response={shift.response}
-                        started={shift.started}
-                        declineReason={shift.declineReason}
-                      />
+                      <div className="flex flex-wrap items-center gap-1">
+                        <ShiftResponseWithReason
+                          response={shift.response}
+                          started={shift.started}
+                          declineReason={shift.declineReason}
+                        />
+                        {shift.changed && (
+                          <Badge variant="secondary">{t('rota.changed')}</Badge>
+                        )}
+                      </div>
                     )}
+                  </div>
+                ))}
+                {removedShiftsIn(staffMember.id, day).map(({ shift, times }) => (
+                  <div key={shift.id} className="flex flex-col items-start gap-1">
+                    <span className="text-sm text-muted-foreground line-through">{times}</span>
+                    <Badge variant="secondary">{t('rota.removed')}</Badge>
                   </div>
                 ))}
               </TableCell>

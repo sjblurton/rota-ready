@@ -20,7 +20,13 @@ export function useRotaWeek(venueId: string, weekStart: string) {
   const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
   const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
-  return { status: rota.status, shifts: rota.shifts, staffMembers, timeZone: venue.timeZone };
+  return {
+    status: rota.status,
+    shifts: rota.shifts,
+    removedShifts: rota.removedShifts,
+    staffMembers,
+    timeZone: venue.timeZone,
+  };
 }
 
 function rotaPath(venueId: string, weekStart: string) {
@@ -69,6 +75,13 @@ export function removeShiftFromRota(
   queryClient.setQueryData(rotaQuery(venueId, weekStart).queryKey, (rota) =>
     rota && { ...rota, shifts: rota.shifts.filter((existing) => existing.id !== shiftId) },
   );
+}
+
+// Only the API knows what staff were last told, so it works out the Removed Shifts.
+// refetchQueries skips static queries, so this fetches with staleTime 0 instead. If it fails,
+// the Published Rota's next poll catches up.
+export function refetchRota(queryClient: QueryClient, venueId: string, weekStart: string) {
+  queryClient.query({ ...rotaQuery(venueId, weekStart), staleTime: 0 }).catch(() => undefined);
 }
 
 export function publishPath(venueId: string, weekStart: string) {

@@ -24,7 +24,12 @@ import {
 } from '@/components/ui/dialog';
 import { FieldError, FieldGroup } from '@/components/ui/field';
 import { DeleteShiftDialog, type ShiftSummary } from '@/features/rota/delete-shift-dialog';
-import { replaceShiftInRota, shiftPath, useRotaWeek } from '@/features/rota/rota-queries';
+import {
+  refetchRota,
+  replaceShiftInRota,
+  shiftPath,
+  useRotaWeek,
+} from '@/features/rota/rota-queries';
 import { ShiftFields } from '@/features/rota/shift-fields';
 import { useShiftMutation } from '@/features/rota/shift-mutation';
 import { apiPatch } from '@/lib/api';
@@ -98,6 +103,7 @@ function EditShiftForm({
     send: (request) => apiPatch(shiftPath(venueId, weekStart, shift.id), request, shiftSchema),
     onSuccess: (updated) => {
       replaceShiftInRota(queryClient, venueId, weekStart, updated);
+      refetchRota(queryClient, venueId, weekStart);
       onDone();
     },
   });
