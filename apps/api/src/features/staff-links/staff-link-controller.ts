@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type { Shift } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
-import { toShift } from '#src/rotas.js';
+import { toShift } from '#src/features/rota/shift-controller.js';
 import type { StaffLinkService } from './staff-link-service.js';
 
 const shiftIdSchema = z.uuid();
