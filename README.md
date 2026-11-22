@@ -131,6 +131,8 @@ pnpm dev                     # web on http://localhost:5173, API on http://local
 
 Open http://localhost:5173 and you'll land on the login page. Create an account (local sign-ups need no email confirmation); your email address appears in the header, and the page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
 
+Every email the app sends locally, such as the Staff Link email from Publish, lands in the local Supabase inbox (Mailpit) at http://127.0.0.1:54324, while `pnpm db:start` is running.
+
 | Command | What it does |
 | --- | --- |
 | `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
