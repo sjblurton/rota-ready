@@ -192,7 +192,64 @@ describe('shiftFormSchema', () => {
         staffMemberId,
         startsAt: '2026-07-15T19:00:00.000Z',
         endsAt: '2026-07-16T01:00:00.000Z',
+        role: null,
+        notes: null,
       });
+    });
+  });
+
+  describe('when the form has a Role and notes with spaces around them', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '18:00',
+        endTime: '23:00',
+        role: '  Bar  ',
+        notes: ' Cash up at close ',
+      });
+    });
+
+    it('sends them trimmed', () => {
+      expect(result.data).toMatchObject({ role: 'Bar', notes: 'Cash up at close' });
+    });
+  });
+
+  describe('when the Role and notes are left blank', () => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '18:00',
+        endTime: '23:00',
+        role: '   ',
+        notes: '',
+      });
+    });
+
+    it('sends no Role and no notes', () => {
+      expect(result.data).toMatchObject({ role: null, notes: null });
+    });
+  });
+
+  describe.each([
+    { field: 'role', value: 'B'.repeat(51), message: 'validation.staffMemberRoleTooLong' },
+    { field: 'notes', value: 'N'.repeat(501), message: 'validation.shiftNotesTooLong' },
+  ])('when the $field is longer than allowed', ({ field, value, message }) => {
+    beforeEach(() => {
+      result = schema.safeParse({
+        staffMemberId,
+        date: '2026-07-15',
+        startTime: '18:00',
+        endTime: '23:00',
+        [field]: value,
+      });
+    });
+
+    it('puts the too-long message on that field', () => {
+      expect(result.error?.issues).toEqual([
+        expect.objectContaining({ path: [field], message }),
+      ]);
     });
   });
 
@@ -332,6 +389,8 @@ describe('shiftFormValues', () => {
           staffMemberId: STAFF_MEMBER_ID,
           startsAt: '2026-07-15T19:00:00.000Z',
           endsAt: '2026-07-16T01:00:00.000Z',
+          role: null,
+          notes: null,
         },
         LONDON,
       );
@@ -343,7 +402,28 @@ describe('shiftFormValues', () => {
         date: '2026-07-15',
         startTime: '20:00',
         endTime: '02:00',
+        role: '',
+        notes: '',
       });
+    });
+  });
+
+  describe('when the Shift has a Role and notes', () => {
+    beforeEach(() => {
+      values = shiftFormValues(
+        {
+          staffMemberId: STAFF_MEMBER_ID,
+          startsAt: '2026-07-15T17:00:00.000Z',
+          endsAt: '2026-07-15T22:00:00.000Z',
+          role: 'Bar',
+          notes: 'Cash up at close',
+        },
+        LONDON,
+      );
+    });
+
+    it('fills them in', () => {
+      expect(values).toMatchObject({ role: 'Bar', notes: 'Cash up at close' });
     });
   });
 });

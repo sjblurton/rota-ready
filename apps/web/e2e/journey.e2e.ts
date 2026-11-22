@@ -446,6 +446,40 @@ test.describe.serial('MVP journey', () => {
     await expect(staffRows()).toHaveText([/Sam Jones/]);
   });
 
+  test('adds a Shift with a Role and notes and shows them on the grid', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    const thursday = addDays(nextWeek, 3);
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await expect(weekHeading(thisWeek)).toBeVisible();
+    await page.getByRole('link', { name: 'Next Week' }).click();
+    await expect(weekHeading(nextWeek)).toBeVisible();
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Day').selectOption({ label: formatLocalDate(thursday) });
+    await page.getByLabel('Start').selectOption('18:00');
+    await page.getByLabel('End').selectOption('23:00');
+    await page.getByLabel('Role (optional)').fill('Bar');
+    await page.getByLabel('Notes (optional)').fill('Cash up at close');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Sam Jones', thursday, nextWeek)).toHaveText(
+      '18:00–23:00BarCash up at close',
+    );
+  });
+
+  test('edits the Role and notes and shows the change on the grid', async () => {
+    const nextWeek = addDays(thisWeek, 7);
+    const thursday = addDays(nextWeek, 3);
+    await editShiftButton('Sam Jones', thursday, '18:00–23:00').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByLabel('Role (optional)')).toHaveValue('Bar');
+    await dialog.getByLabel('Role (optional)').fill('Floor');
+    await dialog.getByLabel('Notes (optional)').fill('Open up at 17:45');
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(rotaCell('Sam Jones', thursday, nextWeek)).toHaveText(
+      '18:00–23:00FloorOpen up at 17:45',
+    );
+  });
+
   test('asks for confirmation before Publishing this Week', async () => {
     await page.getByRole('tab', { name: 'Rota' }).click();
     await expect(weekHeading(thisWeek)).toBeVisible();

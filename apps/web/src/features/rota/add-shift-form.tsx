@@ -21,7 +21,14 @@ export function AddShiftForm({ venueId, weekStart }: AddShiftFormProps) {
   const queryClient = useQueryClient();
   const form = useForm({
     resolver: zodResolver(shiftFormSchema(timeZone, shifts)),
-    defaultValues: { staffMemberId: '', date: weekStart, startTime: '', endTime: '' },
+    defaultValues: {
+      staffMemberId: '',
+      date: weekStart,
+      startTime: '',
+      endTime: '',
+      role: '',
+      notes: '',
+    },
   });
   const add = useShiftMutation({
     form,

@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { formatTime } from './date-time.js';
-import { validationMessage, type ValidationMessageKey } from './validation.js';
+import { STAFF_MEMBER_ROLE_MAX_LENGTH } from './staff-member.js';
+import { optionalText, validationMessage, type ValidationMessageKey } from './validation.js';
 import { addDays, isLocalDate, isWeekStart, localDateOf, zonedTimeToUtc } from './week.js';
 
 export const MAX_SHIFT_HOURS = 16;
 export const QUARTER_HOUR_MINUTES = 15;
+export const SHIFT_NOTES_MAX_LENGTH = 500;
 
 const HOUR_MS = 3_600_000;
 const WALL_CLOCK_TIME = /^([01]\d|2[0-3]):(?<minutes>[0-5]\d)$/;
@@ -74,11 +76,19 @@ const shiftInstantSchema = z.iso.datetime().refine((value) => {
   );
 }, validationMessage.shiftQuarterHour);
 
+const shiftRoleSchema = optionalText(
+  STAFF_MEMBER_ROLE_MAX_LENGTH,
+  validationMessage.staffMemberRoleTooLong,
+);
+const shiftNotesSchema = optionalText(SHIFT_NOTES_MAX_LENGTH, validationMessage.shiftNotesTooLong);
+
 export const shiftRequestSchema = z
   .object({
     staffMemberId: z.uuid(),
     startsAt: shiftInstantSchema,
     endsAt: shiftInstantSchema,
+    role: shiftRoleSchema,
+    notes: shiftNotesSchema,
   })
   .superRefine(refineShiftTimes('endsAt'));
 
@@ -94,11 +104,15 @@ export function shiftFormSchema(
       date: z.string().refine(isLocalDate, validationMessage.invalid),
       startTime: wallClockTimeSchema,
       endTime: wallClockTimeSchema,
+      role: shiftRoleSchema,
+      notes: shiftNotesSchema,
     })
-    .transform(({ staffMemberId, date, startTime, endTime }) => ({
+    .transform(({ staffMemberId, date, startTime, endTime, role, notes }) => ({
       staffMemberId,
       startsAt: zonedTimeToUtc(date, startTime, timeZone).toISOString(),
       endsAt: shiftEndsAt(date, startTime, endTime, timeZone).toISOString(),
+      role,
+      notes,
     }))
     .superRefine(refineShiftTimes('endTime'))
     .superRefine((shift, context) => {
@@ -117,7 +131,7 @@ export function shiftFormSchema(
 }
 
 export function shiftFormValues(
-  shift: Pick<Shift, 'staffMemberId' | 'startsAt' | 'endsAt'>,
+  shift: Pick<Shift, 'staffMemberId' | 'startsAt' | 'endsAt' | 'role' | 'notes'>,
   timeZone: string,
 ) {
   const startsAt = new Date(shift.startsAt);
@@ -126,6 +140,8 @@ export function shiftFormValues(
     date: localDateOf(startsAt, timeZone),
     startTime: formatTime(startsAt, { timeZone }),
     endTime: formatTime(new Date(shift.endsAt), { timeZone }),
+    role: shift.role ?? '',
+    notes: shift.notes ?? '',
   };
 }
 
@@ -138,6 +154,8 @@ export const shiftSchema = z.object({
   staffMemberId: z.uuid(),
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
+  role: z.string().nullable(),
+  notes: z.string().nullable(),
   response: shiftResponseSchema,
   declineReason: z.string().nullable(),
   started: z.boolean(),

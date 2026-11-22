@@ -49,6 +49,12 @@ export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
                       shift={shift}
                       times={times}
                     />
+                    {shift.role && <span className="text-xs font-medium">{shift.role}</span>}
+                    {shift.notes && (
+                      <p className="text-xs whitespace-pre-line text-muted-foreground">
+                        {shift.notes}
+                      </p>
+                    )}
                     {showResponses && (
                       <ShiftResponseWithReason
                         response={shift.response}

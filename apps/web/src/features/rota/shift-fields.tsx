@@ -10,7 +10,9 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { z } from 'zod';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ShiftFieldsProps {
   weekStart: string;
@@ -69,6 +71,26 @@ export function ShiftFields({ weekStart, staffMembers }: ShiftFieldsProps) {
       </Field>
       <ShiftTimeField name="startTime" />
       <ShiftTimeField name="endTime" />
+      <Field data-invalid={!!errors.role}>
+        <FieldLabel htmlFor={`${id}-role`}>{t('rota.shift.role')}</FieldLabel>
+        <Input
+          id={`${id}-role`}
+          aria-invalid={!!errors.role}
+          aria-describedby={`${id}-role-error`}
+          {...register('role')}
+        />
+        <FieldError id={`${id}-role-error`} errors={[errors.role]} />
+      </Field>
+      <Field data-invalid={!!errors.notes} className="sm:col-span-2">
+        <FieldLabel htmlFor={`${id}-notes`}>{t('rota.shift.notes')}</FieldLabel>
+        <Textarea
+          id={`${id}-notes`}
+          aria-invalid={!!errors.notes}
+          aria-describedby={`${id}-notes-error`}
+          {...register('notes')}
+        />
+        <FieldError id={`${id}-notes-error`} errors={[errors.notes]} />
+      </Field>
     </div>
   );
 }

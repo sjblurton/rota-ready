@@ -12,6 +12,8 @@ function shift(id: string, staffMemberId: string, startsAt: string, endsAt: stri
     staffMemberId,
     startsAt,
     endsAt,
+    role: null,
+    notes: null,
     response: 'pending',
     declineReason: null,
     started: false,
