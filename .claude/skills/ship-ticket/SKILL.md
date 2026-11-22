@@ -10,7 +10,7 @@ Run the whole loop without pausing between steps. Stop to ask only for a genuine
 
 ## 1. Pick the ticket
 
-If a ticket number was given, use it. Otherwise list open issues (commands in `docs/agents/issue-tracker.md`) and keep the **startable** ones: labelled `ready-for-agent`, unassigned, and with zero open blockers. This repo's `gh` predates `--json blockedBy`, so count blockers with the REST call in the tracker doc's **Count open blockers** line.
+If a ticket number was given, use it. Otherwise list open issues (commands in `docs/agents/issue-tracker.md`) and keep the **startable** ones: labelled `ready-for-agent`, unassigned, and with zero open blockers. Count blockers with the REST call in the tracker doc's **Count open blockers** line: one call per ticket also returns its sub-issues.
 
 A ticket with open sub-issues (`sub_issues_summary` in the same REST call) is a parent: skip it and consider its sub-issues instead.
 
