@@ -277,6 +277,7 @@ test.describe.serial('MVP journey', () => {
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(sunday) });
     await page.getByLabel('Start').selectOption('20:00');
+    await expect(page.getByLabel('End')).toHaveValue('20:00');
     await page.getByLabel('End').selectOption('02:00');
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(rotaCell('Sam Jones', sunday)).toHaveText('20:00–02:00 (+1)');

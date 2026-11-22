@@ -5,7 +5,7 @@ import {
   type shiftFormSchema,
   type StaffMember,
 } from '@rota-ready/shared';
-import { useId } from 'react';
+import { useId, type ChangeEvent } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { z } from 'zod';
@@ -106,9 +106,14 @@ const timeLabels = {
 function ShiftTimeField({ name }: { name: keyof typeof timeLabels }) {
   const { t } = useTranslation();
   const id = useId();
-  const { register, formState, clearErrors } =
+  const { register, formState, clearErrors, getValues, setValue } =
     useFormContext<z.input<ReturnType<typeof shiftFormSchema>>>();
   const error = formState.errors[name];
+
+  function onChange(event: ChangeEvent<HTMLSelectElement>) {
+    clearErrors('root');
+    if (name === 'startTime' && !getValues('endTime')) setValue('endTime', event.target.value);
+  }
 
   return (
     <Field data-invalid={!!error}>
@@ -118,7 +123,7 @@ function ShiftTimeField({ name }: { name: keyof typeof timeLabels }) {
         className="w-full"
         aria-invalid={!!error}
         aria-describedby={`${id}-error`}
-        {...register(name, { onChange: () => clearErrors('root') })}
+        {...register(name, { onChange })}
       >
         <NativeSelectOption value="">{t('rota.shift.chooseTime')}</NativeSelectOption>
         {times.map((time) => (
