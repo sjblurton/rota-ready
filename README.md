@@ -166,7 +166,7 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready-api` | `STAFF_LINK_KEY` | 32 random bytes, base64 (`openssl rand -base64 32`), encrypting stored Staff Link tokens ([ADR-0002](docs/adr/0002-staff-link-tokens-hashed-and-encrypted.md)). The API won't start without it, and losing it means regenerating every Staff Link |
 | Render `rota-ready` | `VITE_SUPABASE_URL` | Same Supabase URL, built into the web app |
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
-| Render `rota-ready-api` | `SMTP_URL` | Resend's SMTP endpoint with the API key as the password: `smtps://resend:<api-key>@smtp.resend.com:465` |
+| Render `rota-ready-api` | `SMTP_URL` | Resend's SMTP endpoint with the API key as the password: `smtps://resend:<api-key>@smtp.resend.com:2465`. Use port 2465, because Render's free plan blocks outbound 25, 465 and 587, so sends on those ports time out and show as Failed |
 | Render `rota-ready-api` | `EMAIL_FROM` | `Rota Ready <onboarding@resend.dev>`, Resend's test sender, until a domain is verified in Resend. It only delivers to the Resend account's own address, so emails to anyone else show as Failed |
 | Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
 
