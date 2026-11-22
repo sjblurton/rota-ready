@@ -67,7 +67,7 @@ Done when every finding is either fixed or listed with a reason it stays.
 
 - **Commit** with a conventional message ending `(#<issue>)` and the attribution trailer.
 - **Push** with `git push -u origin <branch>`.
-- **Write the PR body** with the `pr` skill. Start it with `Closes #<issue>`, include the manual browser steps the ticket asks for, and say which screens you checked in screenshots.
+- **Write the PR body** with the `pr` skill. Start it with `Closes #<issue>`, include the manual browser steps the ticket asks for, and say which screens you checked in screenshots. CI uploads a `journey-screenshots` artifact for every pull request, named by journey step, so the reviewer can see the same screens.
 - **Check every claim in the body against the code or a command's output before publishing it.** Edit the body afterwards if one turns out wrong.
 - **Name any conflict with other open PRs** that touch the same files (`gh pr list`, then `gh pr diff <n> --name-only`). Say which PR needs the follow-up edit.
 
