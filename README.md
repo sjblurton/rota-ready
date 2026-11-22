@@ -43,6 +43,7 @@ flowchart LR
 - **Nothing fakes the API.** No MSW or mocked API client in the web app. The only test doubles sit at outside boundaries (email outbox, clock, JWT signing key).
 - **Cross-venue 404 tests.** For every venue-scoped route, a member of venue A asks for venue B's data and must get a 404.
 - **A Playwright journey that grows with each slice.** By the end of the MVP, the whole owner-and-staff journey runs in CI against the real stack.
+- **Screenshots of every journey step.** CI attaches them to each PR as a `journey-screenshots` download, so a reviewer can see each screen without running the app.
 
 ### Lessons from the first attempt
 
@@ -77,14 +78,19 @@ This repo is set up so that bug can't hide:
 
 ```
 apps/
-  api/        Express API, built by createApp()
-  web/        Vite + React single-page app
+  api/                 Express API, built by createApp()
+    src/features/      One folder per glossary area, split into router, controller, service and data
+    src/lib/           Infrastructure: database client, clock, HTTP errors, auth
+  web/                 Vite + React single-page app
+    src/features/      One folder per glossary area: components, queries and mutations
 packages/
-  shared/     Zod schemas and pure domain logic used by both apps
+  shared/              Zod schemas and pure domain logic used by both apps
 docs/
-  adr/        Architecture decision records
-  agents/     Configuration for the agent skills
-GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
+  adr/                 Architecture decision records
+  agents/              Configuration for the agent skills
+  building-ui.md       How components are composed from shadcn/ui
+GLOSSARY.md            The domain language (Venue, Rota, Shift, Staff Link, …)
+CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 ```
 
 ### Key decisions
@@ -95,6 +101,10 @@ GLOSSARY.md   The domain language (Venue, Rota, Shift, Staff Link, …)
 - [ADR-0004](docs/adr/0004-stack.md): stack choices, including the Vite single-page app, React Compiler and email over SMTP.
 - [ADR-0005](docs/adr/0005-i18n-english-only-with-typed-keys.md): all UI text goes through typed i18next keys, dates through shared `Intl` helpers, and API errors carry a code instead of a message.
 - [ADR-0006](docs/adr/0006-hosting-on-render-with-migrations-from-github-actions.md): the web app and API run on Render from one origin, and GitHub Actions runs migrations before each deploy.
+- [ADR-0007](docs/adr/0007-forms-with-react-hook-form-and-shared-zod-schemas.md): forms use React Hook Form, validated by the same shared Zod schemas as the API, with translated messages.
+- [ADR-0008](docs/adr/0008-feature-folders-for-apps-web.md): `apps/web` groups code into feature folders named after glossary terms.
+- [ADR-0009](docs/adr/0009-where-errors-show.md): errors show where the user can fix them, and never reveal which accounts exist.
+- [ADR-0010](docs/adr/0010-api-feature-folders-with-layers.md): `apps/api` uses the same feature folders, each split into router, controller, service and data layers, with lint enforcing the imports between them.
 
 ### Testing approach
 
@@ -125,6 +135,7 @@ Open http://localhost:5173 and you'll land on the login page. Create an account 
 | --- | --- |
 | `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
 | `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts the API and web dev servers itself (or reuses running ones); needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
+| `pnpm --filter @rota-ready/web e2e:isolated` | The same journey on its own servers (API `:3200`, web `:5273`), so it never tests dev servers already running from another branch. Add `E2E_SCREENSHOTS=<dir>` to either command to save a screenshot after every step. |
 | `pnpm lint` | ESLint, including the React Compiler rules, with warnings treated as errors |
 | `pnpm typecheck` | TypeScript in every package |
 | `pnpm build` | Production builds of the web app and the API |
@@ -171,10 +182,10 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#6](https://github.com/sjblurton/rota-ready/issues/6) Deploy to production
 - [x] [#7](https://github.com/sjblurton/rota-ready/issues/7) Manage staff members
 - [x] [#8](https://github.com/sjblurton/rota-ready/issues/8) View a week and add shifts
-- [ ] [#9](https://github.com/sjblurton/rota-ready/issues/9) Edit and delete shifts
+- [x] [#9](https://github.com/sjblurton/rota-ready/issues/9) Edit and delete shifts
 - [x] [#10](https://github.com/sjblurton/rota-ready/issues/10) Publish and the staff link page
 - [ ] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
-- [ ] [#12](https://github.com/sjblurton/rota-ready/issues/12) Confirm and decline
+- [x] [#12](https://github.com/sjblurton/rota-ready/issues/12) Confirm and decline
 - [ ] [#13](https://github.com/sjblurton/rota-ready/issues/13) Changes after publishing
 - [ ] [#14](https://github.com/sjblurton/rota-ready/issues/14) Send updates
 
