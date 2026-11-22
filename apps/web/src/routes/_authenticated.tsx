@@ -7,7 +7,6 @@ import { bootstrapCurrentUserQuery } from '@/features/users/current-user';
 import { accessToken, supabase } from '@/lib/supabase';
 
 export const Route = createFileRoute('/_authenticated')({
-  // Child routes call user-scoped endpoints, which 403 until this bootstrap has stored the User.
   beforeLoad: async ({ context }) => {
     if (!(await accessToken())) throw redirect({ to: '/login' });
     try {

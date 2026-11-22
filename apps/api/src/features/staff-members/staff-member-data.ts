@@ -51,7 +51,6 @@ export async function hasShiftEndingAfter(db: DbClient, staffMemberId: string, i
   return shift !== null;
 }
 
-// Prisma Client can't take a row lock, so SELECT … FOR UPDATE is raw SQL.
 export async function lockActiveStaffMemberUntilCommit(
   tx: Prisma.TransactionClient,
   { id, venueId }: StaffMemberKey,

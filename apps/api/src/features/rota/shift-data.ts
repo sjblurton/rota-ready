@@ -61,16 +61,10 @@ export function updateLiveShift(
   return db.shift.update({ where: { id, deletedAt: null }, data });
 }
 
-// Hard-deletes first: once Publish has told staff about a Shift it never goes back to untold,
-// so a Publish landing between the two statements still ends in a soft delete.
-export async function deleteShiftInWeek(db: DbClient, key: ShiftInWeekKey, deletedAt: Date) {
-  const { count: hardDeleted } = await db.shift.deleteMany({
-    where: { ...inWeek(key), toldStaffMemberId: null },
-  });
-  if (hardDeleted === 1) return true;
-  const { count: softDeleted } = await db.shift.updateMany({
-    where: { ...inWeek(key), toldStaffMemberId: { not: null } },
-    data: { deletedAt },
-  });
-  return softDeleted === 1;
+export function hardDeleteShift(db: DbClient, id: string) {
+  return db.shift.delete({ where: { id } });
+}
+
+export function softDeleteShift(db: DbClient, id: string, deletedAt: Date) {
+  return db.shift.update({ where: { id }, data: { deletedAt } });
 }

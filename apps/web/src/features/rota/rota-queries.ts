@@ -77,9 +77,6 @@ export function removeShiftFromRota(
   );
 }
 
-// Only the API knows what staff were last told, so it works out the Removed Shifts.
-// refetchQueries skips static queries, so this fetches with staleTime 0 instead. If it fails,
-// the Published Rota's next poll catches up.
 export function refetchRota(queryClient: QueryClient, venueId: string, weekStart: string) {
   queryClient.query({ ...rotaQuery(venueId, weekStart), staleTime: 0 }).catch(() => undefined);
 }

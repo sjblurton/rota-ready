@@ -19,7 +19,7 @@ Before writing glue, use the library's documented integration:
 - `pino-http` for request logging
 - `zodResolver` and the shared schemas for form validation
 - shadcn components for UI
-- Prisma for queries. Raw SQL is only for what Prisma can't express, such as row locks, and gets a one-line comment saying why.
+- Prisma for queries. Raw SQL is only for what Prisma can't express, such as row locks or copying one column into another. Name the function for what it does, and say in the PR what Prisma couldn't do.
 
 Flag custom wrappers, scripts or helpers that redo what a dependency already does, and tests of a library's own behaviour.
 

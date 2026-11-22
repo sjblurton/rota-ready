@@ -105,6 +105,7 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 - [ADR-0008](docs/adr/0008-feature-folders-for-apps-web.md): `apps/web` groups code into feature folders named after glossary terms.
 - [ADR-0009](docs/adr/0009-where-errors-show.md): errors show where the user can fix them, and never reveal which accounts exist.
 - [ADR-0010](docs/adr/0010-api-feature-folders-with-layers.md): `apps/api` uses the same feature folders, each split into router, controller, service and data layers, with lint enforcing the imports between them.
+- [ADR-0011](docs/adr/0011-no-code-comments.md): code carries no comments; names, structure and tests carry the meaning, and lint enforces it.
 
 ### Testing approach
 
