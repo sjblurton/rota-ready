@@ -167,7 +167,7 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready` | `VITE_SUPABASE_URL` | Same Supabase URL, built into the web app |
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
 | Render `rota-ready-api` | `SMTP_URL` | Resend's SMTP endpoint with the API key as the password: `smtps://resend:<api-key>@smtp.resend.com:465` |
-| Render `rota-ready-api` | `EMAIL_FROM` | The sender, on a domain verified in Resend, e.g. `Rota Ready <rota@yourdomain>` |
+| Render `rota-ready-api` | `EMAIL_FROM` | `Rota Ready <onboarding@resend.dev>`, Resend's test sender, until a domain is verified in Resend. It only delivers to the Resend account's own address, so emails to anyone else show as Failed |
 | Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
