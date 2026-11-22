@@ -464,6 +464,9 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', thursday, nextWeek)).toHaveText(
       '18:00–23:00BarCash up at close',
     );
+    await expect(
+      rotaGrid().getByRole('row', { name: 'Sam Jones' }).getByRole('cell').first(),
+    ).toHaveText('Sam JonesFloor');
   });
 
   test('edits the Role and notes and shows the change on the grid', async () => {

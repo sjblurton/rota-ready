@@ -38,7 +38,12 @@ export function RotaGrid({ venueId, weekStart }: RotaGridProps) {
       <TableBody>
         {staffMembers.map((staffMember) => (
           <TableRow key={staffMember.id}>
-            <TableCell className="font-medium">{staffMember.name}</TableCell>
+            <TableCell className="align-top">
+              <div className="flex flex-col">
+                <span className="font-medium">{staffMember.name}</span>
+                <span className="text-xs text-muted-foreground">{staffMember.role}</span>
+              </div>
+            </TableCell>
             {days.map((day) => (
               <TableCell key={day} className="align-top">
                 {shiftsIn(staffMember.id, day).map(({ shift, times }) => (
