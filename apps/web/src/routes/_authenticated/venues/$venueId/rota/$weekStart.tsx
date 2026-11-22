@@ -40,7 +40,11 @@ function RotaPage() {
           <Badge variant={rota.status === 'published' ? 'default' : 'secondary'}>
             {t(`rota.status.${rota.status}`)}
           </Badge>
-          {rota.status === 'draft' && <PublishRotaDialog venueId={venueId} weekStart={weekStart} />}
+          <PublishRotaDialog
+            venueId={venueId}
+            weekStart={weekStart}
+            published={rota.status === 'published'}
+          />
         </div>
         <div className="flex gap-2">
           <WeekLink venueId={venueId} weekStart={addDays(weekStart, -7)}>

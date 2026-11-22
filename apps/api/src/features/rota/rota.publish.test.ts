@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createActiveStaffMember,
+  createArchivedStaffMember,
   createRotaFor,
   createShift,
   createUser,
@@ -15,6 +16,17 @@ const OTHER_OWNER = {
 };
 const WEEK_START = '2026-11-16';
 const SAM = { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: null };
+const JO = { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: null };
+const ALEX = { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: null };
+const PAT = { name: 'Pat Gone', role: 'Bar', phone: null };
+const MONDAY_9_TO_5 = {
+  startsAt: '2026-11-16T09:00:00.000Z',
+  endsAt: '2026-11-16T17:00:00.000Z',
+};
+const TUESDAY_9_TO_5 = {
+  startsAt: '2026-11-17T09:00:00.000Z',
+  endsAt: '2026-11-17T17:00:00.000Z',
+};
 
 function rotaPath(venue: { id: string }, weekStart: string) {
   return `/api/venues/${venue.id}/rotas/${weekStart}`;
@@ -22,6 +34,20 @@ function rotaPath(venue: { id: string }, weekStart: string) {
 
 function publishPath(venue: { id: string }, weekStart: string) {
   return `${rotaPath(venue, weekStart)}/publish`;
+}
+
+async function staffLinkUrlOf(app: TestApp, venue: { id: string }, staffMember: { id: string }) {
+  const response = await app.request(
+    'GET',
+    `/api/venues/${venue.id}/staff-members/${staffMember.id}/staff-link`,
+    { as: OWNER },
+  );
+  const { token } = (await response.json()) as { token: string };
+  return `${app.webUrl}/s/${token}`;
+}
+
+function recipients(app: TestApp) {
+  return app.outbox.sent.map((email) => email.to).sort();
 }
 
 describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
@@ -66,6 +92,10 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       expect([response.status, await response.json()]).toEqual([404, { code: 'not_found' }]);
     });
 
+    it('sends no email', () => {
+      expect(app.outbox.sent).toEqual([]);
+    });
+
     it("leaves the other venue's Rota as a Draft", async () => {
       expect(await app.db.rota.findMany({ select: { status: true, publishedAt: true } })).toEqual([
         { status: 'draft', publishedAt: null },
@@ -101,8 +131,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
     });
 
-    it('responds with 204', () => {
-      expect(response.status).toBe(204);
+    it('responds with 200', () => {
+      expect(response.status).toBe(200);
     });
 
     it('stores the Rota as Published, with when it was published', async () => {
@@ -153,6 +183,10 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
         ]);
       });
 
+      it('sends no more emails', () => {
+        expect(app.outbox.sent).toHaveLength(1);
+      });
+
       it('keeps when it was first published', async () => {
         expect(
           await app.db.rota.findUniqueOrThrow({
@@ -169,8 +203,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
     });
 
-    it('responds with 204', () => {
-      expect(response.status).toBe(204);
+    it('responds with 200 and no emails', async () => {
+      expect([response.status, await response.json()]).toEqual([200, { emails: [] }]);
     });
 
     it('stores a Published Rota for that Week', async () => {
@@ -190,7 +224,9 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     let responses: Response[];
 
     beforeEach(async () => {
-      await createRotaFor(app.db, ownVenue, WEEK_START);
+      const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      const sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      await createShift(app.db, { id: rota.id, venueId: ownVenue.id }, sam, MONDAY_9_TO_5);
       responses = await Promise.all([
         app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER }),
         app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER }),
@@ -198,7 +234,104 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     });
 
     it('accepts one and responds to the other with 409', () => {
-      expect(responses.map((each) => each.status).sort()).toEqual([204, 409]);
+      expect(responses.map((each) => each.status).sort()).toEqual([200, 409]);
+    });
+
+    it('emails Sam once', () => {
+      expect(recipients(app)).toEqual([SAM.email]);
+    });
+  });
+
+  describe('when Sam and Jo have Shifts that Week, Alex has none, and Pat has one but is archived', () => {
+    let sam: { id: string };
+    let jo: { id: string };
+
+    beforeEach(async () => {
+      const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      const inRota = { id: rota.id, venueId: ownVenue.id };
+      sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      jo = await createActiveStaffMember(app.db, ownVenue, JO);
+      await createActiveStaffMember(app.db, ownVenue, ALEX);
+      const pat = await createArchivedStaffMember(app.db, ownVenue, PAT);
+      await createShift(app.db, inRota, sam, MONDAY_9_TO_5);
+      await createShift(app.db, inRota, sam, TUESDAY_9_TO_5);
+      await createShift(app.db, inRota, jo, TUESDAY_9_TO_5);
+      await createShift(app.db, inRota, pat, MONDAY_9_TO_5);
+    });
+
+    describe('when the Owner publishes it', () => {
+      beforeEach(async () => {
+        response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
+      });
+
+      it('responds with 200 and Jo and Sam as sent, by name', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          200,
+          {
+            emails: [
+              { staffMemberId: jo.id, name: JO.name, status: 'sent' },
+              { staffMemberId: sam.id, name: SAM.name, status: 'sent' },
+            ],
+          },
+        ]);
+      });
+
+      it('emails only Jo and Sam, once each', () => {
+        expect(recipients(app)).toEqual([JO.email, SAM.email]);
+      });
+
+      it('emails Sam their Staff Link', async () => {
+        const email = app.outbox.sent.find(({ to }) => to === SAM.email);
+        expect(email?.text).toContain(await staffLinkUrlOf(app, ownVenue, sam));
+      });
+
+      it('emails Jo their Staff Link', async () => {
+        const email = app.outbox.sent.find(({ to }) => to === JO.email);
+        expect(email?.text).toContain(await staffLinkUrlOf(app, ownVenue, jo));
+      });
+
+      it('names the Venue and the Week in the subject', () => {
+        expect(app.outbox.sent.find(({ to }) => to === SAM.email)?.subject).toBe(
+          'Your Shifts at The Crown for the Week of Mon, 16 Nov 2026',
+        );
+      });
+    });
+
+    describe('when the email to Jo fails', () => {
+      beforeEach(async () => {
+        app.outbox.failFor(JO.email);
+        response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
+      });
+
+      it('responds with 200, Jo as failed and Sam as sent', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          200,
+          {
+            emails: [
+              { staffMemberId: jo.id, name: JO.name, status: 'failed' },
+              { staffMemberId: sam.id, name: SAM.name, status: 'sent' },
+            ],
+          },
+        ]);
+      });
+
+      it('still emails Sam', () => {
+        expect(recipients(app)).toEqual([SAM.email]);
+      });
+
+      it('keeps the Rota Published', async () => {
+        expect(await app.db.rota.findMany({ select: { status: true } })).toEqual([
+          { status: 'published' },
+        ]);
+      });
+
+      it('logs the failure', () => {
+        expect(app.logs()).toContain('Staff Link email failed');
+      });
+
+      it('keeps the Staff Link out of the log', () => {
+        expect(app.logs()).not.toContain(`${app.webUrl}/s/`);
+      });
     });
   });
 });

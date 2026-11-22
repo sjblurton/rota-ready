@@ -20,7 +20,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @rota-ready/api dev',
       url: `http://localhost:${apiPort}/api/health`,
-      env: { PORT: String(apiPort) },
+      env: { PORT: String(apiPort), WEB_URL: `http://localhost:${webPort}` },
       reuseExistingServer,
     },
     {

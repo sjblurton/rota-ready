@@ -3,6 +3,7 @@ import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
+const mailpitUrl = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
 const staffMembers = [
@@ -10,6 +11,22 @@ const staffMembers = [
   { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: '07700 900456' },
   { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
 ];
+
+interface MailpitMessage {
+  ID: string;
+  Created: string;
+}
+
+async function latestEmailTextTo(address: string, since: Date): Promise<string | undefined> {
+  const search = await fetch(
+    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:${address}`)}&limit=1`,
+  );
+  const { messages } = (await search.json()) as { messages: MailpitMessage[] };
+  const latest = messages[0];
+  if (!latest || new Date(latest.Created) < since) return undefined;
+  const message = await fetch(`${mailpitUrl}/api/v1/message/${latest.ID}`);
+  return ((await message.json()) as { Text: string }).Text;
+}
 
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -27,6 +44,8 @@ test.describe.serial('MVP journey', () => {
   let page: Page;
   let thisWeek: string;
   let samsLink: string;
+  let samsEmailedLink: string;
+  let publishedThisWeekAt: Date;
   let samsNewLink: string;
   let privateWindow: BrowserContext;
   let staffLinkPage: Page;
@@ -506,11 +525,36 @@ test.describe.serial('MVP journey', () => {
     );
   });
 
-  test('Publishes this Week and shows the Published badge in place of the Publish button', async () => {
+  test('Publishes this Week and shows who was emailed their Staff Link', async () => {
+    publishedThisWeekAt = new Date(Date.now() - 1_000);
     await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
+    const dialog = page.getByRole('alertdialog');
+    await expect(dialog).toContainText(
+      `Published the Week of ${formatLocalDate(thisWeek, { withYear: true })}`,
+    );
+    await expect(
+      dialog.getByRole('list', { name: 'Staff Link emails' }).getByRole('listitem'),
+    ).toHaveText(['Sam JonesSent']);
+  });
+
+  test('closes the results and shows the Published badge in place of the Publish button', async () => {
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Done' }).click();
     await expect(page.getByRole('alertdialog')).toBeHidden();
     await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publish' })).toHaveCount(0);
+  });
+
+  test("emails Sam their Staff Link, which opens Sam's page", async ({ browser }) => {
+    await expect
+      .poll(() => latestEmailTextTo('sam@example.com', publishedThisWeekAt))
+      .toMatch(/\/s\/[\w-]{43}/);
+    const text = await latestEmailTextTo('sam@example.com', publishedThisWeekAt);
+    samsEmailedLink = text?.match(/https?:\/\/\S+\/s\/[\w-]{43}/)?.[0] ?? '';
+    const emailWindow = await browser.newContext();
+    const emailPage = await emailWindow.newPage();
+    await emailPage.goto(samsEmailedLink);
+    await expect(emailPage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
+    await emailWindow.close();
   });
 
   test('keeps this Week Published after a reload', async () => {
@@ -536,6 +580,7 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('dialog')).toContainText("Sam Jones's Staff Link");
     await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
     samsLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
+    expect(samsLink).toBe(samsEmailedLink);
   });
 
   test("copies Sam's Staff Link", async () => {
@@ -607,6 +652,7 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', addDays(nextWeek, 2), nextWeek)).toHaveText('12:00–18:00');
     await page.getByRole('button', { name: 'Publish' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Done' }).click();
     await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
   });
 

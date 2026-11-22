@@ -18,3 +18,9 @@ export async function publishDraftRota(db: DbClient, rotaId: string, publishedAt
   });
   return count === 1;
 }
+
+export function findActiveStaffMembersOnRota(db: DbClient, rotaId: string) {
+  return db.staffMember.findMany({
+    where: { archivedAt: null, shifts: { some: { rotaId } } },
+  });
+}

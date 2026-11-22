@@ -66,6 +66,8 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
   }
 
   return {
+    staffLinkTokenOf,
+
     list(venueId: string) {
       return findActiveStaffMembers(db, venueId);
     },
