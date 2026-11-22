@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Keep shadcn components as CLI output
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'shadcn-upgrade')
+        run: .github/scripts/check-shadcn-untouched.sh "origin/${{ github.base_ref }}"
 
       - uses: jdx/mise-action@v2
 

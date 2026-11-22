@@ -43,6 +43,8 @@ cd <scratchpad>/<slug>-wt && pnpm install --frozen-lockfile
 
 Branch from `origin/main`, because local `main` is often stale. Use the session's scratchpad directory for the worktree.
 
+Tests and the journey need local Supabase (`pnpm db:start`), which needs Docker Desktop. When `supabase start` can't reach Docker, run `systemctl --user start docker-desktop` and prefix the command with `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`.
+
 Done when `pnpm typecheck` passes in the worktree.
 
 ## 4. Build it
@@ -50,9 +52,10 @@ Done when `pnpm typecheck` passes in the worktree.
 Read the ticket, its parent spec (#1), and every ADR and glossary term it touches. Follow `AGENTS.md` and `.claude/skills/scenario-tests/SKILL.md`. Write each test so it fails without the change. For any test that could pass by accident, prove it: break the code, watch the test go red, then restore the code.
 
 - **Shared test database:** API tests drop and recreate `rota_ready_test`, so two checkouts running `pnpm test` at once will collide.
-- **Busy ports:** Playwright reuses whatever is already serving `:3000` and `:5173`, which may be the user's dev servers on another branch. When `ss -ltn` shows those ports in use, run the journey from a temporary `apps/web/playwright.alt.config.ts`: a copy of `playwright.config.ts` with `baseURL` `http://localhost:5273`, the API server given `env: { PORT: '3200' }`, the web server running `vite --port 5273 --strictPort` with `env: { API_PROXY_TARGET: 'http://localhost:3200' }`, and `reuseExistingServer: false`. Delete the file afterwards.
+- **The journey:** run it with `pnpm --filter @rota-ready/web e2e:isolated`. It starts its own servers on `:3200` and `:5273`, so it never tests the user's dev servers on `:3000` and `:5173`.
+- **Look at the screens:** run the journey once with `E2E_SCREENSHOTS=<scratchpad>/shots`, which saves a full-page screenshot after every step, named `<line>-chromium-<step title>.png`. Read the screenshots of every step that shows a screen the ticket changed. Fix anything a person would notice in the browser: squashed or overflowing layout, missing labels or empty states, defaults that make them do extra work.
 
-Done when every acceptance criterion in the ticket is met, and lint, typecheck, `pnpm test`, build and the Playwright journey all pass.
+Done when every acceptance criterion in the ticket is met, the changed screens look right in their screenshots, and lint, typecheck, `pnpm test`, build and the journey all pass.
 
 ## 5. Review and fix
 
@@ -64,7 +67,7 @@ Done when every finding is either fixed or listed with a reason it stays.
 
 - **Commit** with a conventional message ending `(#<issue>)` and the attribution trailer.
 - **Push** with `git push -u origin <branch>`.
-- **Write the PR body** with the `pr` skill. Start it with `Closes #<issue>` and include the manual browser steps the ticket asks for.
+- **Write the PR body** with the `pr` skill. Start it with `Closes #<issue>`, include the manual browser steps the ticket asks for, and say which screens you checked in screenshots.
 - **Check every claim in the body against the code or a command's output before publishing it.** Edit the body afterwards if one turns out wrong.
 - **Name any conflict with other open PRs** that touch the same files (`gh pr list`, then `gh pr diff <n> --name-only`). Say which PR needs the follow-up edit.
 

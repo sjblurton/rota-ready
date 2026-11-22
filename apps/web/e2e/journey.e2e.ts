@@ -95,6 +95,14 @@ test.describe.serial('MVP journey', () => {
     await page.close();
   });
 
+  test.afterEach(async ({ browserName }, testInfo) => {
+    const dir = process.env.E2E_SCREENSHOTS;
+    if (!dir) return;
+    const step = String(testInfo.line).padStart(4, '0');
+    const slug = testInfo.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    await page.screenshot({ path: `${dir}/${step}-${browserName}-${slug}.png`, fullPage: true });
+  });
+
   test('sends a logged-out visitor to the login page', async () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();

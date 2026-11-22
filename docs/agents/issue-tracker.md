@@ -2,6 +2,10 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
+`gh` posts as the user, so start every comment or reply an agent writes on an issue or pull request with `> *Written by Claude Code.*`. Skills with their own opening line, such as triage, use theirs instead.
+
+This machine's `gh` (2.46) predates several flags. Use the REST fallbacks below, and edit a pull request body with `gh api --method PATCH repos/<owner>/<repo>/pulls/<n> -F body=@<file>`: `gh pr edit` fails on a Projects (classic) deprecation error.
+
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
