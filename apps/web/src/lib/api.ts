@@ -1,6 +1,6 @@
-import { apiErrorResponseSchema, type ApiErrorCode } from '@rota-ready/shared';
+import { apiErrorCode, apiErrorResponseSchema, type ApiErrorCode } from '@rota-ready/shared';
 import type { z } from 'zod';
-import { accessToken } from './supabase';
+import { accessToken, supabase } from './supabase';
 
 const apiBaseUrl: string = import.meta.env.VITE_API_URL ?? '';
 
@@ -26,6 +26,13 @@ async function errorCodeOf(response: Response): Promise<ApiErrorCode | undefined
   return parsed.success ? parsed.data.code : undefined;
 }
 
+async function endSessionAndReloadAtLogin(): Promise<never> {
+  await supabase.auth.signOut({ scope: 'local' });
+  window.location.assign('/login?sessionEnded=true');
+  const untilThePageUnloads = new Promise<never>(() => {});
+  return untilThePageUnloads;
+}
+
 async function apiRequest<Schema extends z.ZodType>(
   method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
@@ -42,7 +49,9 @@ async function apiRequest<Schema extends z.ZodType>(
   }
   const response = await fetch(`${apiBaseUrl}${path}`, init);
   if (!response.ok) {
-    throw new ApiError(response.status, await errorCodeOf(response));
+    const code = await errorCodeOf(response);
+    if (code === apiErrorCode.unauthorized) return endSessionAndReloadAtLogin();
+    throw new ApiError(response.status, code);
   }
   return schema.parse(response.status === 204 ? undefined : await response.json());
 }

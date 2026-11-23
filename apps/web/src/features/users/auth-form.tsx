@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -11,9 +12,10 @@ import { Input } from '@/components/ui/input';
 interface AuthFormProps {
   mode: 'logIn' | 'signUp';
   authenticate: (credentials: Credentials) => Promise<string | null>;
+  sessionEnded?: boolean;
 }
 
-export function AuthForm({ mode, authenticate }: AuthFormProps) {
+export function AuthForm({ mode, authenticate, sessionEnded = false }: AuthFormProps) {
   const { t } = useTranslation();
   const copy = {
     logIn: {
@@ -52,7 +54,12 @@ export function AuthForm({ mode, authenticate }: AuthFormProps) {
             <h1>{copy.title}</h1>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-6">
+          {sessionEnded && (
+            <Alert role="status">
+              <AlertDescription>{t('errors.unauthorized')}</AlertDescription>
+            </Alert>
+          )}
           <form noValidate className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field data-invalid={!!errors.email}>
