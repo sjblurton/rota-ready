@@ -1,45 +1,25 @@
-import {
-  apiErrorCode,
-  staffMemberDetailsSchema,
-  staffMemberSchema,
-  validationMessage,
-  type StaffMemberDetails,
-} from '@rota-ready/shared';
+import { staffMemberDetailsSchema, type StaffMemberDetails } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { StaffMemberFields } from '@/features/staff-members/staff-member-fields';
+import { useAddStaffMember } from '@/features/staff-members/staff-member-mutations';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost, hasErrorCode } from '@/lib/api';
-import { staffMembersPath, updateStaffMembers } from '@/features/staff-members/staff-member-queries';
 
 const emptyStaffMember = { name: '', role: '', email: '', phone: '' };
 
 export function AddStaffMemberForm({ venueId }: { venueId: string }) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const form = useForm({
     resolver: zodResolver(staffMemberDetailsSchema),
     defaultValues: emptyStaffMember,
   });
-  const add = useMutation({
-    mutationFn: (details: StaffMemberDetails) =>
-      apiPost(staffMembersPath(venueId), details, staffMemberSchema),
-    onSuccess: (added) => {
-      updateStaffMembers(queryClient, venueId, (current) => [...current, added]);
+  const add = useAddStaffMember(venueId, {
+    form,
+    onSuccess: () => {
       form.reset(emptyStaffMember, { keepFieldsRef: true });
       form.setFocus('name');
-    },
-    onError: (error) => {
-      if (hasErrorCode(error, apiErrorCode.staff_member_email_taken)) {
-        form.setError('email', { message: validationMessage.staffMemberEmailTaken });
-      } else {
-        toast.error(apiErrorMessage(t, error));
-      }
     },
   });
 

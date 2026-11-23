@@ -1,8 +1,6 @@
-import { firstNameOf, staffLinkSchema, type StaffMember } from '@rota-ready/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { firstNameOf, type StaffMember } from '@rota-ready/shared';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,9 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { setStaffLink, staffLinkPath } from '@/features/staff-links/staff-link-queries';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost } from '@/lib/api';
+import { useRegenerateStaffLink } from '@/features/staff-links/staff-link-mutations';
 
 interface RegenerateStaffLinkDialogProps {
   venueId: string;
@@ -26,19 +22,10 @@ interface RegenerateStaffLinkDialogProps {
 
 export function RegenerateStaffLinkDialog({ venueId, staffMember }: RegenerateStaffLinkDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const firstName = firstNameOf(staffMember.name);
-  const regenerate = useMutation({
-    mutationFn: () =>
-      apiPost(`${staffLinkPath(venueId, staffMember.id)}/regenerate`, undefined, staffLinkSchema),
-    onSuccess: (staffLink) => {
-      setOpen(false);
-      setStaffLink(queryClient, venueId, staffMember.id, staffLink);
-    },
-    onError: (error) => {
-      toast.error(apiErrorMessage(t, error));
-    },
+  const regenerate = useRegenerateStaffLink(venueId, staffMember.id, {
+    onSuccess: () => setOpen(false),
   });
 
   function confirm(event: MouseEvent) {

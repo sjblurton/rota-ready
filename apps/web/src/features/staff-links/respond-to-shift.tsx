@@ -1,16 +1,8 @@
-import {
-  apiErrorCode,
-  declineFormSchema,
-  staffLinkShiftSchema,
-  type ShiftResponseRequest,
-  type StaffLinkShift,
-} from '@rota-ready/shared';
+import { declineFormSchema, type StaffLinkShift } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import type { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,35 +17,13 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { replaceStaffLinkShift, shiftResponsePath } from '@/features/staff-links/staff-link-queries';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPut, hasErrorCode } from '@/lib/api';
+import { useRespondToShift } from '@/features/staff-links/staff-link-mutations';
 
 interface RespondToShiftProps {
   token: string;
   shift: StaffLinkShift;
   day: string;
   times: string;
-}
-
-function useRespondToShift(token: string, shift: StaffLinkShift, onDone?: () => void) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (request: ShiftResponseRequest) =>
-      apiPut(shiftResponsePath(token, shift.id), request, staffLinkShiftSchema),
-    onSuccess: (updated) => {
-      replaceStaffLinkShift(queryClient, token, updated);
-      onDone?.();
-    },
-    onError: (error) => {
-      toast.error(apiErrorMessage(t, error));
-      if (hasErrorCode(error, apiErrorCode.shift_started)) {
-        replaceStaffLinkShift(queryClient, token, { ...shift, started: true });
-        onDone?.();
-      }
-    },
-  });
 }
 
 export function RespondToShift({ token, shift, day, times }: RespondToShiftProps) {
@@ -117,7 +87,7 @@ function DeclineShiftForm({ token, shift, onDone }: DeclineShiftFormProps) {
     defaultValues: { declineReason: shift.declineReason ?? '' },
   });
   const { errors } = form.formState;
-  const decline = useRespondToShift(token, shift, onDone);
+  const decline = useRespondToShift(token, shift, { onSuccess: onDone });
 
   function onSubmit({ declineReason }: z.output<typeof declineFormSchema>) {
     decline.mutate({ response: 'declined', declineReason });

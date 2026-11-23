@@ -1,22 +1,15 @@
 import {
-  apiErrorCode,
   staffMemberDetailsSchema,
-  staffMemberSchema,
-  validationMessage,
   type StaffMember,
   type StaffMemberDetails,
 } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { StaffMemberFields } from '@/features/staff-members/staff-member-fields';
+import { useEditStaffMember } from '@/features/staff-members/staff-member-mutations';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPatch, hasErrorCode } from '@/lib/api';
-import { staffMemberPath, updateStaffMembers } from '@/features/staff-members/staff-member-queries';
 
 interface EditStaffMemberFormProps {
   venueId: string;
@@ -26,7 +19,6 @@ interface EditStaffMemberFormProps {
 
 export function EditStaffMemberForm({ venueId, staffMember, onDone }: EditStaffMemberFormProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const form = useForm({
     resolver: zodResolver(staffMemberDetailsSchema),
     defaultValues: {
@@ -36,23 +28,7 @@ export function EditStaffMemberForm({ venueId, staffMember, onDone }: EditStaffM
       phone: staffMember.phone ?? '',
     },
   });
-  const edit = useMutation({
-    mutationFn: (details: StaffMemberDetails) =>
-      apiPatch(staffMemberPath(venueId, staffMember.id), details, staffMemberSchema),
-    onSuccess: (edited) => {
-      updateStaffMembers(queryClient, venueId, (current) =>
-        current.map((existing) => (existing.id === edited.id ? edited : existing)),
-      );
-      onDone();
-    },
-    onError: (error) => {
-      if (hasErrorCode(error, apiErrorCode.staff_member_email_taken)) {
-        form.setError('email', { message: validationMessage.staffMemberEmailTaken });
-      } else {
-        toast.error(apiErrorMessage(t, error));
-      }
-    },
-  });
+  const edit = useEditStaffMember(venueId, staffMember.id, { form, onSuccess: onDone });
 
   function onSubmit(details: StaffMemberDetails) {
     edit.mutate(details);
