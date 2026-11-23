@@ -11,6 +11,7 @@ const messageKeys = {
   staff_member_email_taken: 'validation.staffMemberEmailTaken',
   shift_overlaps: 'validation.shiftOverlaps',
   rota_already_published: 'errors.rotaAlreadyPublished',
+  rota_not_published: 'errors.rotaNotPublished',
   shift_started: 'errors.shiftStarted',
   staff_member_has_upcoming_shifts: 'errors.staffMemberHasUpcomingShifts',
   internal_error: 'errors.internal',

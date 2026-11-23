@@ -9,7 +9,7 @@ The API sends only `{ code }` (ADR-0005). Each mutation handles its own errors i
 - **`unauthorized`** signs the User out and redirects to `/login`, which explains that the session has ended.
 - **Page-load errors** replace the page, through the route's `errorComponent`, with a **Try again** button. There's no retry for `not_found`. A page that failed to load never shows as a toast over an empty page.
 
-A success shows as a toast only when nothing on the page changes to show it, such as Send Updates emailing staff. Publish instead lists who was emailed in its dialog, so the Owner sees which emails failed and can send those Staff Links another way. Otherwise the change on the page is the confirmation: an added Shift appears in the grid, a renamed Venue's heading updates, an archived Staff Member leaves the list.
+A success shows as a toast only when nothing on the page changes to show it. Publish and Send Updates instead list who was emailed in their dialogs, so the Owner sees which emails failed and can send those Staff Links another way. Otherwise the change on the page is the confirmation: an added Shift appears in the grid, a renamed Venue's heading updates, an archived Staff Member leaves the list.
 
 ## Considered Options
 

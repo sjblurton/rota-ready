@@ -1,0 +1,439 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  createActiveStaffMember,
+  createRotaFor,
+  createShift,
+  createUser,
+  createVenueFor,
+} from '#test/seed.js';
+import { startTestApp, type TestApp } from '#test/test-app.js';
+
+const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
+const OTHER_OWNER = {
+  id: '7c0d9a54-1e2b-4f3a-8b6c-5d4e3f2a1b0c',
+  email: 'other@example.com',
+};
+const WEEK_START = '2026-11-16';
+const SAM = { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: null };
+const JO = { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: null };
+const ALEX = { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: null };
+const KIM = { name: 'Kim Lee', role: 'Bar', email: 'kim@example.com', phone: null };
+const MONDAY_9_TO_5 = { startsAt: '2026-11-16T09:00:00.000Z', endsAt: '2026-11-16T17:00:00.000Z' };
+const MONDAY_10_TO_5 = { startsAt: '2026-11-16T10:00:00.000Z', endsAt: '2026-11-16T17:00:00.000Z' };
+const TUESDAY_9_TO_5 = { startsAt: '2026-11-17T09:00:00.000Z', endsAt: '2026-11-17T17:00:00.000Z' };
+const WEDNESDAY_9_TO_5 = {
+  startsAt: '2026-11-18T09:00:00.000Z',
+  endsAt: '2026-11-18T17:00:00.000Z',
+};
+const THURSDAY_9_TO_5 = {
+  startsAt: '2026-11-19T09:00:00.000Z',
+  endsAt: '2026-11-19T17:00:00.000Z',
+};
+
+function rotaPath(venue: { id: string }) {
+  return `/api/venues/${venue.id}/rotas/${WEEK_START}`;
+}
+
+function sendUpdatesPath(venue: { id: string }, weekStart = WEEK_START) {
+  return `/api/venues/${venue.id}/rotas/${weekStart}/send-updates`;
+}
+
+function recipients(app: TestApp) {
+  return app.outbox.sent.map((email) => email.to).sort();
+}
+
+function emailTo(app: TestApp, address: string) {
+  return app.outbox.sent.find((email) => email.to === address);
+}
+
+describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
+  let app: TestApp;
+  let response: Response;
+  let ownVenue: { id: string };
+  let otherVenue: { id: string };
+
+  function shiftPath(shift: { id: string }) {
+    return `${rotaPath(ownVenue)}/shifts/${shift.id}`;
+  }
+
+  function moveShift(shift: { id: string }, body: object) {
+    return app.request('PATCH', shiftPath(shift), { as: OWNER, body });
+  }
+
+  async function publish(venue: { id: string }) {
+    await app.request('POST', `${rotaPath(venue)}/publish`, { as: OWNER });
+    app.outbox.sent.length = 0;
+  }
+
+  async function staffLinkUrlOf(staffMember: { id: string }) {
+    const link = await app.request(
+      'GET',
+      `/api/venues/${ownVenue.id}/staff-members/${staffMember.id}/staff-link`,
+      { as: OWNER },
+    );
+    const { token } = (await link.json()) as { token: string };
+    return `${app.webUrl}/s/${token}`;
+  }
+
+  beforeEach(async () => {
+    app = await startTestApp();
+    app.setClock('2026-11-14T10:00:00.000Z');
+    await createUser(app.db, OWNER);
+    await createUser(app.db, OTHER_OWNER);
+    ownVenue = await createVenueFor(app.db, OWNER, {
+      name: 'The Crown',
+      timeZone: 'Europe/London',
+    });
+    otherVenue = await createVenueFor(app.db, OTHER_OWNER, {
+      name: 'The Anchor',
+      timeZone: 'Europe/London',
+    });
+  });
+
+  afterEach(() => app.close());
+
+  describe('when no token is sent', () => {
+    beforeEach(async () => {
+      response = await app.request('POST', sendUpdatesPath(ownVenue));
+    });
+
+    it('responds with 401', () => {
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('when the Week start is not a Monday', () => {
+    beforeEach(async () => {
+      response = await app.request('POST', sendUpdatesPath(ownVenue, '2026-11-17'), { as: OWNER });
+    });
+
+    it('responds with 404', () => {
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('when the Rota is still a Draft', () => {
+    beforeEach(async () => {
+      const sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      const draft = await createRotaFor(app.db, ownVenue, WEEK_START);
+      await createShift(app.db, draft, sam, MONDAY_9_TO_5);
+      response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+    });
+
+    it('responds with 409 and the rota_not_published code', async () => {
+      expect([response.status, await response.json()]).toEqual([
+        409,
+        { code: 'rota_not_published' },
+      ]);
+    });
+
+    it('sends no email', () => {
+      expect(app.outbox.sent).toEqual([]);
+    });
+  });
+
+  describe('when Sam, Jo, Alex and Kim were told about their Shifts', () => {
+    let sam: { id: string };
+    let jo: { id: string };
+    let alex: { id: string };
+    let kim: { id: string };
+    let samsMonday: { id: string };
+    let josTuesday: { id: string };
+    let kimsThursday: { id: string };
+
+    beforeEach(async () => {
+      sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      jo = await createActiveStaffMember(app.db, ownVenue, JO);
+      alex = await createActiveStaffMember(app.db, ownVenue, ALEX);
+      kim = await createActiveStaffMember(app.db, ownVenue, KIM);
+      const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      samsMonday = await createShift(app.db, rota, sam, MONDAY_9_TO_5);
+      josTuesday = await createShift(app.db, rota, jo, TUESDAY_9_TO_5);
+      await createShift(app.db, rota, alex, WEDNESDAY_9_TO_5);
+      kimsThursday = await createShift(app.db, rota, kim, THURSDAY_9_TO_5);
+      await publish(ownVenue);
+    });
+
+    describe('when nothing has changed since', () => {
+      beforeEach(async () => {
+        response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+      });
+
+      it('responds with 200 and no emails', async () => {
+        expect([response.status, await response.json()]).toEqual([200, { emails: [] }]);
+      });
+
+      it('sends no email', () => {
+        expect(app.outbox.sent).toEqual([]);
+      });
+    });
+
+    describe('when only the notes on Sam\'s Monday Shift change', () => {
+      beforeEach(async () => {
+        await moveShift(samsMonday, { staffMemberId: sam.id, ...MONDAY_9_TO_5, notes: 'Lock up' });
+        response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+      });
+
+      it('sends no email', () => {
+        expect(app.outbox.sent).toEqual([]);
+      });
+    });
+
+    describe("when the Owner moves Sam's Monday Shift an hour later and reassigns Jo's Tuesday Shift to Alex", () => {
+      beforeEach(async () => {
+        await moveShift(samsMonday, { staffMemberId: sam.id, ...MONDAY_10_TO_5 });
+        await moveShift(josTuesday, { staffMemberId: alex.id, ...TUESDAY_9_TO_5 });
+      });
+
+      describe('when the Owner sends updates', () => {
+        beforeEach(async () => {
+          response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        });
+
+        it('responds with 200 and Alex, Jo and Sam as sent, by name', async () => {
+          expect([response.status, await response.json()]).toEqual([
+            200,
+            {
+              emails: [
+                { staffMemberId: alex.id, name: 'Alex Smith', status: 'sent' },
+                { staffMemberId: jo.id, name: 'Jo Bloggs', status: 'sent' },
+                { staffMemberId: sam.id, name: 'Sam Jones', status: 'sent' },
+              ],
+            },
+          ]);
+        });
+
+        it('emails Alex, Jo and Sam once each', () => {
+          expect(recipients(app)).toEqual([
+            'alex@example.com',
+            'jo@example.com',
+            'sam@example.com',
+          ]);
+        });
+
+        it('does not email Kim, whose Shift is unchanged', () => {
+          expect(emailTo(app, 'kim@example.com')).toBeUndefined();
+        });
+
+        it('names the Venue and the Week in the subject', () => {
+          expect(emailTo(app, 'sam@example.com')?.subject).toBe(
+            'Changes to your Shifts at The Crown for the Week of Mon, 16 Nov 2026',
+          );
+        });
+
+        describe("when Sam's Staff Link is looked up", () => {
+          let samsStaffLinkUrl: string;
+
+          beforeEach(async () => {
+            samsStaffLinkUrl = await staffLinkUrlOf(sam);
+          });
+
+          it('emails Sam that Staff Link', () => {
+            expect(emailTo(app, 'sam@example.com')?.text).toContain(samsStaffLinkUrl);
+          });
+        });
+
+        it("tells Sam the Monday Shift's new times and what it was", () => {
+          expect(emailTo(app, 'sam@example.com')?.text).toContain(
+            '- Mon 16 Nov, 10:00–17:00: was 09:00–17:00',
+          );
+        });
+
+        it('tells Jo the Tuesday Shift was removed', () => {
+          expect(emailTo(app, 'jo@example.com')?.text).toContain(
+            "- Tue 17 Nov, 09:00–17:00: removed, so you don't need to work it",
+          );
+        });
+
+        it('tells Alex about the new Tuesday Shift only, not the unchanged Wednesday one', () => {
+          expect(
+            emailTo(app, 'alex@example.com')
+              ?.text.split('\n')
+              .filter((line) => line.startsWith('- ')),
+          ).toEqual(['- Tue 17 Nov, 09:00–17:00: new']);
+        });
+
+        describe('when the Owner opens the Week', () => {
+          beforeEach(async () => {
+            response = await app.request('GET', rotaPath(ownVenue), { as: OWNER });
+          });
+
+          it('shows no Changed or Removed Shifts', async () => {
+            const { shifts, removedShifts } = (await response.json()) as {
+              shifts: { changed: boolean }[];
+              removedShifts: unknown[];
+            };
+            expect([shifts.map(({ changed }) => changed), removedShifts]).toEqual([
+              [false, false, false, false],
+              [],
+            ]);
+          });
+        });
+
+        it("keeps the times Sam was told before as the Monday Shift's previous times", async () => {
+          expect(
+            await app.db.shift.findUniqueOrThrow({
+              where: { id: samsMonday.id },
+              select: { previousStaffMemberId: true, previousStartsAt: true, previousEndsAt: true },
+            }),
+          ).toEqual({
+            previousStaffMemberId: sam.id,
+            previousStartsAt: new Date(MONDAY_9_TO_5.startsAt),
+            previousEndsAt: new Date(MONDAY_9_TO_5.endsAt),
+          });
+        });
+
+        describe('when the Owner sends updates again with nothing new', () => {
+          beforeEach(async () => {
+            app.outbox.sent.length = 0;
+            response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+          });
+
+          it('responds with 200 and no emails', async () => {
+            expect([response.status, await response.json()]).toEqual([200, { emails: [] }]);
+          });
+
+          it('sends no email', () => {
+            expect(app.outbox.sent).toEqual([]);
+          });
+        });
+      });
+
+      describe('when Jo is archived before the Owner sends updates', () => {
+        beforeEach(async () => {
+          await app.request('POST', `/api/venues/${ownVenue.id}/staff-members/${jo.id}/archive`, {
+            as: OWNER,
+          });
+          response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        });
+
+        it('lists Jo as having no email', async () => {
+          const { emails } = (await response.json()) as { emails: { name: string; status: string }[] };
+          expect(emails.find(({ name }) => name === 'Jo Bloggs')?.status).toBe('no_email');
+        });
+
+        it('emails Alex and Sam', () => {
+          expect(recipients(app)).toEqual(['alex@example.com', 'sam@example.com']);
+        });
+
+        it('does not email Jo', () => {
+          expect(emailTo(app, 'jo@example.com')).toBeUndefined();
+        });
+      });
+
+      describe('when the email to Jo fails', () => {
+        beforeEach(async () => {
+          app.outbox.failFor('jo@example.com');
+          response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        });
+
+        it('lists Jo as failed', async () => {
+          const { emails } = (await response.json()) as { emails: { name: string; status: string }[] };
+          expect(emails.find(({ name }) => name === 'Jo Bloggs')?.status).toBe('failed');
+        });
+
+        it('still emails Alex and Sam', () => {
+          expect(recipients(app)).toEqual(['alex@example.com', 'sam@example.com']);
+        });
+      });
+
+      describe('when the Owner sends updates from two tabs at once', () => {
+        beforeEach(async () => {
+          await Promise.all([
+            app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER }),
+            app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER }),
+          ]);
+        });
+
+        it('emails each affected Staff Member once', () => {
+          expect(recipients(app)).toEqual([
+            'alex@example.com',
+            'jo@example.com',
+            'sam@example.com',
+          ]);
+        });
+      });
+    });
+
+    describe("when the Owner moves Sam's Monday Shift to Tuesday", () => {
+      beforeEach(async () => {
+        await moveShift(samsMonday, { staffMemberId: sam.id, ...TUESDAY_9_TO_5 });
+        await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+      });
+
+      it('tells Sam the day it was, as well as the times', () => {
+        expect(emailTo(app, 'sam@example.com')?.text).toContain(
+          '- Tue 17 Nov, 09:00–17:00: was Mon 16 Nov, 09:00–17:00',
+        );
+      });
+    });
+
+    describe("when the Owner deletes Kim's Thursday Shift and sends updates", () => {
+      beforeEach(async () => {
+        await app.request('DELETE', shiftPath(kimsThursday), { as: OWNER });
+        response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+      });
+
+      it('emails Kim', () => {
+        expect(recipients(app)).toContain('kim@example.com');
+      });
+
+      it('does not email Sam, Jo or Alex, whose Shifts are unchanged', () => {
+        expect(recipients(app)).toEqual(['kim@example.com']);
+      });
+
+      it('tells Kim the Thursday Shift was removed', () => {
+        expect(emailTo(app, 'kim@example.com')?.text).toContain(
+          "- Thu 19 Nov, 09:00–17:00: removed, so you don't need to work it",
+        );
+      });
+
+      describe('when the Owner opens the Week', () => {
+        beforeEach(async () => {
+          response = await app.request('GET', rotaPath(ownVenue), { as: OWNER });
+        });
+
+        it('shows no Removed Shifts', async () => {
+          expect(((await response.json()) as { removedShifts: unknown[] }).removedShifts).toEqual([]);
+        });
+      });
+    });
+
+    describe('when the Owner adds a Shift for Kim and sends updates', () => {
+      beforeEach(async () => {
+        await app.request('POST', `${rotaPath(ownVenue)}/shifts`, {
+          as: OWNER,
+          body: { staffMemberId: kim.id, ...MONDAY_9_TO_5 },
+        });
+        await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+      });
+
+      it('tells Kim about the new Monday Shift', () => {
+        expect(emailTo(app, 'kim@example.com')?.text).toContain('- Mon 16 Nov, 09:00–17:00: new');
+      });
+    });
+  });
+
+  describe('when a member of another venue requests it', () => {
+    beforeEach(async () => {
+      const pat = await createActiveStaffMember(app.db, otherVenue, SAM);
+      const rota = await createRotaFor(app.db, otherVenue, WEEK_START);
+      const shift = await createShift(app.db, rota, pat, MONDAY_9_TO_5);
+      await app.request('POST', `${rotaPath(otherVenue)}/publish`, { as: OTHER_OWNER });
+      await app.db.shift.update({
+        where: { id: shift.id },
+        data: { startsAt: new Date(MONDAY_10_TO_5.startsAt) },
+      });
+      app.outbox.sent.length = 0;
+      response = await app.request('POST', sendUpdatesPath(otherVenue), { as: OWNER });
+    });
+
+    it('responds with 404 and the not_found code', async () => {
+      expect([response.status, await response.json()]).toEqual([404, { code: 'not_found' }]);
+    });
+
+    it('sends no email', () => {
+      expect(app.outbox.sent).toEqual([]);
+    });
+  });
+});

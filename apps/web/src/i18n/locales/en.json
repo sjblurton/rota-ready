@@ -22,7 +22,8 @@
     "venueAlreadyExists": "You already have a venue. Reload the page to open it.",
     "rotaAlreadyPublished": "This Week's Rota is already Published.",
     "shiftStarted": "This Shift has already started, so you can't change your answer.",
-    "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them."
+    "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them.",
+    "rotaNotPublished": "Publish this Week's Rota before sending updates."
   },
   "validation": {
     "required": "This field is required.",
@@ -137,13 +138,27 @@
       "publishedTitle": "Published the Week of {{date}}",
       "emailsSent": "Each Staff Member with Shifts this Week was emailed their Staff Link.",
       "noEmails": "Nobody has Shifts this Week, so no one was emailed.",
-      "emailsLabel": "Staff Link emails",
-      "emailStatus": {
+      "done": "Done"
+    },
+    "sendUpdates": {
+      "button": "Send Updates",
+      "title": "Send updates for the Week of {{date}}?",
+      "description": "Each Staff Member affected by a Changed or Removed Shift gets one email with their Staff Link and what changed.",
+      "confirm": "Send Updates",
+      "cancel": "Cancel",
+      "sentTitle": "Sent updates for the Week of {{date}}",
+      "emailsSent": "Each affected Staff Member was emailed their Staff Link and what changed.",
+      "noEmails": "Nothing had changed since the last update, so no one was emailed.",
+      "done": "Done"
+    },
+    "emails": {
+      "label": "Staff Link emails",
+      "status": {
         "sent": "Sent",
+        "no_email": "No email",
         "failed": "Failed"
       },
-      "someFailed": "Some emails didn't send. Copy those Staff Links from the Staff page and send them another way.",
-      "done": "Done"
+      "someFailed": "Some emails didn't send. Copy those Staff Links from the Staff page and send them another way."
     }
   },
   "staff": {
@@ -218,7 +233,9 @@
       "removed": "Removed",
       "invalidTitle": "This link isn't valid",
       "invalidDescription": "Ask your manager for a new link.",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "previousTimes": "was {{times}}",
+      "changed": "Changed"
     }
   }
 }

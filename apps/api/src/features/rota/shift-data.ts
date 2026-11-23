@@ -28,6 +28,40 @@ export function findToldShiftsOfRota(db: DbClient, rotaId: string) {
   });
 }
 
+export function findLiveAndToldShiftsOfRota(db: DbClient, rotaId: string) {
+  return db.shift.findMany({
+    where: { rotaId, OR: [{ deletedAt: null }, { toldStaffMemberId: { not: null } }] },
+    orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
+  });
+}
+
+export async function moveToldSnapshotForward(db: DbClient, shift: Shift) {
+  const { toldStaffMemberId, toldStartsAt, toldEndsAt } = shift;
+  const removedFromToldStaffMember =
+    shift.deletedAt !== null || toldStaffMemberId !== shift.staffMemberId;
+  if (toldStaffMemberId && toldStartsAt && toldEndsAt && removedFromToldStaffMember) {
+    const removal = { startsAt: toldStartsAt, endsAt: toldEndsAt };
+    await db.shiftRemoval.upsert({
+      where: { shiftId_staffMemberId: { shiftId: shift.id, staffMemberId: toldStaffMemberId } },
+      create: { shiftId: shift.id, staffMemberId: toldStaffMemberId, ...removal },
+      update: removal,
+    });
+  }
+  const told =
+    shift.deletedAt === null
+      ? { toldStaffMemberId: shift.staffMemberId, toldStartsAt: shift.startsAt, toldEndsAt: shift.endsAt }
+      : { toldStaffMemberId: null, toldStartsAt: null, toldEndsAt: null };
+  await db.shift.update({
+    where: { id: shift.id },
+    data: {
+      previousStaffMemberId: toldStaffMemberId,
+      previousStartsAt: toldStartsAt,
+      previousEndsAt: toldEndsAt,
+      ...told,
+    },
+  });
+}
+
 export function findShiftInWeek(db: DbClient, key: ShiftInWeekKey) {
   return db.shift.findFirst({ where: inWeek(key), include: { rota: { select: { status: true } } } });
 }

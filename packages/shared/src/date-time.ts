@@ -44,6 +44,17 @@ export function formatShiftTimes(
   return extraDays > 0 ? `${range} (+${extraDays})` : range;
 }
 
+export function formatPreviousShiftTimes(
+  previous: { startsAt: Date; endsAt: Date },
+  currentStartsAt: Date,
+  options: DateTimeFormatOptions,
+): string {
+  const times = formatShiftTimes(previous.startsAt, previous.endsAt, options);
+  const sameDay =
+    localDateOf(previous.startsAt, options.timeZone) === localDateOf(currentStartsAt, options.timeZone);
+  return sameDay ? times : `${formatDate(previous.startsAt, options)}, ${times}`;
+}
+
 export function formatLocalDate(localDate: string, { withYear = false } = {}): string {
   return new Intl.DateTimeFormat(DEFAULT_LOCALE, {
     timeZone: 'UTC',

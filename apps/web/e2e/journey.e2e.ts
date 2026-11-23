@@ -29,6 +29,20 @@ async function latestEmailTextTo(address: string, since: Date): Promise<string |
   return ((await message.json()) as { Text: string }).Text;
 }
 
+async function emailTextsTo(address: string, since: Date): Promise<string[]> {
+  const search = await fetch(
+    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:${address}`)}&limit=10`,
+  );
+  const { messages } = (await search.json()) as { messages: MailpitMessage[] };
+  const recent = messages.filter((message) => new Date(message.Created) >= since);
+  return Promise.all(
+    recent.map(async ({ ID }) => {
+      const message = await fetch(`${mailpitUrl}/api/v1/message/${ID}`);
+      return ((await message.json()) as { Text: string }).Text;
+    }),
+  );
+}
+
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -50,6 +64,8 @@ test.describe.serial('MVP journey', () => {
   let samsEmailedLink: string;
   let publishedWeekAt: Date;
   let samsNewLink: string;
+  let josLink: string;
+  let updatesSentAt: Date;
   let privateWindow: BrowserContext;
   let staffLinkPage: Page;
 
@@ -759,13 +775,88 @@ test.describe.serial('MVP journey', () => {
     await page.getByRole('tab', { name: 'Staff' }).click();
     await page.getByRole('button', { name: 'Staff Link for Jo Bloggs' }).click();
     await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
-    const josLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
+    josLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
     await staffLinkPage.goto(josLink);
     await expect(staffLinkShift(thursday)).toContainText('18:00–23:00');
     await expect(staffLinkShift(thursday)).toContainText('Pending');
     await expect(staffLinkPage.getByRole('list', { name: 'Removed Shifts' })).toHaveCount(0);
+    await privateWindow.close();
+  });
+
+  test("marks Sam's Declined Wednesday Shift Changed and Pending when its time changes", async () => {
+    const wednesday = addDays(nextWeek, 2);
+    await openRota(nextWeek);
+    await editShiftButton('Sam Jones', wednesday, '12:00–18:00').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Start').selectOption('13:00');
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(rotaCell('Sam Jones', wednesday, nextWeek)).toHaveText('13:00–18:00PendingChanged');
+  });
+
+  test('asks for confirmation before sending updates', async () => {
+    await page.getByRole('button', { name: 'Send Updates' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText(
+      `Send updates for the Week of ${formatLocalDate(nextWeek, { withYear: true })}?`,
+    );
+  });
+
+  test('Sends Updates and shows that Jo and Sam were emailed', async () => {
+    updatesSentAt = new Date(Date.now() - 1_000);
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Send Updates' }).click();
+    const dialog = page.getByRole('alertdialog');
+    await expect(dialog).toContainText(
+      `Sent updates for the Week of ${formatLocalDate(nextWeek, { withYear: true })}`,
+    );
+    await expect(
+      dialog.getByRole('list', { name: 'Staff Link emails' }).getByRole('listitem'),
+    ).toHaveText(['Jo BloggsSent', 'Sam JonesSent']);
+  });
+
+  test('clears the Changed and Removed markers and the Send Updates button once sent', async () => {
+    const wednesday = addDays(nextWeek, 2);
+    const thursday = addDays(nextWeek, 3);
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Done' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expect(rotaCell('Sam Jones', wednesday, nextWeek)).toHaveText('13:00–18:00Pending');
+    await expect(rotaCell('Sam Jones', thursday, nextWeek)).toHaveText('');
+    await expect(rotaCell('Jo Bloggs', thursday, nextWeek)).toHaveText(
+      '18:00–23:00FloorOpen up at 17:45Pending',
+    );
+    await expect(page.getByRole('button', { name: 'Send Updates' })).toHaveCount(0);
+  });
+
+  test('emails Sam and Jo one update each, saying what changed', async () => {
+    await expect.poll(() => emailTextsTo('sam@example.com', updatesSentAt)).toHaveLength(1);
+    const [samsUpdate] = await emailTextsTo('sam@example.com', updatesSentAt);
+    const [josUpdate] = await emailTextsTo('jo@example.com', updatesSentAt);
+    expect(samsUpdate).toContain(`${formatLocalDate(addDays(nextWeek, 2))}, 13:00–18:00: was 12:00–18:00`);
+    expect(samsUpdate).toContain(`${formatLocalDate(addDays(nextWeek, 3))}, 18:00–23:00: removed`);
+    expect(josUpdate).toContain(`${formatLocalDate(addDays(nextWeek, 3))}, 18:00–23:00: new`);
+    expect(await emailTextsTo('jo@example.com', updatesSentAt)).toHaveLength(1);
+  });
+
+  test("shows the Wednesday Shift's old times on Sam's Staff Link page, and keeps the Removed Shift", async ({
+    browser,
+  }) => {
+    const wednesday = addDays(nextWeek, 2);
+    privateWindow = await browser.newContext();
+    staffLinkPage = await privateWindow.newPage();
+    await staffLinkPage.goto(samsNewLink);
+    await expect(staffLinkShift(wednesday)).toContainText('13:00–18:00');
+    await expect(staffLinkShift(wednesday)).toContainText('was 12:00–18:00');
+    await expect(
+      staffLinkPage.getByRole('list', { name: 'Removed Shifts' }).getByRole('listitem'),
+    ).toHaveText([`${formatLocalDate(addDays(nextWeek, 3))}18:00–23:00Removed`]);
+  });
+
+  test("shows Jo the reassigned Shift without old times, since Jo was never told them", async () => {
+    const thursday = addDays(nextWeek, 3);
+    await staffLinkPage.goto(josLink);
+    await expect(staffLinkShift(thursday)).toContainText('18:00–23:00');
+    await expect(staffLinkShift(thursday)).not.toContainText('was');
     await privateWindow.close();
   });
 

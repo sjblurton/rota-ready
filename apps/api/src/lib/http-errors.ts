@@ -11,6 +11,7 @@ const statusByCode = {
   staff_member_email_taken: 409,
   shift_overlaps: 409,
   rota_already_published: 409,
+  rota_not_published: 409,
   shift_started: 409,
   staff_member_has_upcoming_shifts: 409,
   internal_error: 500,

@@ -28,13 +28,28 @@ export function findRemovedShiftsStartingAfter(
 ) {
   return db.shift.findMany({
     where: {
+      ...publishedShiftNoLongerWith(staffMemberId),
       toldStaffMemberId: staffMemberId,
       toldStartsAt: { gt: instant },
-      rota: { status: RotaStatus.published },
-      OR: [{ deletedAt: { not: null } }, { staffMemberId: { not: staffMemberId } }],
     },
-    orderBy: [{ toldStartsAt: 'asc' }, { createdAt: 'asc' }],
   });
+}
+
+export function findSentRemovalsStartingAfter(db: DbClient, staffMemberId: string, instant: Date) {
+  return db.shiftRemoval.findMany({
+    where: {
+      staffMemberId,
+      startsAt: { gt: instant },
+      shift: publishedShiftNoLongerWith(staffMemberId),
+    },
+  });
+}
+
+function publishedShiftNoLongerWith(staffMemberId: string) {
+  return {
+    rota: { status: RotaStatus.published },
+    OR: [{ deletedAt: { not: null } }, { staffMemberId: { not: staffMemberId } }],
+  };
 }
 
 function publishedShiftOf(staffMemberId: string, shiftId: string) {
@@ -51,6 +66,13 @@ export async function answerPublishedShiftStartingAfter(
     data,
   });
   return count === 1;
+}
+
+export function clearPreviousTimesShownTo(db: DbClient, staffMemberId: string, shiftId: string) {
+  return db.shift.updateMany({
+    where: { id: shiftId, previousStaffMemberId: staffMemberId },
+    data: { previousStaffMemberId: null, previousStartsAt: null, previousEndsAt: null },
+  });
 }
 
 export async function publishedShiftExists(db: DbClient, staffMemberId: string, shiftId: string) {

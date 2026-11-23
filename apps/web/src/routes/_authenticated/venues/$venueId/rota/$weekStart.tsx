@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddShiftForm } from '@/features/rota/add-shift-form';
 import { PublishRotaDialog } from '@/features/rota/publish-rota-dialog';
+import { SendUpdatesDialog } from '@/features/rota/send-updates-dialog';
 import { WeekLink } from '@/features/rota/week-link';
 import { rotaQuery } from '@/features/rota/rota-queries';
 import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
@@ -45,6 +46,7 @@ function RotaPage() {
             weekStart={weekStart}
             published={rota.status === 'published'}
           />
+          <SendUpdatesDialog key={weekStart} venueId={venueId} weekStart={weekStart} />
         </div>
         <div className="flex gap-2">
           <WeekLink venueId={venueId} weekStart={addDays(weekStart, -7)}>
