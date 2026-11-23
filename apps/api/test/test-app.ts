@@ -4,6 +4,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type CryptoKey 
 import { pino } from 'pino';
 import { inject } from 'vitest';
 import { createApp } from '#src/app.js';
+import type { Prisma } from '#src/generated/prisma/client.js';
 import { createDb, type Db } from '#src/lib/db.js';
 import type { Email, EmailSender } from '#src/lib/email-sender.js';
 
@@ -11,6 +12,7 @@ const ISSUER = 'http://auth.test/auth/v1';
 const KEY_ID = 'test-key';
 const WEB_URL = 'http://web.test';
 const DEFAULT_NOW = '2026-01-05T12:00:00.000Z';
+const BLOCKED_REQUEST_TIMEOUT_MS = 2_000;
 
 interface TokenSubject {
   id: string;
@@ -30,6 +32,8 @@ interface RequestOptions {
 }
 
 export type TestApp = Awaited<ReturnType<typeof startTestApp>>;
+export type StaffMemberLock = Awaited<ReturnType<TestApp['holdStaffMemberLock']>>;
+type CompetingChange = (tx: Prisma.TransactionClient) => Promise<unknown>;
 
 function createEmailOutbox() {
   const sent: Email[] = [];
@@ -56,6 +60,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   const logLines: string[] = [];
   let now = new Date(DEFAULT_NOW);
   const outbox = createEmailOutbox();
+  const unfinishedLocks = new Set<() => Promise<void>>();
   const server = createApp({
     db,
     clock: { now: () => new Date(now) },
@@ -113,7 +118,53 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     return fetch(`${baseUrl}${path}`, init);
   }
 
+  async function holdStaffMemberLock(staffMemberId: string) {
+    let lockTaken!: (holderPid: number) => void;
+    const locked = new Promise<number>((resolve) => (lockTaken = resolve));
+    let runChange!: (change: CompetingChange) => void;
+    const changeReady = new Promise<CompetingChange>((resolve) => (runChange = resolve));
+    const transaction = db.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`;
+        const [{ pid }] = await tx.$queryRaw<[{ pid: number }]>`SELECT pg_backend_pid() AS pid`;
+        lockTaken(pid);
+        await (await changeReady)(tx);
+      },
+      { timeout: 10_000 },
+    );
+    const rolledBack = transaction.catch(() => undefined);
+    unfinishedLocks.add(async () => {
+      runChange(() => Promise.reject(new Error('rolled back when the test app closed')));
+      await rolledBack;
+    });
+    const holderPid = await Promise.race([locked, transaction.then(() => locked)]);
+
+    async function isAQueryBlockedByTheHolder() {
+      const rows = await db.$queryRaw<unknown[]>`
+        SELECT 1 FROM pg_stat_activity
+        WHERE wait_event_type = 'Lock' AND ${holderPid}::int = ANY(pg_blocking_pids(pid))`;
+      return rows.length > 0;
+    }
+
+    return {
+      async waitForBlockedRequest() {
+        const deadline = Date.now() + BLOCKED_REQUEST_TIMEOUT_MS;
+        while (!(await isAQueryBlockedByTheHolder())) {
+          if (Date.now() > deadline) {
+            throw new Error('No query waited on the Staff Member row lock in time');
+          }
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+      },
+      async commitAfter(change: CompetingChange) {
+        runChange(change);
+        await transaction;
+      },
+    };
+  }
+
   async function close() {
+    await Promise.all([...unfinishedLocks].map((rollBack) => rollBack()));
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );
@@ -135,6 +186,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     logs,
     setClock,
     request,
+    holdStaffMemberLock,
     signToken,
     signTokenWithAnotherKey,
     signExpiredToken,
