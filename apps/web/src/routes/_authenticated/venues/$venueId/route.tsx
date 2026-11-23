@@ -7,9 +7,8 @@ import {
   type ErrorComponentProps,
 } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageLoadError } from '@/components/page-load-error';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiErrorMessage } from '@/i18n/api-error-message';
 import { venueQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId')({
@@ -19,12 +18,9 @@ export const Route = createFileRoute('/_authenticated/venues/$venueId')({
 });
 
 function VenueError({ error }: ErrorComponentProps) {
-  const { t } = useTranslation();
   return (
     <main className="mx-auto max-w-xl p-6 sm:p-10">
-      <Alert variant="destructive">
-        <AlertDescription>{apiErrorMessage(t, error)}</AlertDescription>
-      </Alert>
+      <PageLoadError error={error} />
     </main>
   );
 }

@@ -11,6 +11,7 @@ apps/web/src/
 ├── components/            app-wide UI with no glossary concept
 │   ├── ui/                shadcn components
 │   ├── health-status.tsx
+│   ├── page-load-error.tsx
 │   └── page-loading.tsx
 ├── features/
 │   ├── venues/            Venue, Venue Member, Owner, Member Role
@@ -129,6 +130,8 @@ If one form needs a different label or a description, compose `Field` there inst
 ## Showing errors
 
 Each mutation handles its own errors in `onError` (ADR-0009). Put a code the form can fix on its field or on `root` with `setError`. Send everything else to a toast with `toast.error(apiErrorMessage(t, error))` from `sonner`. Don't render a catch-all API error inside the form. `<Toaster />` is rendered once, in `routes/__root.tsx`.
+
+When a route's data fails to load, its `errorComponent` replaces the page with `PageLoadError`, never a toast. Every route with a `loader` or a data-loading `beforeLoad` has one, or sits under a parent that has. `PageLoadError` shows the translated message and a **Try again** button that reloads the route, except for `not_found`, where retrying won't help. A route renders it in its own layout: inside a `<main>` when it replaces the whole page, on its own when a parent layout already has one.
 
 Show a success toast (`toast.success`) only when nothing on the page changes to show the result, such as an email being sent. When the page updates, that is the confirmation.
 

@@ -12,6 +12,9 @@
     "dbDown": "API ok · DB down",
     "ok": "API ok · DB ok"
   },
+  "pageLoadError": {
+    "tryAgain": "Try again"
+  },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "invalidRequest": "Check what you entered and try again.",
@@ -240,7 +243,6 @@
       "removed": "Removed",
       "invalidTitle": "This link isn't valid",
       "invalidDescription": "Ask your manager for a new link.",
-      "tryAgain": "Try again",
       "previousTimes": "was {{times}}",
       "changed": "Changed"
     }
