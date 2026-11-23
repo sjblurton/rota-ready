@@ -13,6 +13,16 @@ Audited on 23 November 2026, against `main` at `efbcded` (#92). This is the date
 
 Nothing in the audit argues for more unit tests, component tests, mocks or a coverage gate.
 
+## Since this audit (23 November)
+
+The measurements below were taken on `main` before three of the PRs this audit links were merged the same day. They stay as recorded. What changed:
+
+- **#82, PR #111 (Staff Member row-lock races): merged.** Break 4 (the Staff Member lock without `FOR UPDATE`) now fails 13 tests across 4 files on `main` (`3bd01e5`), where this morning it failed none. The Rota row lock is still untested (#113).
+- **#96, PR #104 (migrations against the running API): merged.** Every PR with migration changes now runs the base branch's API tests against its migrations. The API-to-web half of goal 1 is still open (#115).
+- **#102, PR #106 (coverage in the CI report): merged.** Every PR's CI report comment shows coverage per package and for its changed files, for information only.
+
+So goal 3's weak spot is now the Rota lock rather than both locks, and goal 1 stops at the API rather than at the database.
+
 ## The six goals
 
 1. **Keep `main` deployable.** Merging deploys straight away, so anything that would break users, including migrations and deploy-time compatibility, fails CI first.
