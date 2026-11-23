@@ -272,7 +272,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
       });
     });
 
-    it('returns it marked as changed, since nobody has been told about it', async () => {
+    it('returns it marked as changed, since nobody has been notified about it', async () => {
       expect(await response.json()).toMatchObject({ changed: true });
     });
   });
@@ -280,12 +280,12 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
   describe("when Sam's published Shift from 09:00 to 17:00 on Monday has been deleted", () => {
     beforeEach(async () => {
       const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
-      const told = await createShift(app.db, rota, sam, {
+      const notified = await createShift(app.db, rota, sam, {
         startsAt: '2026-11-16T09:00:00.000Z',
         endsAt: '2026-11-16T17:00:00.000Z',
       });
       await app.request('POST', `${rotaPath(ownVenue, WEEK_START)}/publish`, { as: OWNER });
-      await app.request('DELETE', `${shiftsPath(ownVenue, WEEK_START)}/${told.id}`, {
+      await app.request('DELETE', `${shiftsPath(ownVenue, WEEK_START)}/${notified.id}`, {
         as: OWNER,
       });
       response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {

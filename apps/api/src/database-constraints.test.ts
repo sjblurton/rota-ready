@@ -32,34 +32,34 @@ describe('Shift snapshot constraints', () => {
 
   afterEach(() => app.close());
 
-  describe('when a told snapshot is saved with all three values', () => {
+  describe('when a notified snapshot is saved with all three values', () => {
     beforeEach(() => {
       saving = app.db.shift.update({
         where: { id: shift.id },
         data: {
-          toldStaffMemberId: sam.id,
-          toldStartsAt: new Date(MONDAY_9_TO_5.startsAt),
-          toldEndsAt: new Date(MONDAY_9_TO_5.endsAt),
+          notifiedStaffMemberId: sam.id,
+          notifiedStartsAt: new Date(MONDAY_9_TO_5.startsAt),
+          notifiedEndsAt: new Date(MONDAY_9_TO_5.endsAt),
         },
       });
     });
 
     it('saves it', async () => {
-      await expect(saving).resolves.toMatchObject({ toldStaffMemberId: sam.id });
+      await expect(saving).resolves.toMatchObject({ notifiedStaffMemberId: sam.id });
     });
   });
 
-  describe('when a told snapshot is saved without its end time', () => {
+  describe('when a notified snapshot is saved without its end time', () => {
     beforeEach(() => {
       saving = app.db.shift.update({
         where: { id: shift.id },
-        data: { toldStaffMemberId: sam.id, toldStartsAt: new Date(MONDAY_9_TO_5.startsAt) },
+        data: { notifiedStaffMemberId: sam.id, notifiedStartsAt: new Date(MONDAY_9_TO_5.startsAt) },
       });
       saving.catch(() => undefined);
     });
 
     it('refuses it', async () => {
-      await expect(saving).rejects.toThrow('shifts_told_snapshot_complete');
+      await expect(saving).rejects.toThrow('shifts_notified_snapshot_complete');
     });
   });
 

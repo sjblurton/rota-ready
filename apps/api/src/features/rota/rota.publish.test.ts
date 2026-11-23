@@ -144,16 +144,16 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       ]);
     });
 
-    it('records who the Shift was told to and its times', async () => {
+    it('records who was notified about the Shift, and its times', async () => {
       expect(
         await app.db.shift.findMany({
-          select: { toldStaffMemberId: true, toldStartsAt: true, toldEndsAt: true },
+          select: { notifiedStaffMemberId: true, notifiedStartsAt: true, notifiedEndsAt: true },
         }),
       ).toEqual([
         {
-          toldStaffMemberId: sam.id,
-          toldStartsAt: new Date('2026-11-16T09:00:00.000Z'),
-          toldEndsAt: new Date('2026-11-16T17:00:00.000Z'),
+          notifiedStaffMemberId: sam.id,
+          notifiedStartsAt: new Date('2026-11-16T09:00:00.000Z'),
+          notifiedEndsAt: new Date('2026-11-16T17:00:00.000Z'),
         },
       ]);
     });

@@ -331,19 +331,19 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         expect(await changedInRota()).toBe(true);
       });
 
-      it('keeps the times Sam was told', async () => {
+      it('keeps the times Sam was notified of', async () => {
         expect(
           await app.db.shift.findUnique({
             where: { id: published.id },
-            select: { toldStartsAt: true, toldEndsAt: true },
+            select: { notifiedStartsAt: true, notifiedEndsAt: true },
           }),
         ).toEqual({
-          toldStartsAt: new Date(MONDAY_23_9_TO_5.startsAt),
-          toldEndsAt: new Date(MONDAY_23_9_TO_5.endsAt),
+          notifiedStartsAt: new Date(MONDAY_23_9_TO_5.startsAt),
+          notifiedEndsAt: new Date(MONDAY_23_9_TO_5.endsAt),
         });
       });
 
-      describe('when the Owner moves it back to the times Sam was told', () => {
+      describe('when the Owner moves it back to the times Sam was notified of', () => {
         beforeEach(async () => {
           response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
             as: OWNER,
@@ -386,7 +386,7 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         expect(await changedInRota()).toBe(true);
       });
 
-      it("lists it on the Rota as a Removed Shift in Sam's row, at the times Sam was told", async () => {
+      it("lists it on the Rota as a Removed Shift in Sam's row, at the times Sam was notified of", async () => {
         const opened = await app.request('GET', `/api/venues/${ownVenue.id}/rotas/${PUBLISHED_WEEK}`, {
           as: OWNER,
         });
@@ -430,13 +430,13 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
       expect(await response.json()).toMatchObject({ changed: false });
     });
 
-    it('records nobody as told', async () => {
+    it('records nobody as notified', async () => {
       expect(
         await app.db.shift.findUnique({
           where: { id: shift.id },
-          select: { toldStaffMemberId: true, toldStartsAt: true, toldEndsAt: true },
+          select: { notifiedStaffMemberId: true, notifiedStartsAt: true, notifiedEndsAt: true },
         }),
-      ).toEqual({ toldStaffMemberId: null, toldStartsAt: null, toldEndsAt: null });
+      ).toEqual({ notifiedStaffMemberId: null, notifiedStartsAt: null, notifiedEndsAt: null });
     });
   });
 
