@@ -67,18 +67,18 @@ Done when every finding is either fixed or listed with a reason it stays.
 
 - **Commit** with a conventional message ending `(#<issue>)` and the attribution trailer.
 - **Push** with `git push -u origin <branch>`.
-- **Write the PR body** with the `pr` skill. Start it with `Closes #<issue>`, include the manual browser steps the ticket asks for, and say which screens you checked in screenshots. CI uploads a `journey-screenshots` artifact for every pull request, named by journey step, so the reviewer can see the same screens.
+- **Write the PR body** with the `pr` skill. Start it with `Closes #<issue>`, include the manual browser steps the ticket asks for, and say which screens you checked in screenshots. CI posts a "CI report" comment on the PR that links its `journey-screenshots` artifact, named by journey step, so the reviewer can see the same screens; leave the screenshots link to that comment. Its coverage figures are information only, so never chase them to get CI green.
 - **Check every claim in the body against the code or a command's output before publishing it.** Edit the body afterwards if one turns out wrong.
 - **Name any conflict with other open PRs** that touch the same files (`gh pr list`, then `gh pr diff <n> --name-only`). Say which PR needs the follow-up edit.
 
-- **Wait for CI** with `gh pr checks <n> --watch`. When it passes, add a link to the run's `journey-screenshots` artifact to the PR body: `https://github.com/<owner>/<repo>/actions/runs/<run>/artifacts/<id>`, with the run from `gh pr checks <n> --json link` and the id from `gh api repos/<owner>/<repo>/actions/runs/<run>/artifacts`. When CI fails, fix the cause and push again.
+- **Wait for CI** with `gh pr checks <n> --watch`. When CI fails, fix the cause and push again. When it passes, check that the CI report comment is on the PR, and point to it in your report.
 
-Done when the PR is open, CI passes, and its body links the screenshots and contains only claims you checked.
+Done when the PR is open, CI passes, the CI report comment is posted, and the body contains only claims you checked.
 
 ## 7. Hand back
 
 Remove the worktree (`git worktree remove <path>`) so the user can check out the branch. Report:
-- the PR link
+- the PR link, and the CI report comment
 - what was built
 - what the review found, and what was fixed versus left
 - anything not run, and why

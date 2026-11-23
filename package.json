@@ -16,10 +16,12 @@
     "lint": "eslint . --max-warnings 0",
     "lint:migrations": ".github/scripts/lint-migrations.sh",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @rota-ready/api exec prisma generate && pnpm -r test"
+    "test": "pnpm --filter @rota-ready/api exec prisma generate && pnpm -r test",
+    "test:coverage": "pnpm --filter @rota-ready/api exec prisma generate && pnpm -r --no-bail test:coverage"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "5.1.0",
     "eslint": "^10.15.0",
     "eslint-plugin-i18next": "^6.1.5",
     "eslint-plugin-react-hooks": "^7.1.1",
