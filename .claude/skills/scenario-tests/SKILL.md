@@ -65,14 +65,20 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
 - **API integration tests** (Vitest, real Postgres, single worker, truncate before each test): the outer `beforeEach` builds the app and seeds the scenario through HTTP or the database; nested `describe('when …')` blocks make the request; `it` blocks assert the status, the body, the database row or the outbox. Global migrate and truncate setup lives in Vitest config, which doesn't count as a shared `testUtils` file.
 - **Service tests** (ADR-0010): HTTP tests are the default, one `<concept>.<action>.test.ts` per route next to the code. A `<concept>-service.test.ts` that calls a service directly is allowed only when a rule has more combinations than the HTTP tests cover comfortably. It runs against real Postgres with the same seed and clock helpers, and never fakes our own code.
 - **Shared API test infrastructure**: API tests share two files, and nothing else.
-  - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a random Staff Link key, and a logger that records to memory so a test can check what was logged), and signs tokens and sends requests against it. It also holds the `clock`: real time unless a test sets it with `app.setClock(...)`. Later fakes, such as the email outbox, belong here too.
+  - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a random Staff Link key, and a logger that records to memory so a test can check what was logged), and signs tokens and sends requests against it. It also holds the `clock`: a fixed instant (`DEFAULT_NOW`) unless a test sets its own with `app.setClock(...)`. Later fakes, such as the email outbox, belong here too.
   - `apps/api/test/seed.ts` holds seed factories such as `createUser`, `createVenueFor` and `createActiveStaffMember`, with defaults each test can override.
 
   Every scenario's data is still created by explicit calls in its own `beforeEach` (`await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })`), so the scenario reads from the test file alone. Pass every value a test asserts on; never assert on a value a factory defaulted. Shared fixtures that create data without being called, such as a global `beforeEach` or a factory that seeds more than it says, are not allowed.
 - **Tenancy scenarios**: every venue-scoped route gets a `describe('when a member of another venue requests it')` block that asserts 404.
 - **Email scenarios** check both who received an email and who did not, in separate `it` blocks.
 - **Time scenarios** set the injected clock in `beforeEach`; use `describe.each` for the March and October clock-change cases.
-- **Front-end tests** only for logic that's hard to check by hand (e.g. grid layout). Everything else is covered by API tests and Playwright.
+- **No result depends on the day a test runs.**
+  - API tests run on the fixed default clock, and a test that depends on time sets its own.
+  - React and shared tests never read the clock. Pass in the instants a test needs.
+  - The Playwright journey runs on real time, with its Shifts two Weeks ahead of today, so none starts during a run.
+  - Behaviour that depends on time passing ("has started", "No reply", clock changes) is tested in API, React or shared tests at fixed instants, never in the journey. A daylight saving bug gets its test there.
+  - Only JWT expiry, Mailpit timestamps and unique values (such as the journey's sign-up email) read real time.
+- **Front-end tests** only for logic that's hard to check by hand (e.g. grid layout) or that the journey can't reach because it depends on time passing (e.g. "No reply"). Everything else is covered by API tests and Playwright.
 - **Playwright, where it fits**: the MVP journey spec grows one step per ticket. Use `test.describe('when …')` with setup in `test.beforeEach` for scenarios that can run independently; when steps must happen in order through one journey, use `test.describe.serial` with each `test` named after the outcome it checks. Always run against the real stack (local Supabase), with no auth bypass.
 
 ## Refactoring an existing test file without losing coverage
