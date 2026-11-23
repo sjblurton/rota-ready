@@ -860,6 +860,27 @@ test.describe.serial('MVP journey', () => {
     await privateWindow.close();
   });
 
+  test("fills the empty Week after next with Copy Last Week, keeping times, Role and notes", async () => {
+    const weekAfter = addDays(nextWeek, 7);
+    await openRota(weekAfter);
+    await page.getByRole('button', { name: 'Copy Last Week' }).click();
+    await expect(rotaCell('Sam Jones', addDays(weekAfter, 2), weekAfter)).toHaveText('13:00–18:00');
+    await expect(rotaCell('Jo Bloggs', addDays(weekAfter, 3), weekAfter)).toHaveText(
+      '18:00–23:00FloorOpen up at 17:45',
+    );
+    await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Copy Last Week' })).toHaveCount(0);
+  });
+
+  test('keeps the copied Shifts after a reload', async () => {
+    const weekAfter = addDays(nextWeek, 7);
+    await page.reload();
+    await expect(rotaCell('Sam Jones', addDays(weekAfter, 2), weekAfter)).toHaveText('13:00–18:00');
+    await expect(rotaCell('Jo Bloggs', addDays(weekAfter, 3), weekAfter)).toHaveText(
+      '18:00–23:00FloorOpen up at 17:45',
+    );
+  });
+
   test('shows a Pending Shift that has already started as No reply', async () => {
     const lastWeek = addDays(thisWeek, -7);
     await openRota(lastWeek);

@@ -7,6 +7,7 @@ import {
   shiftFormValues,
   shiftRequestSchema,
   shiftTimesIssue,
+  shiftTimesOneWeekLater,
 } from './shift.js';
 import { zonedTimeToUtc } from './week.js';
 
@@ -81,6 +82,82 @@ describe('shiftEndsAt', () => {
 
     it(`lasts ${hours} hours of real time`, () => {
       expect(endsAt.getTime() - startsAt.getTime()).toBe(hours * HOUR_MS);
+    });
+  });
+});
+
+describe('shiftTimesOneWeekLater', () => {
+  const LONDON = 'Europe/London';
+  let moved: { startsAt: Date; endsAt: Date };
+
+  describe.each([
+    {
+      change: 'the clocks go forward in March',
+      startsAt: '2026-03-23T18:00:00.000Z',
+      endsAt: '2026-03-23T23:00:00.000Z',
+      expected: { startsAt: '2026-03-30T17:00:00.000Z', endsAt: '2026-03-30T22:00:00.000Z' },
+    },
+    {
+      change: 'the clocks go back in October',
+      startsAt: '2026-10-19T17:00:00.000Z',
+      endsAt: '2026-10-19T22:00:00.000Z',
+      expected: { startsAt: '2026-10-26T18:00:00.000Z', endsAt: '2026-10-26T23:00:00.000Z' },
+    },
+  ])('when an 18:00–23:00 Shift moves a Week on across $change', ({ startsAt, endsAt, expected }) => {
+    beforeEach(() => {
+      moved = shiftTimesOneWeekLater({ startsAt: new Date(startsAt), endsAt: new Date(endsAt) }, LONDON);
+    });
+
+    it('keeps it at 18:00–23:00 local time', () => {
+      expect(moved).toEqual({ startsAt: new Date(expected.startsAt), endsAt: new Date(expected.endsAt) });
+    });
+  });
+
+  describe('when an Overnight Shift moves onto the night the clocks go forward', () => {
+    beforeEach(() => {
+      moved = shiftTimesOneWeekLater(
+        { startsAt: new Date('2026-03-21T20:00:00.000Z'), endsAt: new Date('2026-03-22T02:00:00.000Z') },
+        LONDON,
+      );
+    });
+
+    it('keeps it at 20:00–02:00 local time, an hour shorter', () => {
+      expect(moved).toEqual({
+        startsAt: new Date('2026-03-28T20:00:00.000Z'),
+        endsAt: new Date('2026-03-29T01:00:00.000Z'),
+      });
+    });
+  });
+
+  describe('when a 01:30 start moves onto the night the clocks go forward, when 01:30 never happens', () => {
+    beforeEach(() => {
+      moved = shiftTimesOneWeekLater(
+        { startsAt: new Date('2026-03-22T01:30:00.000Z'), endsAt: new Date('2026-03-22T05:00:00.000Z') },
+        LONDON,
+      );
+    });
+
+    it('starts it at 02:30, the same moment an hour later on the clock, and keeps the 05:00 end', () => {
+      expect(moved).toEqual({
+        startsAt: new Date('2026-03-29T01:30:00.000Z'),
+        endsAt: new Date('2026-03-29T04:00:00.000Z'),
+      });
+    });
+  });
+
+  describe('when a 01:30 start moves onto the night the clocks go back, when 01:30 happens twice', () => {
+    beforeEach(() => {
+      moved = shiftTimesOneWeekLater(
+        { startsAt: new Date('2026-10-18T00:30:00.000Z'), endsAt: new Date('2026-10-18T04:00:00.000Z') },
+        LONDON,
+      );
+    });
+
+    it('starts it at the first 01:30 and keeps the 05:00 end', () => {
+      expect(moved).toEqual({
+        startsAt: new Date('2026-10-25T00:30:00.000Z'),
+        endsAt: new Date('2026-10-25T05:00:00.000Z'),
+      });
     });
   });
 });

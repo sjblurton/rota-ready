@@ -23,7 +23,8 @@
     "rotaAlreadyPublished": "This Week's Rota is already Published.",
     "shiftStarted": "This Shift has already started, so you can't change your answer.",
     "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them.",
-    "rotaNotPublished": "Publish this Week's Rota before sending updates."
+    "rotaNotPublished": "Publish this Week's Rota before sending updates.",
+    "rotaNotEmpty": "This Week already has Shifts, so Copy Last Week can only fill an empty Week."
   },
   "validation": {
     "required": "This field is required.",
@@ -159,6 +160,12 @@
         "failed": "Failed"
       },
       "someFailed": "Some emails didn't send. Copy those Staff Links from the Staff page and send them another way."
+    },
+    "copyLastWeek": {
+      "button": "Copy Last Week",
+      "nothingToCopy": "Last Week has no Shifts to copy.",
+      "skipped_one": "1 Shift from last Week wasn't copied, because it would overlap another Shift or run over 16 hours.",
+      "skipped_other": "{{count}} Shifts from last Week weren't copied, because they would overlap other Shifts or run over 16 hours."
     }
   },
   "staff": {

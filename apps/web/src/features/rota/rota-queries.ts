@@ -85,6 +85,10 @@ export function publishPath(venueId: string, weekStart: string) {
   return `${rotaPath(venueId, weekStart)}/publish`;
 }
 
+export function copyLastWeekPath(venueId: string, weekStart: string) {
+  return `${rotaPath(venueId, weekStart)}/copy-last-week`;
+}
+
 export function sendUpdatesPath(venueId: string, weekStart: string) {
   return `${rotaPath(venueId, weekStart)}/send-updates`;
 }

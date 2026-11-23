@@ -62,6 +62,37 @@ export async function moveToldSnapshotForward(db: DbClient, shift: Shift) {
   });
 }
 
+export function findLiveShiftsOfActiveStaffInWeek(db: DbClient, venueId: string, weekStart: string) {
+  return db.shift.findMany({
+    where: {
+      venueId,
+      deletedAt: null,
+      rota: { weekStart: weekStartDate(weekStart) },
+      staffMember: { archivedAt: null },
+    },
+    orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
+  });
+}
+
+export function findLiveShiftsOfStaffBetween(
+  db: DbClient,
+  staffMemberIds: string[],
+  from: Date,
+  to: Date,
+) {
+  return db.shift.findMany({
+    where: { staffMemberId: { in: staffMemberIds }, deletedAt: null, startsAt: { lt: to }, endsAt: { gt: from } },
+  });
+}
+
+export function createShifts(db: DbClient, data: Prisma.ShiftCreateManyInput[]) {
+  return db.shift.createMany({ data });
+}
+
+export async function hasLiveShifts(db: DbClient, rotaId: string) {
+  return (await db.shift.count({ where: { rotaId, deletedAt: null } })) > 0;
+}
+
 export function findShiftInWeek(db: DbClient, key: ShiftInWeekKey) {
   return db.shift.findFirst({ where: inWeek(key), include: { rota: { select: { status: true } } } });
 }

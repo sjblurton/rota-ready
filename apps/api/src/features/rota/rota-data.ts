@@ -22,6 +22,10 @@ export async function lockRotaUntilCommit(
     FOR NO KEY UPDATE`;
 }
 
+export function findRota(db: DbClient, rotaId: string) {
+  return db.rota.findUniqueOrThrow({ where: { id: rotaId } });
+}
+
 export async function publishDraftRota(db: DbClient, rotaId: string, publishedAt: Date) {
   const { count } = await db.rota.updateMany({
     where: { id: rotaId, status: RotaStatus.draft },

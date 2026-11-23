@@ -6,6 +6,9 @@ import {
   formatPreviousShiftTimes,
   formatLocalDate,
   formatShiftTimes,
+  addDays,
+  shiftTimesIssue,
+  shiftTimesOneWeekLater,
   type EmailStatus,
 } from '@rota-ready/shared';
 import type { Logger } from 'pino';
@@ -19,6 +22,7 @@ import { createStaffMemberService } from '#src/features/staff-members/staff-memb
 import {
   findActiveStaffMembersOnRota,
   findOrCreateRota,
+  findRota,
   findStaffMembers,
   lockRotaUntilCommit,
   markShiftsOfRotaTold,
@@ -26,12 +30,17 @@ import {
 } from './rota-data.js';
 import {
   findLiveAndToldShiftsOfRota,
+  createShifts,
+  findLiveShiftsOfActiveStaffInWeek,
+  findLiveShiftsOfStaffBetween,
   findShiftsOfRota,
+  hasLiveShifts,
   findToldShiftsOfRota,
   moveToldSnapshotForward,
   type ShiftTimes,
 } from './shift-data.js';
 import { isChangedOrRemovedShift, isRemovedShift, toldTimesOf } from './shift-service.js';
+import { lockActiveStaffMembersUntilCommit } from '#src/features/staff-members/staff-member-data.js';
 
 export interface RotaServiceDependencies {
   db: Db;
@@ -157,6 +166,57 @@ export function createRotaService({
         ),
       );
       return { ok: true, emails };
+    },
+
+    async copyLastWeek(
+      venue: Venue,
+      weekStart: string,
+    ): Promise<
+      { ok: true; skippedShifts: number } | Refused<'rota_already_published' | 'rota_not_empty'>
+    > {
+      const rota = await findOrCreateRota(db, venue.id, weekStart);
+      return db.$transaction(async (tx) => {
+        await lockRotaUntilCommit(tx, venue.id, weekStart);
+        if ((await findRota(tx, rota.id)).status !== RotaStatus.draft) {
+          return refuse(apiErrorCode.rota_already_published);
+        }
+        if (await hasLiveShifts(tx, rota.id)) return refuse(apiErrorCode.rota_not_empty);
+        const lastWeek = await findLiveShiftsOfActiveStaffInWeek(tx, venue.id, addDays(weekStart, -7));
+        const copies = lastWeek
+          .map((shift) => ({
+            staffMemberId: shift.staffMemberId,
+            ...shiftTimesOneWeekLater(shift, venue.timeZone),
+            role: shift.role,
+            notes: shift.notes,
+            venueId: venue.id,
+            rotaId: rota.id,
+          }))
+          .filter(({ startsAt, endsAt }) => shiftTimesIssue(startsAt, endsAt) === null);
+        const active = await lockActiveStaffMembersUntilCommit(tx, venue.id, [
+          ...new Set(copies.map(({ staffMemberId }) => staffMemberId)),
+        ]);
+        const candidates = copies.filter(({ staffMemberId }) => active.has(staffMemberId));
+        const existing =
+          candidates.length === 0
+            ? []
+            : await findLiveShiftsOfStaffBetween(
+                tx,
+                [...active],
+                new Date(Math.min(...candidates.map(({ startsAt }) => startsAt.getTime()))),
+                new Date(Math.max(...candidates.map(({ endsAt }) => endsAt.getTime()))),
+              );
+        const toCreate = candidates.filter(
+          (copy) =>
+            !existing.some(
+              (shift) =>
+                shift.staffMemberId === copy.staffMemberId &&
+                shift.startsAt < copy.endsAt &&
+                shift.endsAt > copy.startsAt,
+            ),
+        );
+        await createShifts(tx, toCreate);
+        return { ok: true as const, skippedShifts: lastWeek.length - toCreate.length };
+      });
     },
 
     async sendUpdates(

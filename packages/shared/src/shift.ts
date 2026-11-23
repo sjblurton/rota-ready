@@ -26,6 +26,19 @@ export function shiftEndsAt(
   return sameDay.find((endsAt) => endsAt > startsAt) ?? nextDay;
 }
 
+export function shiftTimesOneWeekLater(
+  { startsAt, endsAt }: { startsAt: Date; endsAt: Date },
+  timeZone: string,
+): { startsAt: Date; endsAt: Date } {
+  const localDate = addDays(localDateOf(startsAt, timeZone), 7);
+  const startTime = formatTime(startsAt, { timeZone });
+  const endTime = formatTime(endsAt, { timeZone });
+  return {
+    startsAt: zonedTimeToUtc(localDate, startTime, timeZone),
+    endsAt: shiftEndsAt(localDate, startTime, endTime, timeZone),
+  };
+}
+
 export function shiftTimesIssue(startsAt: Date, endsAt: Date): ValidationMessageKey | null {
   const lengthMs = endsAt.getTime() - startsAt.getTime();
   if (lengthMs <= 0) return validationMessage.shiftEndsBeforeStart;
@@ -181,6 +194,13 @@ export const rotaSchema = z.object({
 });
 
 export type Rota = z.infer<typeof rotaSchema>;
+
+export const copyLastWeekResultSchema = z.object({
+  rota: rotaSchema,
+  skippedShifts: z.number().int().nonnegative(),
+});
+
+export type CopyLastWeekResult = z.infer<typeof copyLastWeekResultSchema>;
 
 export const emailStatusSchema = z.enum(['sent', 'no_email', 'failed']);
 
