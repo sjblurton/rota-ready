@@ -109,13 +109,19 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 
 ### Testing approach
 
+The tests exist to keep `main` deployable (merging deploys), make refactoring safe, protect the risky rules (tenancy, clock changes, who is emailed, row locks), show what the user sees, stay fast and deterministic (CI under 5 minutes), and make the right place for a new test obvious. [The November 2026 audit](docs/testing-audit-2026-11.md) measured the approach against those goals.
+
 | Seam | What it covers | Tooling |
 | --- | --- | --- |
-| HTTP API | Almost all behaviour, including auth failures and cross-venue 404s | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
+| HTTP API | Almost all behaviour, including auth failures and cross-venue 404s. The default place for a new test | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
 | Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
 | Clock | "Upcoming", "has started", "No reply", March/October clock changes | API tests run on a fixed default instant passed into `createApp`; a time scenario sets its own. React and shared tests take instants as input. No test result depends on the day it runs |
-| Shared logic | Week attribution, time validation, token encryption | Vitest unit tests in `packages/shared` |
-| End to end | One growing journey through the real stack, on real time, with its Shifts two Weeks ahead so none starts during a run | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`) |
+| Row locks | Two requests racing on the same Staff Member or Rota | API tests that force the race: a second connection holds the row lock (`holdStaffMemberLock` in `test-app.ts`) until the request is blocked on it. The Staff Member lock is covered (#82); the Rota lock isn't yet (#113) |
+| Shared logic | Week attribution, Shift times across clock changes, date formatting | Vitest unit tests in `packages/shared` |
+| End to end | One growing journey through the real stack, on real time, with its Shifts two Weeks ahead so none starts during a run. One step per screen or message; rule variants stay in API tests | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`), with a screenshot of every step |
+| Migrations | Every new migration is atomic, free of statements known to break the API already running, and passes the base branch's API tests | CI checks on every PR with migration changes: `pnpm lint:migrations`, then `pnpm test:migrations` (ADR-0006) |
+
+Coverage is information, never a gate. Every PR's CI report comment shows it per package and for the files the PR changed.
 
 ### Getting started
 

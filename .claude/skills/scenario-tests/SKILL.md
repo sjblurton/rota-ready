@@ -61,8 +61,15 @@ describe('when the submenu is reopened', () => {
 
 These follow from the spec (#1) and ADRs, and take precedence over the generic patterns above.
 
+- **Which layer a new test goes in:**
+  - A rule the API enforces (a status, a response body, an email, a 404): an API HTTP test next to the route. This is the default.
+  - A pure calculation in `packages/shared`: a Vitest unit test with its instants passed in. Web logic follows **Front-end tests** below.
+  - What the user sees, and the wiring between screens, real email and Supabase Auth: journey steps, as **Playwright, where it fits** describes.
+  - A race on a row lock: an API test, written as described under *Race scenarios* below.
+  - Migration safety: the CI checks in ADR-0006, not a test.
+  - Coverage is reported for information only; it isn't a target.
 - **No fakes of our own system.** No MSW, no mocked API client, no mocked Prisma, and no mocked auth or venue-membership checks. The only fakes are at outside boundaries passed into `createApp({ db, clock, emailSender, authConfig, staffLinkKey })`: the in-memory email outbox, a fixed `clock`, and a test signing key in `authConfig`.
-- **API integration tests** (Vitest, real Postgres, single worker, truncate before each test): the outer `beforeEach` builds the app and seeds the scenario through HTTP or the database; nested `describe('when …')` blocks make the request; `it` blocks assert the status, the body, the database row or the outbox. Global migrate and truncate setup lives in Vitest config, which doesn't count as a shared `testUtils` file.
+- **API integration tests** (Vitest, real Postgres, single worker, truncate before each test): the outer `beforeEach` builds the app and seeds the scenario through HTTP or the database; nested `describe('when …')` blocks make the request; `it` blocks assert the status, the body, the database row or the outbox. Prefer the response or a follow-up request. Check a row only when the outcome isn't visible through the API, such as nothing being stored, so a schema change or rename doesn't force test edits. Global migrate and truncate setup lives in Vitest config, which doesn't count as a shared `testUtils` file.
 - **Service tests** (ADR-0010): HTTP tests are the default, one `<concept>.<action>.test.ts` per route next to the code. A `<concept>-service.test.ts` that calls a service directly is allowed only when a rule has more combinations than the HTTP tests cover comfortably. It runs against real Postgres with the same seed and clock helpers, and never fakes our own code.
 - **Shared API test infrastructure**: API tests share two files, and nothing else.
   - `apps/api/test/test-app.ts` starts the app with the outside-boundary fakes (a test signing key, a random Staff Link key, and a logger that records to memory so a test can check what was logged), and signs tokens and sends requests against it. It also holds the `clock`: a fixed instant (`DEFAULT_NOW`) unless a test sets its own with `app.setClock(...)`. Later fakes, such as the email outbox, belong here too.
@@ -71,6 +78,7 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
   Every scenario's data is still created by explicit calls in its own `beforeEach` (`await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })`), so the scenario reads from the test file alone. Pass every value a test asserts on; never assert on a value a factory defaulted. Shared fixtures that create data without being called, such as a global `beforeEach` or a factory that seeds more than it says, are not allowed.
 - **Tenancy scenarios**: every venue-scoped route gets a `describe('when a member of another venue requests it')` block that asserts 404.
 - **Email scenarios** check both who received an email and who did not, in separate `it` blocks.
+- **Race scenarios** force the interleaving. Hold the row lock from a second database connection, wait until the request is blocked on it, commit the competing change, then await the response. For the Staff Member row, use `holdStaffMemberLock` from `apps/api/test/test-app.ts`. Requests fired together with `Promise.all` may not interleave, so they can pass without the lock. Check that the test goes red when the lock is removed.
 - **Time scenarios** set the injected clock in `beforeEach`; use `describe.each` for the March and October clock-change cases.
 - **No result depends on the day a test runs.**
   - API tests run on the fixed default clock, and a test that depends on time sets its own.
@@ -79,7 +87,7 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
   - Rules about the moment a Shift starts and clock changes are tested in API, React or shared tests at fixed instants. A daylight saving bug gets its test there.
   - Only JWT expiry, Mailpit timestamps and unique values (such as the journey's sign-up email) read real time.
 - **Front-end tests** only for logic that's hard to check by hand (e.g. grid layout) or that depends on time passing (e.g. "No reply"). Everything else is covered by API tests and Playwright.
-- **Playwright, where it fits**: the MVP journey spec grows one step per ticket. Use `test.describe('when …')` with setup in `test.beforeEach` for scenarios that can run independently; when steps must happen in order through one journey, use `test.describe.serial` with each `test` named after the outcome it checks. Always run against the real stack (local Supabase), with no auth bypass.
+- **Playwright, where it fits**: the MVP journey spec grows with each ticket, adding steps for the screens and messages it changes. Rule variants that show the same message belong in API tests. Use `test.describe('when …')` with setup in `test.beforeEach` for scenarios that can run independently; when steps must happen in order through one journey, use `test.describe.serial` with each `test` named after the outcome it checks. Always run against the real stack (local Supabase), with no auth bypass.
 
 ## Refactoring an existing test file without losing coverage
 
