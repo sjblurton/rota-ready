@@ -3,8 +3,7 @@ import { toast } from 'sonner';
 
 const formMessageKeys: Partial<Record<string, ParseKeys>> = {
   invalid_credentials: 'auth.errors.invalidCredentials',
-  user_already_exists: 'auth.errors.userAlreadyExists',
-  email_exists: 'auth.errors.userAlreadyExists',
+  email_not_confirmed: 'auth.errors.emailNotConfirmed',
   weak_password: 'auth.errors.weakPassword',
   email_address_invalid: 'auth.errors.invalidEmail',
 };

@@ -3,6 +3,7 @@ import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
+const checkEmailMessage = 'Check your email to confirm your account, then log in.';
 const mailpitUrl = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
@@ -57,6 +58,7 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
 
 test.describe.serial('MVP journey', () => {
   let page: Page;
+  let signedUpAt: Date;
   let thisWeek: string;
   let plannedWeek: string;
   let nextWeek: string;
@@ -159,12 +161,49 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   });
 
-  test('signs up and shows the new email address in the header', async () => {
+  test('signs up and asks the new User to confirm their email address', async () => {
     await page.getByRole('link', { name: 'Create an account' }).click();
     await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+    signedUpAt = new Date();
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Create account' }).click();
+    await expect(page.getByRole('status')).toHaveText(checkEmailMessage);
+  });
+
+  test('asks the User to confirm their email address before logging in', async () => {
+    await page.getByRole('link', { name: 'Log in' }).click();
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill(password);
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Confirm your email address with the link we sent you, then log in.',
+    );
+  });
+
+  test('confirms the email address with the link in the confirmation email', async () => {
+    await expect.poll(() => latestEmailTextTo(email, signedUpAt)).toMatch(/\/auth\/v1\/verify\?/);
+    const text = await latestEmailTextTo(email, signedUpAt);
+    const confirmationLink = text?.match(/https?:\/\/[^\s)]+\/auth\/v1\/verify\?[^\s)]+/)?.[0] ?? '';
+    const confirmation = await fetch(confirmationLink, { redirect: 'manual' });
+    expect(confirmation.headers.get('location')).toContain('access_token=');
+  });
+
+  test('shows the same confirm-your-email screen when someone signs up again with that email', async () => {
+    await page.goto('/signup');
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill('a-different-password');
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await expect(page.getByRole('status')).toHaveText(checkEmailMessage);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(toast()).toHaveCount(0);
+  });
+
+  test('logs in with the confirmed email and shows it in the header', async () => {
+    await page.getByRole('link', { name: 'Log in' }).click();
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill(password);
+    await page.getByRole('button', { name: 'Log in' }).click();
     await expect(page.getByRole('banner')).toContainText(email);
   });
 

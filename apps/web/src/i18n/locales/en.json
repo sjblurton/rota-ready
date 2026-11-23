@@ -63,7 +63,7 @@
     },
     "errors": {
       "invalidCredentials": "That email and password don't match an account.",
-      "userAlreadyExists": "An account with that email already exists. Try logging in.",
+      "emailNotConfirmed": "Confirm your email address with the link we sent you, then log in.",
       "weakPassword": "Choose a longer password.",
       "invalidEmail": "Enter a valid email address.",
       "tooManyRequests": "Too many attempts. Wait a moment and try again."
