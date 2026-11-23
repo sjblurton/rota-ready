@@ -51,6 +51,19 @@ export async function hasShiftEndingAfter(db: DbClient, staffMemberId: string, i
   return shift !== null;
 }
 
+export async function lockActiveStaffMembersUntilCommit(
+  tx: Prisma.TransactionClient,
+  venueId: string,
+  ids: string[],
+) {
+  const rows = await tx.$queryRaw<{ id: string }[]>`
+    SELECT id FROM staff_members
+    WHERE id = ANY(${ids}::uuid[]) AND venue_id = ${venueId}::uuid AND archived_at IS NULL
+    ORDER BY id
+    FOR UPDATE`;
+  return new Set(rows.map(({ id }) => id));
+}
+
 export async function lockActiveStaffMemberUntilCommit(
   tx: Prisma.TransactionClient,
   { id, venueId }: StaffMemberKey,

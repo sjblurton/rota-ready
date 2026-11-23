@@ -22,5 +22,6 @@ export function rotaRouter(dependencies: RotaServiceDependencies): Router {
   router.delete('/:weekStart/shifts/:shiftId', shifts.deleteShift);
   router.post('/:weekStart/publish', rotas.publishRota);
   router.post('/:weekStart/send-updates', rotas.sendUpdates);
+  router.post('/:weekStart/copy-last-week', rotas.copyLastWeek);
   return router;
 }

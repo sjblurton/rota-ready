@@ -1,5 +1,6 @@
 import {
   byStaffMemberName,
+  copyLastWeekResultSchema,
   rotaSchema,
   staffLinkEmailsResultSchema,
 } from '@rota-ready/shared';
@@ -20,16 +21,28 @@ function toEmailsResult(emails: StaffLinkEmailResult[]) {
 }
 
 export function rotaController(rotas: RotaService, clock: Clock) {
-  const getRota: RotaRequestHandler = async (req, res) => {
-    const { weekStart } = req.params;
-    const { rota, shifts, removedShifts } = await rotas.get(res.locals.venue.id, weekStart);
+  async function rotaOf(venueId: string, weekStart: string) {
+    const { rota, shifts, removedShifts } = await rotas.get(venueId, weekStart);
     const now = clock.now();
+    return rotaSchema.parse({
+      weekStart,
+      status: rota.status,
+      shifts: shifts.map((shift) => toShift(shift, rota.status, now)),
+      removedShifts: removedShifts.map(toRemovedShift),
+    });
+  }
+
+  const getRota: RotaRequestHandler = async (req, res) => {
+    res.json(await rotaOf(res.locals.venue.id, req.params.weekStart));
+  };
+
+  const copyLastWeek: RotaRequestHandler = async (req, res) => {
+    const result = await rotas.copyLastWeek(res.locals.venue, req.params.weekStart);
+    if (!result.ok) return sendError(res, result.code);
     res.json(
-      rotaSchema.parse({
-        weekStart,
-        status: rota.status,
-        shifts: shifts.map((shift) => toShift(shift, rota.status, now)),
-        removedShifts: removedShifts.map(toRemovedShift),
+      copyLastWeekResultSchema.parse({
+        rota: await rotaOf(res.locals.venue.id, req.params.weekStart),
+        skippedShifts: result.skippedShifts,
       }),
     );
   };
@@ -46,5 +59,5 @@ export function rotaController(rotas: RotaService, clock: Clock) {
     res.json(toEmailsResult(result.emails));
   };
 
-  return { getRota, publishRota, sendUpdates };
+  return { getRota, publishRota, sendUpdates, copyLastWeek };
 }

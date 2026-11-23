@@ -7,6 +7,7 @@ import { RotaLoadError } from '@/features/rota/rota-load-error';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddShiftForm } from '@/features/rota/add-shift-form';
+import { CopyLastWeekButton } from '@/features/rota/copy-last-week-button';
 import { PublishRotaDialog } from '@/features/rota/publish-rota-dialog';
 import { SendUpdatesDialog } from '@/features/rota/send-updates-dialog';
 import { WeekLink } from '@/features/rota/week-link';
@@ -47,6 +48,7 @@ function RotaPage() {
             published={rota.status === 'published'}
           />
           <SendUpdatesDialog key={weekStart} venueId={venueId} weekStart={weekStart} />
+          <CopyLastWeekButton venueId={venueId} weekStart={weekStart} />
         </div>
         <div className="flex gap-2">
           <WeekLink venueId={venueId} weekStart={addDays(weekStart, -7)}>

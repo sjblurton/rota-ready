@@ -6,10 +6,20 @@ import {
   formatPreviousShiftTimes,
   formatLocalDate,
   formatShiftTimes,
+  addDays,
+  shiftTimesIssue,
+  shiftTimesOneWeekLater,
   type EmailStatus,
 } from '@rota-ready/shared';
 import type { Logger } from 'pino';
-import { RotaStatus, type Shift, type StaffMember, type Venue } from '#src/generated/prisma/client.js';
+import {
+  RotaStatus,
+  type Prisma,
+  type Rota,
+  type Shift,
+  type StaffMember,
+  type Venue,
+} from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import type { Db } from '#src/lib/db.js';
 import type { EmailSender } from '#src/lib/email-sender.js';
@@ -19,6 +29,7 @@ import { createStaffMemberService } from '#src/features/staff-members/staff-memb
 import {
   findActiveStaffMembersOnRota,
   findOrCreateRota,
+  findRota,
   findStaffMembers,
   lockRotaUntilCommit,
   markShiftsOfRotaTold,
@@ -26,12 +37,17 @@ import {
 } from './rota-data.js';
 import {
   findLiveAndToldShiftsOfRota,
+  createShifts,
+  findLiveShiftsOfActiveStaffInWeek,
+  findLiveShiftsOfStaffBetween,
   findShiftsOfRota,
+  hasLiveShifts,
   findToldShiftsOfRota,
   moveToldSnapshotForward,
   type ShiftTimes,
 } from './shift-data.js';
 import { isChangedOrRemovedShift, isRemovedShift, toldTimesOf } from './shift-service.js';
+import { lockActiveStaffMembersUntilCommit } from '#src/features/staff-members/staff-member-data.js';
 
 export interface RotaServiceDependencies {
   db: Db;
@@ -85,6 +101,51 @@ function describeUpdate(update: ShiftUpdate, timeZone: string) {
     timeZone,
   });
   return t('shiftUpdatesEmail.changed', { day, times, previousTimes });
+}
+
+type ShiftCopy = ShiftTimes & {
+  role: string | null;
+  notes: string | null;
+  venueId: string;
+  rotaId: string;
+};
+
+async function refuseUnlessEmptyDraft(tx: Prisma.TransactionClient, rotaId: string) {
+  if ((await findRota(tx, rotaId)).status !== RotaStatus.draft) {
+    return refuse(apiErrorCode.rota_already_published);
+  }
+  if (await hasLiveShifts(tx, rotaId)) return refuse(apiErrorCode.rota_has_shifts);
+  return null;
+}
+
+function copyOneWeekLater(shift: Shift, rota: Rota, timeZone: string): ShiftCopy {
+  return {
+    staffMemberId: shift.staffMemberId,
+    ...shiftTimesOneWeekLater(shift, timeZone),
+    role: shift.role,
+    notes: shift.notes,
+    venueId: rota.venueId,
+    rotaId: rota.id,
+  };
+}
+
+function fitsInOneShift({ startsAt, endsAt }: ShiftCopy) {
+  return shiftTimesIssue(startsAt, endsAt) === null;
+}
+
+function overlaps(a: ShiftTimes, b: ShiftTimes) {
+  return a.staffMemberId === b.staffMemberId && a.startsAt < b.endsAt && a.endsAt > b.startsAt;
+}
+
+async function withoutClashes(tx: Prisma.TransactionClient, venueId: string, copies: ShiftCopy[]) {
+  const staffMemberIds = [...new Set(copies.map(({ staffMemberId }) => staffMemberId))];
+  const active = await lockActiveStaffMembersUntilCommit(tx, venueId, staffMemberIds);
+  const forActiveStaff = copies.filter(({ staffMemberId }) => active.has(staffMemberId));
+  if (forActiveStaff.length === 0) return [];
+  const earliestStart = new Date(Math.min(...forActiveStaff.map(({ startsAt }) => startsAt.getTime())));
+  const latestEnd = new Date(Math.max(...forActiveStaff.map(({ endsAt }) => endsAt.getTime())));
+  const existing = await findLiveShiftsOfStaffBetween(tx, [...active], earliestStart, latestEnd);
+  return forActiveStaff.filter((copy) => !existing.some((shift) => overlaps(copy, shift)));
 }
 
 export function createRotaService({
@@ -157,6 +218,29 @@ export function createRotaService({
         ),
       );
       return { ok: true, emails };
+    },
+
+    async copyLastWeek(
+      venue: Venue,
+      weekStart: string,
+    ): Promise<
+      { ok: true; skippedShifts: number } | Refused<'rota_already_published' | 'rota_has_shifts'>
+    > {
+      const rota = await findOrCreateRota(db, venue.id, weekStart);
+      return db.$transaction(async (tx) => {
+        await lockRotaUntilCommit(tx, venue.id, weekStart);
+        const refused = await refuseUnlessEmptyDraft(tx, rota.id);
+        if (refused) return refused;
+
+        const lastWeek = await findLiveShiftsOfActiveStaffInWeek(tx, venue.id, addDays(weekStart, -7));
+        const copies = lastWeek
+          .map((shift) => copyOneWeekLater(shift, rota, venue.timeZone))
+          .filter(fitsInOneShift);
+        const toCreate = await withoutClashes(tx, venue.id, copies);
+        await createShifts(tx, toCreate);
+
+        return { ok: true as const, skippedShifts: lastWeek.length - toCreate.length };
+      });
     },
 
     async sendUpdates(
