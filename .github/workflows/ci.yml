@@ -10,6 +10,9 @@ concurrency:
   # Never cancel a run on main: it may be part-way through production migrations.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Lint, typecheck, test, build, e2e
@@ -61,6 +64,16 @@ jobs:
         run: pnpm db:migrate
 
       - run: pnpm test
+        if: github.event_name != 'pull_request'
+
+      - name: Run the tests with coverage
+        if: github.event_name == 'pull_request'
+        run: pnpm test:coverage
+
+      - name: Run the base branch's API tests against these migrations
+        if: github.event_name == 'pull_request'
+        run: pnpm test:migrations "origin/${{ github.base_ref }}"
+
       - run: pnpm build
 
       - name: Install Playwright's Chromium
@@ -72,6 +85,7 @@ jobs:
           E2E_SCREENSHOTS: ${{ github.workspace }}/journey-screenshots
 
       - name: Upload a screenshot of every journey step
+        id: screenshots
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
@@ -80,6 +94,25 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Write the CI report
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        run: node .github/scripts/ci-report.mjs "origin/${{ github.base_ref }}" ci-report.md
+        env:
+          SCREENSHOTS_URL: ${{ steps.screenshots.outputs.artifact-url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Hand the CI report to the job that posts it
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report
+          path: ci-report.md
+          if-no-files-found: ignore
+          retention-days: 1
+
       - name: Upload the Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -87,6 +120,39 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report/
           retention-days: 7
+
+  report:
+    name: Post the CI report
+    needs: check
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: ci-report
+
+      - name: Create the CI report comment, or update it in place
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ ! -f ci-report.md ]; then
+            echo "::warning::The check job wrote no CI report"; exit 0
+          fi
+          body=$(jq -Rs '{body: .}' ci-report.md)
+          ids=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- ci-report -->"))) | .id')
+          id=${ids%%$'\n'*}
+          if [ -n "$id" ]; then
+            echo "$body" | gh api -X PATCH "repos/$REPO/issues/comments/$id" --input - > /dev/null
+          else
+            echo "$body" | gh api "repos/$REPO/issues/$PR/comments" --input - > /dev/null
+          fi
 
   deploy:
     name: Migrate and deploy to production

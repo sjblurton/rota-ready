@@ -13,7 +13,7 @@ import {
   findStaffMemberByTokenHash,
   publishedShiftExists,
 } from './staff-link-data.js';
-import { toldTimesOf } from '#src/features/rota/shift-service.js';
+import { notifiedTimesOf } from '#src/features/rota/shift-service.js';
 import { hashStaffLinkToken } from './staff-link-token.js';
 
 interface RemovedShiftTimes {
@@ -46,8 +46,8 @@ export function createStaffLinkService({ db, clock }: { db: Db; clock: Clock }) 
       const removed = new Map<string, RemovedShiftTimes>();
       for (const { shiftId, startsAt, endsAt } of sent) removed.set(shiftId, { startsAt, endsAt });
       for (const shift of unsent) {
-        const told = toldTimesOf(shift);
-        if (told) removed.set(shift.id, { startsAt: told.startsAt, endsAt: told.endsAt });
+        const notified = notifiedTimesOf(shift);
+        if (notified) removed.set(shift.id, { startsAt: notified.startsAt, endsAt: notified.endsAt });
       }
       return [...removed]
         .map(([id, times]) => ({ id, ...times }))

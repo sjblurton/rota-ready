@@ -29,8 +29,8 @@ export function findRemovedShiftsStartingAfter(
   return db.shift.findMany({
     where: {
       ...publishedShiftNoLongerWith(staffMemberId),
-      toldStaffMemberId: staffMemberId,
-      toldStartsAt: { gt: instant },
+      notifiedStaffMemberId: staffMemberId,
+      notifiedStartsAt: { gt: instant },
     },
   });
 }

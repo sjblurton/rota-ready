@@ -13,17 +13,18 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useRotaWeek } from '@/features/rota/rota-queries';
 import { usePublishRota } from '@/features/rota/staff-link-email-mutations';
 import { StaffLinkEmailResults } from '@/features/rota/staff-link-email-results';
 
 interface PublishRotaDialogProps {
   venueId: string;
   weekStart: string;
-  published: boolean;
 }
 
-export function PublishRotaDialog({ venueId, weekStart, published }: PublishRotaDialogProps) {
+export function PublishRotaDialog({ venueId, weekStart }: PublishRotaDialogProps) {
   const { t } = useTranslation();
+  const published = useRotaWeek(venueId, weekStart).status === 'published';
   const [open, setOpen] = useState(false);
   const date = formatLocalDate(weekStart, { withYear: true });
   const publish = usePublishRota(venueId, weekStart, { onAlreadyPublished: () => setOpen(false) });

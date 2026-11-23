@@ -4,7 +4,7 @@ The old guidance was "keep comments rare, and write one only when the *why* isn'
 
 When code seems to need a comment, make the code say it instead:
 
-- **A name** that states what a function does, such as `lockActiveStaffMemberUntilCommit`, or `markShiftsOfRotaTold` for raw SQL.
+- **A name** that states what a function does, such as `lockActiveStaffMemberUntilCommit`, or `markShiftsOfRotaNotified` for raw SQL.
 - **A smaller function, or a structure that makes the constraint impossible to get wrong.** For example, the Shift delete used to rely on running a hard delete before a soft delete. It now locks the Rota row, so the order no longer matters.
 - **A test** that goes red when someone "simplifies" the code. For example, the journey step showing the Removed marker straight after a reassignment fails if the Rota refetch is swapped for `refetchQueries`, which skips static queries.
 - **The PR description or `docs/`**, for the reason behind a choice that the code can't hold.
@@ -15,9 +15,9 @@ Every comment block on `main` when this was decided, and what replaced it:
 
 | Comment | Verdict |
 |---|---|
-| `rota-data.ts`: why `markShiftsOfRotaTold` is raw SQL | Deleted. The function name, plus `CODING_STANDARDS.md` ("raw SQL only for what Prisma can't express"), cover it. |
+| `rota-data.ts`: why `markShiftsOfRotaNotified` is raw SQL | Deleted. The function name, plus `CODING_STANDARDS.md` ("raw SQL only for what Prisma can't express"), cover it. |
 | `staff-member-data.ts`: why the row lock is raw SQL | Deleted, for the same reason. |
-| `shift-data.ts`: hard delete must run before soft delete | Rewrote the code. The service locks the Rota row (`FOR NO KEY UPDATE`) for the delete. Publish's `UPDATE rotas` waits on that lock, so the told snapshot can't change mid-delete, while adding Shifts to the Week isn't blocked. |
+| `shift-data.ts`: hard delete must run before soft delete | Rewrote the code. The service locks the Rota row (`FOR NO KEY UPDATE`) for the delete. Publish's `UPDATE rotas` waits on that lock, so the notified snapshot can't change mid-delete, while adding Shifts to the Week isn't blocked. |
 | `rota-queries.ts`: why `refetchRota` uses `query({ staleTime: 0 })`, and that a failed refetch waits for the next poll | Deleted. Swapping in `refetchQueries` turns the journey's Removed-marker step red. A failed refetch is ignored because a Published Rota refreshes every 30 seconds anyway (`refetchInterval` in `rotaQuery`). |
 | `_authenticated.tsx`: child routes 403 until the User is stored | Deleted. `bootstrapCurrentUserQuery` in `beforeLoad` already says it runs first. |
 | `tsdown.config.ts`: why workspace packages are bundled | Deleted. `alwaysBundle: [/^@rota-ready\//]` says what it does. `packages/shared/package.json` exports `./src/index.ts`, which shows why. |

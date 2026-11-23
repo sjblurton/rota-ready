@@ -42,11 +42,7 @@ function RotaPage() {
           <Badge variant={rota.status === 'published' ? 'default' : 'secondary'}>
             {t(`rota.status.${rota.status}`)}
           </Badge>
-          <PublishRotaDialog
-            venueId={venueId}
-            weekStart={weekStart}
-            published={rota.status === 'published'}
-          />
+          <PublishRotaDialog venueId={venueId} weekStart={weekStart} />
           <SendUpdatesDialog key={weekStart} venueId={venueId} weekStart={weekStart} />
           <CopyLastWeekButton venueId={venueId} weekStart={weekStart} />
         </div>

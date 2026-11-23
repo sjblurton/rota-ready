@@ -8,7 +8,7 @@ import {
   createUser,
   createVenueFor,
 } from '#test/seed.js';
-import { startTestApp, type TestApp } from '#test/test-app.js';
+import { startTestApp, type StaffMemberLock, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 const OTHER_OWNER = {
@@ -272,7 +272,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
       });
     });
 
-    it('returns it marked as changed, since nobody has been told about it', async () => {
+    it('returns it marked as changed, since nobody has been notified about it', async () => {
       expect(await response.json()).toMatchObject({ changed: true });
     });
   });
@@ -280,12 +280,12 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
   describe("when Sam's published Shift from 09:00 to 17:00 on Monday has been deleted", () => {
     beforeEach(async () => {
       const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
-      const told = await createShift(app.db, rota, sam, {
+      const notified = await createShift(app.db, rota, sam, {
         startsAt: '2026-11-16T09:00:00.000Z',
         endsAt: '2026-11-16T17:00:00.000Z',
       });
       await app.request('POST', `${rotaPath(ownVenue, WEEK_START)}/publish`, { as: OWNER });
-      await app.request('DELETE', `${shiftsPath(ownVenue, WEEK_START)}/${told.id}`, {
+      await app.request('DELETE', `${shiftsPath(ownVenue, WEEK_START)}/${notified.id}`, {
         as: OWNER,
       });
       response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
@@ -529,6 +529,76 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
 
     it('responds with 409', () => {
       expect(response.status).toBe(409);
+    });
+  });
+
+  describe("when a Shift is added for Sam while another request holds Sam's row lock", () => {
+    let rota: { id: string; venueId: string };
+    let lock: StaffMemberLock;
+    let pending: Promise<Response>;
+
+    beforeEach(async () => {
+      rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      lock = await app.holdStaffMemberLock(sam.id);
+      pending = app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-16T09:00:00.000Z',
+          endsAt: '2026-11-16T17:00:00.000Z',
+        },
+      });
+      await lock.waitForBlockedRequest();
+    });
+
+    describe('when that request adds an overlapping Shift for Sam and commits', () => {
+      beforeEach(async () => {
+        await lock.commitAfter((tx) =>
+          tx.shift.create({
+            data: {
+              venueId: rota.venueId,
+              rotaId: rota.id,
+              staffMemberId: sam.id,
+              startsAt: new Date('2026-11-16T12:00:00.000Z'),
+              endsAt: new Date('2026-11-16T20:00:00.000Z'),
+            },
+          }),
+        );
+        response = await pending;
+      });
+
+      it('responds with 409 and the shift_overlaps code', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          409,
+          { code: 'shift_overlaps' },
+        ]);
+      });
+
+      it("stores only the other request's Shift", async () => {
+        expect(await app.db.shift.findMany({ select: { startsAt: true } })).toEqual([
+          { startsAt: new Date('2026-11-16T12:00:00.000Z') },
+        ]);
+      });
+    });
+
+    describe('when that request archives Sam and commits', () => {
+      beforeEach(async () => {
+        await lock.commitAfter((tx) =>
+          tx.staffMember.update({
+            where: { id: sam.id },
+            data: { archivedAt: new Date('2026-11-15T09:00:00.000Z'), email: null },
+          }),
+        );
+        response = await pending;
+      });
+
+      it('responds with 404 and the not_found code', async () => {
+        expect([response.status, await response.json()]).toEqual([404, { code: 'not_found' }]);
+      });
+
+      it('stores no Shift', async () => {
+        expect(await app.db.shift.count()).toBe(0);
+      });
     });
   });
 

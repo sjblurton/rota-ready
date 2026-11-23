@@ -1,9 +1,6 @@
 import type { StaffMember } from '@rota-ready/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { z } from 'zod';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,9 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost } from '@/lib/api';
-import { staffMemberPath, updateStaffMembers } from '@/features/staff-members/staff-member-queries';
+import { useArchiveStaffMember } from '@/features/staff-members/staff-member-mutations';
 
 interface ArchiveStaffMemberDialogProps {
   venueId: string;
@@ -27,20 +22,9 @@ interface ArchiveStaffMemberDialogProps {
 
 export function ArchiveStaffMemberDialog({ venueId, staffMember }: ArchiveStaffMemberDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const archive = useMutation({
-    mutationFn: () =>
-      apiPost(`${staffMemberPath(venueId, staffMember.id)}/archive`, undefined, z.undefined()),
-    onSuccess: () => {
-      setOpen(false);
-      updateStaffMembers(queryClient, venueId, (current) =>
-        current.filter((existing) => existing.id !== staffMember.id),
-      );
-    },
-    onError: (error) => {
-      toast.error(apiErrorMessage(t, error));
-    },
+  const archive = useArchiveStaffMember(venueId, staffMember.id, {
+    onSuccess: () => setOpen(false),
   });
 
   function confirm(event: MouseEvent) {

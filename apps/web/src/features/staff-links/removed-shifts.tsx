@@ -1,15 +1,15 @@
-import { formatDate, formatShiftTimes, type RemovedShift } from '@rota-ready/shared';
+import { formatDate, formatShiftTimes } from '@rota-ready/shared';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { staffLinkPageQuery } from '@/features/staff-links/staff-link-queries';
 
-interface RemovedShiftsProps {
-  removedShifts: RemovedShift[];
-  timeZone: string;
-}
-
-export function RemovedShifts({ removedShifts, timeZone }: RemovedShiftsProps) {
+export function RemovedShifts({ token }: { token: string }) {
   const { t } = useTranslation();
+  const {
+    data: { removedShifts, timeZone },
+  } = useSuspenseQuery(staffLinkPageQuery(token));
 
   if (removedShifts.length === 0) return null;
 

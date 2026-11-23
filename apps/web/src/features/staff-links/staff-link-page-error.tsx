@@ -1,13 +1,11 @@
 import { apiErrorCode } from '@rota-ready/shared';
-import { useRouter, type ErrorComponentProps } from '@tanstack/react-router';
+import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { apiErrorMessage } from '@/i18n/api-error-message';
+import { PageLoadError } from '@/components/page-load-error';
 import { hasErrorCode } from '@/lib/api';
 
 export function StaffLinkPageError({ error }: ErrorComponentProps) {
   const { t } = useTranslation();
-  const router = useRouter();
 
   if (hasErrorCode(error, apiErrorCode.not_found)) {
     return (
@@ -19,11 +17,8 @@ export function StaffLinkPageError({ error }: ErrorComponentProps) {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-col items-start gap-4 p-6">
-      <p role="alert">{apiErrorMessage(t, error)}</p>
-      <Button variant="outline" size="sm" onClick={() => void router.invalidate()}>
-        {t('staffLink.page.tryAgain')}
-      </Button>
+    <main className="mx-auto max-w-md p-6">
+      <PageLoadError error={error} />
     </main>
   );
 }
