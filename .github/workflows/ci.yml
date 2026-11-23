@@ -61,6 +61,11 @@ jobs:
         run: pnpm db:migrate
 
       - run: pnpm test
+
+      - name: Run the base branch's API tests against these migrations
+        if: github.event_name == 'pull_request'
+        run: pnpm test:migrations "origin/${{ github.base_ref }}"
+
       - run: pnpm build
 
       - name: Install Playwright's Chromium
