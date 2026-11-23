@@ -12,6 +12,7 @@
     "start": "node --env-file-if-exists=../../.env dist/server.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migration": "prisma migrate dev --create-only"
