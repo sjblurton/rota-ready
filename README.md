@@ -113,9 +113,9 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 | --- | --- | --- |
 | HTTP API | Almost all behaviour, including auth failures and cross-venue 404s | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
 | Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
-| Clock | "Upcoming", "has started", March/October clock changes | Fixed clock passed into `createApp` from #10 |
+| Clock | "Upcoming", "has started", "No reply", March/October clock changes | API tests run on a fixed default instant passed into `createApp`; a time scenario sets its own. React and shared tests take instants as input. No test result depends on the day it runs |
 | Shared logic | Week attribution, time validation, token encryption | Vitest unit tests in `packages/shared` |
-| End to end | One growing journey through the real stack | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`) |
+| End to end | One growing journey through the real stack, on real time, with its Shifts two Weeks ahead so none starts during a run | Playwright against local Supabase (`apps/web/e2e/journey.e2e.ts`) |
 
 ### Getting started
 

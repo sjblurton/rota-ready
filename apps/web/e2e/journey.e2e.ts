@@ -6,6 +6,7 @@ const password = 'correct-horse-battery-staple';
 const mailpitUrl = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
+const rotaWeekUrl = /\/rota\/\d{4}-\d{2}-\d{2}$/;
 const staffMembers = [
   { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: '07700 900123' },
   { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: '07700 900456' },
@@ -43,9 +44,11 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
 test.describe.serial('MVP journey', () => {
   let page: Page;
   let thisWeek: string;
+  let plannedWeek: string;
+  let nextWeek: string;
   let samsLink: string;
   let samsEmailedLink: string;
-  let publishedThisWeekAt: Date;
+  let publishedWeekAt: Date;
   let samsNewLink: string;
   let privateWindow: BrowserContext;
   let staffLinkPage: Page;
@@ -58,6 +61,19 @@ test.describe.serial('MVP journey', () => {
     return page.getByRole('heading', {
       name: `Week of ${formatLocalDate(weekStart, { withYear: true })}`,
     });
+  }
+
+  async function openRota(weekStart: string) {
+    await page.getByRole('tab', { name: 'Rota' }).click();
+    await page.waitForURL(rotaWeekUrl);
+    const shownWeek = page.url().slice(-10);
+    const weeksAway = daysBetween(shownWeek, weekStart) / 7;
+    const link = weeksAway > 0 ? 'Next Week' : 'Previous Week';
+    for (let step = 1; step <= Math.abs(weeksAway); step++) {
+      await page.getByRole('link', { name: link }).click();
+      await expect(weekHeading(addDays(shownWeek, 7 * Math.sign(weeksAway) * step))).toBeVisible();
+    }
+    await expect(weekHeading(weekStart)).toBeVisible();
   }
 
   function toast() {
@@ -79,7 +95,7 @@ test.describe.serial('MVP journey', () => {
     return page.getByRole('table', { name: 'Rota' });
   }
 
-  function rotaCell(staffMemberName: string, day: string, weekStart = thisWeek) {
+  function rotaCell(staffMemberName: string, day: string, weekStart = plannedWeek) {
     return rotaGrid()
       .getByRole('row', { name: staffMemberName })
       .getByRole('cell')
@@ -264,8 +280,10 @@ test.describe.serial('MVP journey', () => {
 
   test("opens this Week's Draft Rota with a row per active Staff Member", async () => {
     await page.getByRole('tab', { name: 'Rota' }).click();
-    await page.waitForURL(/\/rota\/\d{4}-\d{2}-\d{2}$/);
+    await page.waitForURL(rotaWeekUrl);
     thisWeek = page.url().slice(-10);
+    plannedWeek = addDays(thisWeek, 14);
+    nextWeek = addDays(plannedWeek, 7);
     await expect(weekHeading(thisWeek)).toBeVisible();
     await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
     await expect(
@@ -299,8 +317,9 @@ test.describe.serial('MVP journey', () => {
     await expect(weekHeading(thisWeek)).toBeVisible();
   });
 
-  test('adds an Overnight Shift and shows it on the day it starts, marked (+1)', async () => {
-    const sunday = addDays(thisWeek, 6);
+  test('adds an Overnight Shift two Weeks ahead and shows it on the day it starts, marked (+1)', async () => {
+    const sunday = addDays(plannedWeek, 6);
+    await openRota(plannedWeek);
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(sunday) });
     await page.getByLabel('Start').selectOption('20:00');
@@ -312,23 +331,22 @@ test.describe.serial('MVP journey', () => {
 
   test('keeps the Shift after a reload', async () => {
     await page.reload();
-    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toHaveText('20:00–02:00 (+1)');
+    await expect(rotaCell('Sam Jones', addDays(plannedWeek, 6))).toHaveText('20:00–02:00 (+1)');
   });
 
   test('rejects a 17-hour Shift with the error under the end time', async () => {
     await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
-    await page.getByLabel('Day').selectOption({ label: formatLocalDate(thisWeek) });
+    await page.getByLabel('Day').selectOption({ label: formatLocalDate(plannedWeek) });
     await page.getByLabel('Start').selectOption('06:00');
     await page.getByLabel('End').selectOption('23:00');
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(page.getByLabel('End')).toHaveAccessibleDescription(
       'Shifts can be at most 16 hours.',
     );
-    await expect(rotaCell('Alex Smith', thisWeek)).toHaveText('');
+    await expect(rotaCell('Alex Smith', plannedWeek)).toHaveText('');
   });
 
   test("adds a Shift on the next Week's Monday without choosing the day again", async () => {
-    const nextWeek = addDays(thisWeek, 7);
     await page.getByRole('link', { name: 'Next Week' }).click();
     await expect(weekHeading(nextWeek)).toBeVisible();
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
@@ -347,13 +365,12 @@ test.describe.serial('MVP journey', () => {
   test('rejects a Shift that overlaps one the Staff Member already has', async () => {
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(page.getByText('This Staff Member already has a Shift at that time.')).toBeVisible();
-    await expect(rotaCell('Sam Jones', addDays(thisWeek, 7), addDays(thisWeek, 7))).toHaveText(
+    await expect(rotaCell('Sam Jones', nextWeek, nextWeek)).toHaveText(
       '09:00–17:00',
     );
   });
 
   test('adds the same times for another Staff Member by changing only the person', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     await page.getByLabel('Staff Member').selectOption({ label: 'Alex Smith' });
     await page.getByRole('button', { name: 'Add Shift' }).click();
     await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('09:00–17:00');
@@ -382,7 +399,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("opens a Shift's details from the grid", async () => {
-    const nextWeek = addDays(thisWeek, 7);
     await editShiftButton('Sam Jones', nextWeek).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByLabel('Staff Member').locator('option:checked')).toHaveText(
@@ -403,7 +419,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('moves the Shift to another Staff Member and another day', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     const tuesday = addDays(nextWeek, 1);
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Day').selectOption({ label: formatLocalDate(tuesday) });
@@ -414,7 +429,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('keeps the moved Shift after a reload', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     const tuesday = addDays(nextWeek, 1);
     await page.reload();
     await expect(rotaCell('Alex Smith', tuesday, nextWeek)).toHaveText('09:00–17:00');
@@ -422,7 +436,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('asks for confirmation before deleting a Shift', async () => {
-    const tuesday = addDays(thisWeek, 8);
+    const tuesday = addDays(plannedWeek, 8);
     await editShiftButton('Alex Smith', tuesday).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete Shift' }).click();
     await expect(page.getByRole('alertdialog')).toContainText(
@@ -431,7 +445,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('deletes the Shift and takes it off the grid', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
     await expect(page.getByRole('alertdialog')).toBeHidden();
     await expect(page.getByRole('dialog')).toBeHidden();
@@ -439,7 +452,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('keeps the Shift deleted after a reload', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     await page.reload();
     await expect(rotaCell('Alex Smith', nextWeek, nextWeek)).toHaveText('09:00–17:00');
     await expect(rotaCell('Alex Smith', addDays(nextWeek, 1), nextWeek)).toHaveText('');
@@ -459,10 +471,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('archives the Staff Member once their upcoming Shift is deleted from the Rota', async () => {
-    const nextWeek = addDays(thisWeek, 7);
-    await page.getByRole('tab', { name: 'Rota' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
-    await page.getByRole('link', { name: 'Next Week' }).click();
+    await openRota(nextWeek);
     await editShiftButton('Alex Smith', nextWeek).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete Shift' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
@@ -475,12 +484,8 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('adds a Shift with a Role and notes and shows them on the grid', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     const thursday = addDays(nextWeek, 3);
-    await page.getByRole('tab', { name: 'Rota' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
-    await page.getByRole('link', { name: 'Next Week' }).click();
-    await expect(weekHeading(nextWeek)).toBeVisible();
+    await openRota(nextWeek);
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
     await expect(page.getByLabel('Role (optional)')).toHaveAttribute('placeholder', 'Floor');
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(thursday) });
@@ -498,7 +503,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('edits the Role and notes and shows the change on the grid', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     const thursday = addDays(nextWeek, 3);
     await editShiftButton('Sam Jones', thursday, '18:00–23:00').click();
     const dialog = page.getByRole('dialog');
@@ -512,25 +516,20 @@ test.describe.serial('MVP journey', () => {
     );
   });
 
-  test('asks for confirmation before Publishing this Week', async () => {
-    await page.getByRole('tab', { name: 'Rota' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
-    await page.getByRole('link', { name: 'Next Week' }).click();
-    await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
-    await page.getByRole('link', { name: 'Previous Week' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
+  test('asks for confirmation before Publishing the Week', async () => {
+    await openRota(plannedWeek);
     await page.getByRole('button', { name: 'Publish' }).click();
     await expect(page.getByRole('alertdialog')).toContainText(
-      `Publish the Week of ${formatLocalDate(thisWeek, { withYear: true })}?`,
+      `Publish the Week of ${formatLocalDate(plannedWeek, { withYear: true })}?`,
     );
   });
 
-  test('Publishes this Week and shows who was emailed their Staff Link', async () => {
-    publishedThisWeekAt = new Date(Date.now() - 1_000);
+  test('Publishes the Week and shows who was emailed their Staff Link', async () => {
+    publishedWeekAt = new Date(Date.now() - 1_000);
     await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toContainText(
-      `Published the Week of ${formatLocalDate(thisWeek, { withYear: true })}`,
+      `Published the Week of ${formatLocalDate(plannedWeek, { withYear: true })}`,
     );
     await expect(
       dialog.getByRole('list', { name: 'Staff Link emails' }).getByRole('listitem'),
@@ -546,9 +545,9 @@ test.describe.serial('MVP journey', () => {
 
   test("emails Sam their Staff Link, which opens Sam's page", async ({ browser }) => {
     await expect
-      .poll(() => latestEmailTextTo('sam@example.com', publishedThisWeekAt))
+      .poll(() => latestEmailTextTo('sam@example.com', publishedWeekAt))
       .toMatch(/\/s\/[\w-]{43}/);
-    const text = await latestEmailTextTo('sam@example.com', publishedThisWeekAt);
+    const text = await latestEmailTextTo('sam@example.com', publishedWeekAt);
     samsEmailedLink = text?.match(/https?:\/\/\S+\/s\/[\w-]{43}/)?.[0] ?? '';
     const emailWindow = await browser.newContext();
     const emailPage = await emailWindow.newPage();
@@ -557,19 +556,19 @@ test.describe.serial('MVP journey', () => {
     await emailWindow.close();
   });
 
-  test('keeps this Week Published after a reload', async () => {
+  test('keeps the Week Published after a reload', async () => {
     await page.reload();
     await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
-    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('20:00–02:00 (+1)');
+    await expect(rotaCell('Sam Jones', addDays(plannedWeek, 6))).toContainText('20:00–02:00 (+1)');
   });
 
   test('shows each Shift in the Published Rota as Pending', async () => {
-    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('Pending');
+    await expect(rotaCell('Sam Jones', addDays(plannedWeek, 6))).toContainText('Pending');
   });
 
   test('keeps the next Week a Draft with a Publish button', async () => {
     await page.getByRole('link', { name: 'Next Week' }).click();
-    await expect(weekHeading(addDays(thisWeek, 7))).toBeVisible();
+    await expect(weekHeading(nextWeek)).toBeVisible();
     await expect(page.getByRole('tabpanel').getByText('Draft', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publish' })).toBeVisible();
   });
@@ -632,18 +631,14 @@ test.describe.serial('MVP journey', () => {
   test("shows only Sam's upcoming Published Shift, not next Week's Draft ones", async () => {
     await expect(
       staffLinkPage.getByRole('list', { name: 'Your upcoming Shifts' }).getByRole('listitem'),
-    ).toContainText([`${formatLocalDate(addDays(thisWeek, 6))}20:00–02:00 (+1)`]);
+    ).toContainText([`${formatLocalDate(addDays(plannedWeek, 6))}20:00–02:00 (+1)`]);
     await privateWindow.close();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
   });
 
   test('Publishes next Week with a Wednesday Shift for Sam', async () => {
-    const nextWeek = addDays(thisWeek, 7);
-    await page.getByRole('tab', { name: 'Rota' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
-    await page.getByRole('link', { name: 'Next Week' }).click();
-    await expect(weekHeading(nextWeek)).toBeVisible();
+    await openRota(nextWeek);
     await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
     await page.getByLabel('Day').selectOption({ label: formatLocalDate(addDays(nextWeek, 2)) });
     await page.getByLabel('Start').selectOption('12:00');
@@ -657,7 +652,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("Confirms Sunday's Shift from Sam's Staff Link page", async ({ browser }) => {
-    const sunday = addDays(thisWeek, 6);
+    const sunday = addDays(plannedWeek, 6);
     privateWindow = await browser.newContext();
     staffLinkPage = await privateWindow.newPage();
     await staffLinkPage.goto(samsNewLink);
@@ -669,7 +664,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("Declines next Wednesday's Shift with a Decline Reason", async () => {
-    const wednesday = addDays(thisWeek, 9);
+    const wednesday = addDays(plannedWeek, 9);
     await staffLinkPage
       .getByRole('button', { name: `Decline your Shift on ${formatLocalDate(wednesday)}` })
       .click();
@@ -684,13 +679,12 @@ test.describe.serial('MVP journey', () => {
 
   test("keeps Sam's answers after a reload", async () => {
     await staffLinkPage.reload();
-    await expect(staffLinkShift(addDays(thisWeek, 6))).toContainText('Confirmed');
-    await expect(staffLinkShift(addDays(thisWeek, 9))).toContainText('Declined');
+    await expect(staffLinkShift(addDays(plannedWeek, 6))).toContainText('Confirmed');
+    await expect(staffLinkShift(addDays(plannedWeek, 9))).toContainText('Declined');
     await privateWindow.close();
   });
 
   test("shows the Decline and its reason on the Owner's grid within 30 seconds, without a reload", async () => {
-    const nextWeek = addDays(thisWeek, 7);
     await page.clock.fastForward(30_000);
     const wednesday = rotaCell('Sam Jones', addDays(nextWeek, 2), nextWeek);
     await wednesday.getByRole('button', { name: 'Declined: see the Decline Reason' }).click();
@@ -701,13 +695,13 @@ test.describe.serial('MVP journey', () => {
 
   test("shows the Confirm on the Owner's grid after the next refresh", async () => {
     await page.getByRole('link', { name: 'Previous Week' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
+    await expect(weekHeading(plannedWeek)).toBeVisible();
     await page.clock.fastForward(30_000);
-    await expect(rotaCell('Sam Jones', addDays(thisWeek, 6))).toContainText('Confirmed');
+    await expect(rotaCell('Sam Jones', addDays(plannedWeek, 6))).toContainText('Confirmed');
   });
 
   test('keeps a Confirmed Shift Confirmed and unmarked when only its notes change', async () => {
-    const sunday = addDays(thisWeek, 6);
+    const sunday = addDays(plannedWeek, 6);
     await editShiftButton('Sam Jones', sunday, '20:00–02:00 (+1)').click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Notes (optional)').fill('Lock up');
@@ -717,7 +711,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("sends a Confirmed Shift back to Pending, marked Changed, when its time changes", async () => {
-    const sunday = addDays(thisWeek, 6);
+    const sunday = addDays(plannedWeek, 6);
     await editShiftButton('Sam Jones', sunday, '20:00–02:00 (+1)').click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Start').selectOption('21:00');
@@ -727,7 +721,6 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('reassigns a published Shift, marking it Changed for the new Staff Member and Removed for Sam', async () => {
-    const nextWeek = addDays(thisWeek, 7);
     const thursday = addDays(nextWeek, 3);
     await page.getByRole('tab', { name: 'Staff' }).click();
     const addForm = staffForm('Add staff member');
@@ -736,10 +729,7 @@ test.describe.serial('MVP journey', () => {
     await addForm.getByLabel('Email').fill('jo@example.com');
     await addForm.getByRole('button', { name: 'Add staff member' }).click();
     await expect(staffTable().getByText('Jo Bloggs')).toBeVisible();
-    await page.getByRole('tab', { name: 'Rota' }).click();
-    await expect(weekHeading(thisWeek)).toBeVisible();
-    await page.getByRole('link', { name: 'Next Week' }).click();
-    await expect(weekHeading(nextWeek)).toBeVisible();
+    await openRota(nextWeek);
     await editShiftButton('Sam Jones', thursday, '18:00–23:00').click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Staff Member').selectOption({ label: 'Jo Bloggs' });
@@ -752,7 +742,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("shows the reassigned Shift as Removed on Sam's Staff Link page", async ({ browser }) => {
-    const thursday = addDays(thisWeek, 10);
+    const thursday = addDays(plannedWeek, 10);
     privateWindow = await browser.newContext();
     staffLinkPage = await privateWindow.newPage();
     await staffLinkPage.goto(samsNewLink);
@@ -765,7 +755,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test("shows the reassigned Shift as Pending on Jo's Staff Link page", async () => {
-    const thursday = addDays(thisWeek, 10);
+    const thursday = addDays(plannedWeek, 10);
     await page.getByRole('tab', { name: 'Staff' }).click();
     await page.getByRole('button', { name: 'Staff Link for Jo Bloggs' }).click();
     await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
@@ -777,6 +767,20 @@ test.describe.serial('MVP journey', () => {
     await expect(staffLinkShift(thursday)).toContainText('Pending');
     await expect(staffLinkPage.getByRole('list', { name: 'Removed Shifts' })).toHaveCount(0);
     await privateWindow.close();
+  });
+
+  test('shows a Pending Shift that has already started as No reply', async () => {
+    const lastWeek = addDays(thisWeek, -7);
+    await openRota(lastWeek);
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Start').selectOption('09:00');
+    await page.getByLabel('End').selectOption('17:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Sam Jones', lastWeek, lastWeek)).toHaveText('09:00–17:00');
+    await page.getByRole('button', { name: 'Publish' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Done' }).click();
+    await expect(rotaCell('Sam Jones', lastWeek, lastWeek)).toHaveText('09:00–17:00No reply');
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {

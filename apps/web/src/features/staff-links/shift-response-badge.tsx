@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { shownResponse, type ShownResponse } from '@/features/staff-links/shown-response';
 
 const variants = {
   pending: 'outline',
   confirmed: 'default',
   declined: 'destructive',
   noReply: 'secondary',
-} as const satisfies Record<ShiftResponse | 'noReply', string>;
+} as const satisfies Record<ShownResponse, string>;
 
 interface ShiftResponseBadgeProps {
   response: ShiftResponse;
@@ -18,7 +19,7 @@ interface ShiftResponseBadgeProps {
 
 export function ShiftResponseBadge({ response, started }: ShiftResponseBadgeProps) {
   const { t } = useTranslation();
-  const shown = response === 'pending' && started ? 'noReply' : response;
+  const shown = shownResponse(response, started);
   return <Badge variant={variants[shown]}>{t(`shiftResponse.${shown}`)}</Badge>;
 }
 

@@ -348,7 +348,7 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
     beforeEach(async () => {
       await app.db.staffMember.update({
         where: { id: sam.id },
-        data: { archivedAt: new Date(), email: null },
+        data: { archivedAt: new Date(WEDNESDAY_NOON), email: null },
       });
       response = await app.request('PUT', responsePath(token, thursday), {
         body: { response: 'confirmed' },
