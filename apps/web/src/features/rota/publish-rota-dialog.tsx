@@ -1,13 +1,6 @@
-import {
-  apiErrorCode,
-  formatLocalDate,
-  staffLinkEmailsResultSchema,
-  type StaffLinkEmailsResult,
-} from '@rota-ready/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatLocalDate } from '@rota-ready/shared';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +13,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { markRotaPublished, publishPath } from '@/features/rota/rota-queries';
+import { usePublishRota } from '@/features/rota/staff-link-email-mutations';
 import { StaffLinkEmailResults } from '@/features/rota/staff-link-email-results';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost, hasErrorCode } from '@/lib/api';
 
 interface PublishRotaDialogProps {
   venueId: string;
@@ -33,25 +24,10 @@ interface PublishRotaDialogProps {
 
 export function PublishRotaDialog({ venueId, weekStart, published }: PublishRotaDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [result, setResult] = useState<StaffLinkEmailsResult>();
   const date = formatLocalDate(weekStart, { withYear: true });
-  const publish = useMutation({
-    mutationFn: () => apiPost(publishPath(venueId, weekStart), undefined, staffLinkEmailsResultSchema),
-    onSuccess: (publishResult) => {
-      setResult(publishResult);
-      markRotaPublished(queryClient, venueId, weekStart);
-    },
-    onError: (error) => {
-      if (hasErrorCode(error, apiErrorCode.rota_already_published)) {
-        setOpen(false);
-        markRotaPublished(queryClient, venueId, weekStart);
-      } else {
-        toast.error(apiErrorMessage(t, error));
-      }
-    },
-  });
+  const publish = usePublishRota(venueId, weekStart, { onAlreadyPublished: () => setOpen(false) });
+  const result = publish.data;
 
   function confirm(event: MouseEvent) {
     event.preventDefault();

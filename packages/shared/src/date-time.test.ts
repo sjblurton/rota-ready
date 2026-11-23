@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   formatDate,
-  formatEarlierShiftTimes,
+  formatPreviousShiftTimes,
   formatLocalDate,
   formatShiftTimes,
   formatTime,
@@ -179,8 +179,8 @@ describe('formatShiftTimes', () => {
   });
 });
 
-describe('formatEarlierShiftTimes', () => {
-  const earlier = {
+describe('formatPreviousShiftTimes', () => {
+  const previous = {
     startsAt: new Date('2026-12-02T12:00:00Z'),
     endsAt: new Date('2026-12-02T18:00:00Z'),
   };
@@ -188,34 +188,34 @@ describe('formatEarlierShiftTimes', () => {
 
   describe('when the Shift is now later the same day', () => {
     beforeEach(() => {
-      formatted = formatEarlierShiftTimes(earlier, new Date('2026-12-02T13:00:00Z'), london);
+      formatted = formatPreviousShiftTimes(previous, new Date('2026-12-02T13:00:00Z'), london);
     });
 
-    it('gives only the earlier times', () => {
+    it('gives only the previous times', () => {
       expect(formatted).toBe('12:00–18:00');
     });
   });
 
   describe('when the Shift has moved to another day', () => {
     beforeEach(() => {
-      formatted = formatEarlierShiftTimes(earlier, new Date('2026-12-03T12:00:00Z'), london);
+      formatted = formatPreviousShiftTimes(previous, new Date('2026-12-03T12:00:00Z'), london);
     });
 
-    it('gives the earlier day as well as the times', () => {
+    it('gives the previous day as well as the times', () => {
       expect(formatted).toBe('Wed 2 Dec, 12:00–18:00');
     });
   });
 
   describe('when the Shift moved across midnight in UTC but stays on the same day in the Venue', () => {
     beforeEach(() => {
-      formatted = formatEarlierShiftTimes(
+      formatted = formatPreviousShiftTimes(
         { startsAt: new Date('2026-07-01T22:30:00Z'), endsAt: new Date('2026-07-02T02:00:00Z') },
         new Date('2026-07-01T21:30:00Z'),
         london,
       );
     });
 
-    it('gives only the earlier times', () => {
+    it('gives only the previous times', () => {
       expect(formatted).toBe('23:30–03:00 (+1)');
     });
   });

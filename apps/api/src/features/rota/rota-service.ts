@@ -3,7 +3,7 @@ import {
   emailStatusSchema,
   firstNameOf,
   formatDate,
-  formatEarlierShiftTimes,
+  formatPreviousShiftTimes,
   formatLocalDate,
   formatShiftTimes,
   type EmailStatus,
@@ -56,7 +56,7 @@ const shiftUpdateKind = { added: 'added', changed: 'changed', removed: 'removed'
 
 type ShiftUpdate =
   | { kind: typeof shiftUpdateKind.added | typeof shiftUpdateKind.removed; staffMemberId: string; times: ShiftTimes }
-  | { kind: typeof shiftUpdateKind.changed; staffMemberId: string; times: ShiftTimes; was: ShiftTimes };
+  | { kind: typeof shiftUpdateKind.changed; staffMemberId: string; times: ShiftTimes; previous: ShiftTimes };
 
 function updatesOf(shift: Shift): ShiftUpdate[] {
   const told = toldTimesOf(shift);
@@ -72,7 +72,7 @@ function updatesOf(shift: Shift): ShiftUpdate[] {
       { kind: added, staffMemberId, times: shift },
     ];
   }
-  return [{ kind: changed, staffMemberId, times: shift, was: told }];
+  return [{ kind: changed, staffMemberId, times: shift, previous: told }];
 }
 
 function describeUpdate(update: ShiftUpdate, timeZone: string) {
@@ -81,8 +81,10 @@ function describeUpdate(update: ShiftUpdate, timeZone: string) {
   if (update.kind !== shiftUpdateKind.changed) {
     return t(`shiftUpdatesEmail.${update.kind}`, { day, times });
   }
-  const was = formatEarlierShiftTimes(update.was, update.times.startsAt, { timeZone });
-  return t('shiftUpdatesEmail.changed', { day, times, was });
+  const previousTimes = formatPreviousShiftTimes(update.previous, update.times.startsAt, {
+    timeZone,
+  });
+  return t('shiftUpdatesEmail.changed', { day, times, previousTimes });
 }
 
 export function createRotaService({

@@ -1,13 +1,6 @@
-import {
-  formatLocalDate,
-  rotaSchema,
-  staffLinkEmailsResultSchema,
-  type StaffLinkEmailsResult,
-} from '@rota-ready/shared';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { formatLocalDate } from '@rota-ready/shared';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +13,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { refetchRota, rotaQuery, sendUpdatesPath } from '@/features/rota/rota-queries';
+import { useHasUnsentChanges } from '@/features/rota/rota-queries';
+import { useSendUpdates } from '@/features/rota/staff-link-email-mutations';
 import { StaffLinkEmailResults } from '@/features/rota/staff-link-email-results';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPost } from '@/lib/api';
 
 interface SendUpdatesDialogProps {
   venueId: string;
@@ -32,24 +24,11 @@ interface SendUpdatesDialogProps {
 
 export function SendUpdatesDialog({ venueId, weekStart }: SendUpdatesDialogProps) {
   const { t } = useTranslation();
-  const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
-  const hasUnsentChanges =
-    rota.status === rotaSchema.shape.status.enum.published &&
-    (rota.shifts.some(({ changed }) => changed) || rota.removedShifts.length > 0);
-  const queryClient = useQueryClient();
+  const hasUnsentChanges = useHasUnsentChanges(venueId, weekStart);
   const [open, setOpen] = useState(false);
-  const [result, setResult] = useState<StaffLinkEmailsResult>();
+  const sendUpdates = useSendUpdates(venueId, weekStart);
+  const result = sendUpdates.data;
   const date = formatLocalDate(weekStart, { withYear: true });
-  const sendUpdates = useMutation({
-    mutationFn: () => apiPost(sendUpdatesPath(venueId, weekStart), undefined, staffLinkEmailsResultSchema),
-    onSuccess: (sendUpdatesResult) => {
-      setResult(sendUpdatesResult);
-      refetchRota(queryClient, venueId, weekStart);
-    },
-    onError: (error) => {
-      toast.error(apiErrorMessage(t, error));
-    },
-  });
 
   function confirm(event: MouseEvent) {
     event.preventDefault();
@@ -58,7 +37,7 @@ export function SendUpdatesDialog({ venueId, weekStart }: SendUpdatesDialogProps
 
   function changeOpen(nextOpen: boolean) {
     setOpen(nextOpen);
-    if (nextOpen) setResult(undefined);
+    if (nextOpen) sendUpdates.reset();
   }
 
   if (!hasUnsentChanges && !open) return null;

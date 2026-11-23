@@ -234,7 +234,7 @@
       "invalidTitle": "This link isn't valid",
       "invalidDescription": "Ask your manager for a new link.",
       "tryAgain": "Try again",
-      "was": "was {{times}}",
+      "previousTimes": "was {{times}}",
       "changed": "Changed"
     }
   }

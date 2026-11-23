@@ -1,6 +1,6 @@
 import {
   formatDate,
-  formatEarlierShiftTimes,
+  formatPreviousShiftTimes,
   formatShiftTimes,
   type StaffLinkShift,
 } from '@rota-ready/shared';
@@ -29,9 +29,9 @@ export function UpcomingShifts({ token, shifts, timeZone }: UpcomingShiftsProps)
         const startsAt = new Date(shift.startsAt);
         const day = formatDate(startsAt, { timeZone });
         const times = formatShiftTimes(startsAt, new Date(shift.endsAt), { timeZone });
-        const was =
+        const previousTimes =
           shift.previous &&
-          formatEarlierShiftTimes(
+          formatPreviousShiftTimes(
             { startsAt: new Date(shift.previous.startsAt), endsAt: new Date(shift.previous.endsAt) },
             startsAt,
             { timeZone },
@@ -44,9 +44,9 @@ export function UpcomingShifts({ token, shifts, timeZone }: UpcomingShiftsProps)
                   <span className="font-medium">{day}</span>
                   <span className="tabular-nums">{times}</span>
                 </div>
-                {was && (
+                {previousTimes && (
                   <p className="text-right text-sm text-muted-foreground tabular-nums">
-                    {t('staffLink.page.was', { times: was })}
+                    {t('staffLink.page.previousTimes', { times: previousTimes })}
                   </p>
                 )}
                 <div className="flex flex-wrap items-center justify-between gap-2">

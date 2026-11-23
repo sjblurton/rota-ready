@@ -44,15 +44,15 @@ export function formatShiftTimes(
   return extraDays > 0 ? `${range} (+${extraDays})` : range;
 }
 
-export function formatEarlierShiftTimes(
-  earlier: { startsAt: Date; endsAt: Date },
-  laterStartsAt: Date,
+export function formatPreviousShiftTimes(
+  previous: { startsAt: Date; endsAt: Date },
+  currentStartsAt: Date,
   options: DateTimeFormatOptions,
 ): string {
-  const times = formatShiftTimes(earlier.startsAt, earlier.endsAt, options);
+  const times = formatShiftTimes(previous.startsAt, previous.endsAt, options);
   const sameDay =
-    localDateOf(earlier.startsAt, options.timeZone) === localDateOf(laterStartsAt, options.timeZone);
-  return sameDay ? times : `${formatDate(earlier.startsAt, options)}, ${times}`;
+    localDateOf(previous.startsAt, options.timeZone) === localDateOf(currentStartsAt, options.timeZone);
+  return sameDay ? times : `${formatDate(previous.startsAt, options)}, ${times}`;
 }
 
 export function formatLocalDate(localDate: string, { withYear = false } = {}): string {

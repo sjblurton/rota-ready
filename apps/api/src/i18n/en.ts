@@ -27,7 +27,7 @@ export const en = {
       "This link is just for you, so please don't share it.",
     ].join('\n'),
     added: '- {{day}}, {{times}}: new',
-    changed: '- {{day}}, {{times}}: was {{was}}',
+    changed: '- {{day}}, {{times}}: was {{previousTimes}}',
     removed: "- {{day}}, {{times}}: removed, so you don't need to work it",
   },
 };

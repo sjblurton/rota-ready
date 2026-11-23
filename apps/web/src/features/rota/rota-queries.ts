@@ -89,6 +89,14 @@ export function sendUpdatesPath(venueId: string, weekStart: string) {
   return `${rotaPath(venueId, weekStart)}/send-updates`;
 }
 
+export function useHasUnsentChanges(venueId: string, weekStart: string) {
+  const { data: rota } = useSuspenseQuery(rotaQuery(venueId, weekStart));
+  return (
+    rota.status === rotaSchema.shape.status.enum.published &&
+    (rota.shifts.some(({ changed }) => changed) || rota.removedShifts.length > 0)
+  );
+}
+
 export function markRotaPublished(queryClient: QueryClient, venueId: string, weekStart: string) {
   queryClient.setQueryData(rotaQuery(venueId, weekStart).queryKey, (rota) =>
     rota && { ...rota, status: 'published' as const },
