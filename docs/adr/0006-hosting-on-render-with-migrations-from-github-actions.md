@@ -28,6 +28,8 @@ On every pull request, `pnpm lint:migrations` checks the migrations the PR adds 
 
 When a statement has to break a rule on purpose, such as the final drop of expand-then-contract, put `-- squawk-ignore <rule>` on the line above that one statement, naming only the rules it needs. `squawk-ignore-file` isn't allowed. The PR description must link the earlier, already-deployed PR that stopped the app using what's being dropped or renamed.
 
+A linter only reads the SQL, so on pull requests that add or change a migration, CI also runs `pnpm test:migrations`: it checks out the base branch in a temporary folder, swaps in the PR's migrations folder, and runs the base branch's API tests against the result. That's the API still running in production while the new migrations apply, so a failing base test means the migration would break production for the length of the deploy. It catches schema changes squawk can't judge, such as a `squawk-ignore`d drop of a column the old API still reads. The tests run on an empty database, so it proves the old code works with the new schema, not with data a migration rewrote. A PR with no migration changes skips it in seconds. It adds about a minute to a PR that has migrations, and needs the local Supabase stack, like `pnpm test`.
+
 ## One origin, no CORS
 
 The static site rewrites `/api/*` to the API service, so the browser only ever talks to `https://rota-ready.onrender.com`, just as it talks to the Vite proxy in development. The API needs no CORS configuration and `VITE_API_URL` stays empty.
@@ -39,7 +41,6 @@ Both the CI migrations and the API use Supabase's **session pooler** connection 
 ## Considered Options
 
 - **Render pre-deploy command for migrations**: simpler, but paid only. Revisit if the API moves to a paid plan. It wouldn't remove the need for backwards-compatible migrations, since the old API keeps serving until the new one is healthy, so the linter stays either way.
-- **A backwards-compatibility test** (#96): run `main`'s API tests against the PR's migrations. It catches problems a linter can't see, at the cost of CI time. Planned as a follow-up.
 - **Migrations in their own PRs**: makes "add first" the default, but splits every feature in two, and the journey can't test a migration on its own. Rejected.
 - **Concurrent index builds**: once tables are large enough for an index build to matter, allow an unwrapped migration that contains only `CREATE INDEX CONCURRENTLY` or `DROP INDEX CONCURRENTLY`, with the concurrent rule on for it. Not needed yet.
 - **Running migrations when the API starts**: every instance would race to migrate, and a failed migration would take the API down instead of failing the deploy. Rejected.

@@ -15,6 +15,7 @@
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
     "lint:migrations": ".github/scripts/lint-migrations.sh",
+    "test:migrations": ".github/scripts/test-migrations.sh",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @rota-ready/api exec prisma generate && pnpm -r test"
   },
