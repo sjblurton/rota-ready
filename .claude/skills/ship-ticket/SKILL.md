@@ -71,14 +71,14 @@ Done when every finding is either fixed or listed with a reason it stays.
 - **Check every claim in the body against the code or a command's output before publishing it.** Edit the body afterwards if one turns out wrong.
 - **Name any conflict with other open PRs** that touch the same files (`gh pr list`, then `gh pr diff <n> --name-only`). Say which PR needs the follow-up edit.
 
-- **Wait for CI** with `gh pr checks <n> --watch`. When CI fails, fix the cause and push again. When it passes, check that the CI report comment is on the PR, and point to it in your report.
+- **Wait for CI** with `gh pr checks <n> --watch` until it passes, so you know the build, tests and journey work. When CI fails, fix the cause and push again.
 
-Done when the PR is open, CI passes, the CI report comment is posted, and the body contains only claims you checked.
+Done when the PR is open, CI passes, and the body contains only claims you checked.
 
 ## 7. Hand back
 
 Remove the worktree (`git worktree remove <path>`) so the user can check out the branch. Report:
-- the PR link, and the CI report comment
+- the PR link
 - what was built
 - what the review found, and what was fixed versus left
 - anything not run, and why
