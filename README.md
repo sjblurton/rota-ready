@@ -42,7 +42,7 @@ flowchart LR
 - **Integration tests hit a real Postgres database.** No mocked ORM, and no transaction rollback hiding bugs that only show up when a transaction actually commits.
 - **Nothing fakes the API.** No MSW or mocked API client in the web app. The only test doubles sit at outside boundaries (email outbox, clock, JWT signing key).
 - **Cross-venue 404 tests.** For every venue-scoped route, a member of venue A asks for venue B's data and must get a 404.
-- **A Playwright journey that grows with each slice.** By the end of the MVP, the whole owner-and-staff journey runs in CI against the real stack.
+- **A Playwright journey that grew with each slice.** The whole owner-and-staff journey runs in CI against the real stack.
 - **Screenshots of every journey step.** CI attaches them to each PR as a `journey-screenshots` download, so a reviewer can see each screen without running the app.
 
 ### Lessons from the first attempt
@@ -52,7 +52,7 @@ The first version had 100% test coverage and still had serious bugs, because the
 This repo is set up so that bug can't hide:
 
 - **Access is checked in one place.** Every venue route lives under `/api/venues/:venueId/...`, behind a single membership check that returns 404 to anyone who isn't a member ([ADR-0001](docs/adr/0001-venue-membership-and-404-scoping.md)).
-- **Tests run the real code.** The API is built by a single `createApp()` factory that tests and production share, with no `NODE_ENV` switches. As the database, clock, email and auth arrive in later tickets, they're passed into `createApp` as dependencies (ADR-0004), so tests use the same auth and membership checks as production.
+- **Tests run the real code.** The API is built by a single `createApp()` factory that tests and production share, with no `NODE_ENV` switches. The database, clock, email and auth are passed into `createApp` as dependencies (ADR-0004), so tests use the same auth and membership checks as production.
 - **The rule is enforced in review.** A cross-venue test is required for every venue route, and the PR template checks for it.
 
 ### Skills used
@@ -177,7 +177,7 @@ The Supabase project has the Data API and "Automatically expose new tables" turn
 
 ### Roadmap
 
-MVP, in order. Each ticket ends with a check you can click in the browser:
+The MVP is complete. Its tickets, in order, each ending with a check you can click in the browser:
 
 - [x] [#2](https://github.com/sjblurton/rota-ready/issues/2) App shell: monorepo, web app, API health check, CI
 - [x] [#3](https://github.com/sjblurton/rota-ready/issues/3) Database: Prisma, local Supabase Postgres, integration test harness
@@ -192,11 +192,11 @@ MVP, in order. Each ticket ends with a check you can click in the browser:
 - [x] [#11](https://github.com/sjblurton/rota-ready/issues/11) Publish emails staff links
 - [x] [#12](https://github.com/sjblurton/rota-ready/issues/12) Confirm and decline
 - [x] [#13](https://github.com/sjblurton/rota-ready/issues/13) Changes after publishing
-- [ ] [#14](https://github.com/sjblurton/rota-ready/issues/14) Send updates
+- [x] [#14](https://github.com/sjblurton/rota-ready/issues/14) Send updates
 
 Stretch goals:
 
-- [ ] [#15](https://github.com/sjblurton/rota-ready/issues/15) Copy last week
+- [x] [#15](https://github.com/sjblurton/rota-ready/issues/15) Copy last week
 - [ ] Later: SMS links, open (unassigned) shifts, managers and multiple venues, shift swaps, availability and time off
 
 ---

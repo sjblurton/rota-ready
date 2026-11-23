@@ -160,8 +160,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/copy-last-week', () => {
         response = await app.request('POST', copyPath(ownVenue), { as: OWNER });
       });
 
-      it('responds with 409 and the rota_not_empty code', async () => {
-        expect([response.status, await response.json()]).toEqual([409, { code: 'rota_not_empty' }]);
+      it('responds with 409 and the rota_has_shifts code', async () => {
+        expect([response.status, await response.json()]).toEqual([409, { code: 'rota_has_shifts' }]);
       });
 
       it('copies no Shifts', async () => {

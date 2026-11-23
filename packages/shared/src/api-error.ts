@@ -10,7 +10,7 @@ export const apiErrorCodeSchema = z.enum([
   'shift_overlaps',
   'rota_already_published',
   'rota_not_published',
-  'rota_not_empty',
+  'rota_has_shifts',
   'shift_started',
   'staff_member_has_upcoming_shifts',
   'internal_error',
