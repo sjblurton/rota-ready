@@ -30,3 +30,11 @@ ALTER TABLE "shift_removals" ADD CONSTRAINT "shift_removals_shift_id_fkey" FOREI
 -- AddForeignKey
 ALTER TABLE "shift_removals" ADD CONSTRAINT "shift_removals_staff_member_id_fkey" FOREIGN KEY ("staff_member_id") REFERENCES "staff_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddCheckConstraint
+ALTER TABLE "shifts" ADD CONSTRAINT "shifts_told_snapshot_complete" CHECK (num_nulls("told_staff_member_id", "told_starts_at", "told_ends_at") IN (0, 3));
+
+-- AddCheckConstraint
+ALTER TABLE "shifts" ADD CONSTRAINT "shifts_previous_values_complete" CHECK (num_nulls("previous_staff_member_id", "previous_starts_at", "previous_ends_at") IN (0, 3));
+
+-- AddCheckConstraint
+ALTER TABLE "shift_removals" ADD CONSTRAINT "shift_removals_times" CHECK ("ends_at" > "starts_at");
