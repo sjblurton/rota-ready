@@ -132,7 +132,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
     });
   });
 
-  describe('when Sam, Jo, Alex and Kim were told about their Shifts', () => {
+  describe('when Sam, Jo, Alex and Kim were notified about their Shifts', () => {
     let sam: { id: string };
     let jo: { id: string };
     let alex: { id: string };
@@ -270,7 +270,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
           });
         });
 
-        it("keeps the times Sam was told before as the Monday Shift's previous times", async () => {
+        it("keeps the times Sam was notified of before as the Monday Shift's previous times", async () => {
           expect(
             await app.db.shift.findUniqueOrThrow({
               where: { id: samsMonday.id },

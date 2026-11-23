@@ -120,11 +120,11 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
   });
 
   describe('when the Owner deletes a Confirmed Shift that has been published', () => {
-    let told: { id: string };
+    let notified: { id: string };
 
     beforeEach(async () => {
       const draft = await createRotaFor(app.db, ownVenue, '2026-11-23');
-      told = await createShift(app.db, draft, sam, {
+      notified = await createShift(app.db, draft, sam, {
         startsAt: '2026-11-23T09:00:00.000Z',
         endsAt: '2026-11-23T17:00:00.000Z',
       });
@@ -132,11 +132,11 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         as: OWNER,
       });
       await app.db.shift.update({
-        where: { id: told.id },
+        where: { id: notified.id },
         data: { response: 'confirmed', respondedAt: new Date('2026-11-20T10:00:00.000Z') },
       });
       app.setClock('2026-11-21T08:00:00.000Z');
-      response = await app.request('DELETE', shiftPath(ownVenue, '2026-11-23', told), {
+      response = await app.request('DELETE', shiftPath(ownVenue, '2026-11-23', notified), {
         as: OWNER,
       });
     });
@@ -147,7 +147,7 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
 
     it('keeps the Shift, marked as deleted then, so Sam can see it was removed', async () => {
       expect(
-        await app.db.shift.findUnique({ where: { id: told.id }, select: { deletedAt: true } }),
+        await app.db.shift.findUnique({ where: { id: notified.id }, select: { deletedAt: true } }),
       ).toEqual({ deletedAt: new Date('2026-11-21T08:00:00.000Z') });
     });
 
@@ -166,7 +166,7 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         expect(await response.json()).toMatchObject({
           removedShifts: [
             {
-              id: told.id,
+              id: notified.id,
               staffMemberId: sam.id,
               startsAt: '2026-11-23T09:00:00.000Z',
               endsAt: '2026-11-23T17:00:00.000Z',
@@ -178,7 +178,7 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
 
     describe('when the Owner deletes it again', () => {
       beforeEach(async () => {
-        response = await app.request('DELETE', shiftPath(ownVenue, '2026-11-23', told), {
+        response = await app.request('DELETE', shiftPath(ownVenue, '2026-11-23', notified), {
           as: OWNER,
         });
       });
@@ -190,7 +190,7 @@ describe('DELETE /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
 
     describe('when the Owner tries to edit it', () => {
       beforeEach(async () => {
-        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', told), {
+        response = await app.request('PATCH', shiftPath(ownVenue, '2026-11-23', notified), {
           as: OWNER,
           body: {
             staffMemberId: sam.id,

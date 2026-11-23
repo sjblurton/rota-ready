@@ -44,10 +44,10 @@ export function findStaffMembers(db: DbClient, ids: string[]) {
   return db.staffMember.findMany({ where: { id: { in: ids } } });
 }
 
-export function markShiftsOfRotaTold(db: DbClient, rotaId: string) {
+export function markShiftsOfRotaNotified(db: DbClient, rotaId: string) {
   return db.$executeRaw`
     UPDATE shifts
-    SET told_staff_member_id = staff_member_id, told_starts_at = starts_at, told_ends_at = ends_at
+    SET notified_staff_member_id = staff_member_id, notified_starts_at = starts_at, notified_ends_at = ends_at
     WHERE rota_id = ${rotaId}::uuid
   `;
 }

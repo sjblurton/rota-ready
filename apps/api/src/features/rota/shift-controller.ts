@@ -5,7 +5,7 @@ import type { Clock } from '#src/lib/clock.js';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from '#src/features/venues/require-venue-member.js';
 import type { RotaRequestHandler } from './rota-controller.js';
-import { isChangedShift, toldTimesOf, type ShiftService } from './shift-service.js';
+import { isChangedShift, notifiedTimesOf, type ShiftService } from './shift-service.js';
 
 type ShiftRequestHandler = VenueRequestHandler<{ weekStart: string; shiftId: string }>;
 
@@ -36,12 +36,12 @@ export function toShift(shift: Shift, rotaStatus: RotaStatus, now: Date) {
 }
 
 export function toRemovedShift(shift: Shift) {
-  const told = toldTimesOf(shift);
+  const notified = notifiedTimesOf(shift);
   return {
     id: shift.id,
-    staffMemberId: told?.staffMemberId,
-    startsAt: told?.startsAt.toISOString(),
-    endsAt: told?.endsAt.toISOString(),
+    staffMemberId: notified?.staffMemberId,
+    startsAt: notified?.startsAt.toISOString(),
+    endsAt: notified?.endsAt.toISOString(),
   };
 }
 

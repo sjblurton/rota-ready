@@ -36,20 +36,29 @@ function detailsChanged(before: ShiftTimes, after: ShiftTimes) {
   );
 }
 
-export function toldTimesOf({ toldStaffMemberId, toldStartsAt, toldEndsAt }: Shift): ShiftTimes | null {
-  if (toldStaffMemberId === null || toldStartsAt === null || toldEndsAt === null) return null;
-  return { staffMemberId: toldStaffMemberId, startsAt: toldStartsAt, endsAt: toldEndsAt };
+export function notifiedTimesOf({
+  notifiedStaffMemberId,
+  notifiedStartsAt,
+  notifiedEndsAt,
+}: Shift): ShiftTimes | null {
+  if (notifiedStaffMemberId === null || notifiedStartsAt === null || notifiedEndsAt === null) {
+    return null;
+  }
+  return { staffMemberId: notifiedStaffMemberId, startsAt: notifiedStartsAt, endsAt: notifiedEndsAt };
 }
 
 export function isChangedShift(shift: Shift, rotaStatus: RotaStatus) {
   if (rotaStatus !== RotaStatus.published) return false;
-  const told = toldTimesOf(shift);
-  return told === null || detailsChanged(told, shift);
+  const notified = notifiedTimesOf(shift);
+  return notified === null || detailsChanged(notified, shift);
 }
 
 export function isRemovedShift(shift: Shift) {
-  const told = toldTimesOf(shift);
-  return told !== null && (shift.deletedAt !== null || told.staffMemberId !== shift.staffMemberId);
+  const notified = notifiedTimesOf(shift);
+  return (
+    notified !== null &&
+    (shift.deletedAt !== null || notified.staffMemberId !== shift.staffMemberId)
+  );
 }
 
 export function isChangedOrRemovedShift(shift: Shift, rotaStatus: RotaStatus) {
@@ -61,10 +70,11 @@ export function isChangedPublishedShift(shift: Shift) {
 }
 
 export function previousTimesShownWith(shift: Shift) {
-  const { staffMemberId, toldStaffMemberId, previousStaffMemberId, previousStartsAt, previousEndsAt } =
+  const { staffMemberId, notifiedStaffMemberId, previousStaffMemberId, previousStartsAt, previousEndsAt } =
     shift;
-  const toldSinceSent = toldStaffMemberId === staffMemberId && previousStaffMemberId === staffMemberId;
-  if (!toldSinceSent || !previousStartsAt || !previousEndsAt) return null;
+  const notifiedSinceSent =
+    notifiedStaffMemberId === staffMemberId && previousStaffMemberId === staffMemberId;
+  if (!notifiedSinceSent || !previousStartsAt || !previousEndsAt) return null;
   if (isChangedPublishedShift(shift)) return null;
   return { startsAt: previousStartsAt, endsAt: previousEndsAt };
 }
@@ -162,7 +172,7 @@ export function createShiftService({ db, clock }: { db: Db; clock: Clock }) {
         await lockRotaUntilCommit(tx, venueId, weekStart);
         const shift = await findShiftInWeek(tx, { id: shiftId, venueId, weekStart });
         if (!shift) return refuse(apiErrorCode.not_found);
-        if (toldTimesOf(shift)) await softDeleteShift(tx, shift.id, clock.now());
+        if (notifiedTimesOf(shift)) await softDeleteShift(tx, shift.id, clock.now());
         else await hardDeleteShift(tx, shift.id);
         return { ok: true as const };
       });

@@ -179,7 +179,7 @@ describe('GET /api/staff-links/:token', () => {
     });
   });
 
-  describe('when Sam was told about Shifts on Thursday and Friday, and it is Wednesday at noon', () => {
+  describe('when Sam was notified about Shifts on Thursday and Friday, and it is Wednesday at noon', () => {
     const THURSDAY_9_TO_5 = {
       startsAt: '2026-11-19T09:00:00.000Z',
       endsAt: '2026-11-19T17:00:00.000Z',
@@ -238,7 +238,7 @@ describe('GET /api/staff-links/:token', () => {
         });
       });
 
-      it("shows it to Sam as a Removed Shift, with the times Sam was told", async () => {
+      it("shows it to Sam as a Removed Shift, with the times Sam was notified of", async () => {
         expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
           { id: thursday.id, ...THURSDAY_9_TO_5 },
         ]);
@@ -261,13 +261,13 @@ describe('GET /api/staff-links/:token', () => {
       describe('when the Owner sends updates', () => {
         beforeEach(sendUpdates);
 
-        it('still shows it to Sam as a Removed Shift, with the times Sam was told', async () => {
+        it('still shows it to Sam as a Removed Shift, with the times Sam was notified of', async () => {
           expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
             { id: thursday.id, ...THURSDAY_9_TO_5 },
           ]);
         });
 
-        it('shows it to Jo with no earlier times, since Jo was never told them', async () => {
+        it('shows it to Jo with no earlier times, since Jo was never notified of them', async () => {
           expect(await previousOf(jo, thursday)).toBeNull();
         });
 
@@ -284,7 +284,7 @@ describe('GET /api/staff-links/:token', () => {
             await sendUpdates();
           });
 
-          it('still shows it to Sam as a Removed Shift, with the times Sam was told', async () => {
+          it('still shows it to Sam as a Removed Shift, with the times Sam was notified of', async () => {
             expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
               { id: thursday.id, ...THURSDAY_9_TO_5 },
             ]);
@@ -361,7 +361,7 @@ describe('GET /api/staff-links/:token', () => {
       describe('when the Owner sends updates', () => {
         beforeEach(sendUpdates);
 
-        it('shows Sam the times Sam was told before', async () => {
+        it('shows Sam the times Sam was notified of before', async () => {
           expect(await previousOf(sam, thursday)).toEqual(THURSDAY_9_TO_5);
         });
 

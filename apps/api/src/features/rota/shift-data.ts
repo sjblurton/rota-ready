@@ -21,43 +21,52 @@ export function findShiftsOfRota(db: DbClient, rotaId: string) {
   });
 }
 
-export function findToldShiftsOfRota(db: DbClient, rotaId: string) {
+export function findNotifiedShiftsOfRota(db: DbClient, rotaId: string) {
   return db.shift.findMany({
-    where: { rotaId, toldStaffMemberId: { not: null } },
-    orderBy: [{ toldStartsAt: 'asc' }, { createdAt: 'asc' }],
+    where: { rotaId, notifiedStaffMemberId: { not: null } },
+    orderBy: [{ notifiedStartsAt: 'asc' }, { createdAt: 'asc' }],
   });
 }
 
-export function findLiveAndToldShiftsOfRota(db: DbClient, rotaId: string) {
+export function findLiveAndNotifiedShiftsOfRota(db: DbClient, rotaId: string) {
   return db.shift.findMany({
-    where: { rotaId, OR: [{ deletedAt: null }, { toldStaffMemberId: { not: null } }] },
+    where: { rotaId, OR: [{ deletedAt: null }, { notifiedStaffMemberId: { not: null } }] },
     orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
   });
 }
 
-export async function moveToldSnapshotForward(db: DbClient, shift: Shift) {
-  const { toldStaffMemberId, toldStartsAt, toldEndsAt } = shift;
-  const removedFromToldStaffMember =
-    shift.deletedAt !== null || toldStaffMemberId !== shift.staffMemberId;
-  if (toldStaffMemberId && toldStartsAt && toldEndsAt && removedFromToldStaffMember) {
-    const removal = { startsAt: toldStartsAt, endsAt: toldEndsAt };
+export async function moveNotifiedSnapshotForward(db: DbClient, shift: Shift) {
+  const { notifiedStaffMemberId, notifiedStartsAt, notifiedEndsAt } = shift;
+  const removedFromNotifiedStaffMember =
+    shift.deletedAt !== null || notifiedStaffMemberId !== shift.staffMemberId;
+  if (
+    notifiedStaffMemberId &&
+    notifiedStartsAt &&
+    notifiedEndsAt &&
+    removedFromNotifiedStaffMember
+  ) {
+    const removal = { startsAt: notifiedStartsAt, endsAt: notifiedEndsAt };
     await db.shiftRemoval.upsert({
-      where: { shiftId_staffMemberId: { shiftId: shift.id, staffMemberId: toldStaffMemberId } },
-      create: { shiftId: shift.id, staffMemberId: toldStaffMemberId, ...removal },
+      where: { shiftId_staffMemberId: { shiftId: shift.id, staffMemberId: notifiedStaffMemberId } },
+      create: { shiftId: shift.id, staffMemberId: notifiedStaffMemberId, ...removal },
       update: removal,
     });
   }
-  const told =
+  const notified =
     shift.deletedAt === null
-      ? { toldStaffMemberId: shift.staffMemberId, toldStartsAt: shift.startsAt, toldEndsAt: shift.endsAt }
-      : { toldStaffMemberId: null, toldStartsAt: null, toldEndsAt: null };
+      ? {
+          notifiedStaffMemberId: shift.staffMemberId,
+          notifiedStartsAt: shift.startsAt,
+          notifiedEndsAt: shift.endsAt,
+        }
+      : { notifiedStaffMemberId: null, notifiedStartsAt: null, notifiedEndsAt: null };
   await db.shift.update({
     where: { id: shift.id },
     data: {
-      previousStaffMemberId: toldStaffMemberId,
-      previousStartsAt: toldStartsAt,
-      previousEndsAt: toldEndsAt,
-      ...told,
+      previousStaffMemberId: notifiedStaffMemberId,
+      previousStartsAt: notifiedStartsAt,
+      previousEndsAt: notifiedEndsAt,
+      ...notified,
     },
   });
 }

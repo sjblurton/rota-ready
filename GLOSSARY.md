@@ -87,13 +87,13 @@ How a Shift shows once it has started while its Shift Response is still Pending.
 _Avoid_: Missed, expired, no-show (it says nothing about whether they turned up)
 
 **Changed Shift**:
-A Shift in a Published Rota whose date, time or Staff Member has been changed since the affected staff were last told. A change of this kind resets the Shift Response to Pending; changing notes or Role does not.
+A Shift in a Published Rota whose date, time or Staff Member has been changed since the affected staff were last notified. A change of this kind resets the Shift Response to Pending; changing notes or Role does not.
 _Avoid_: Edited shift, dirty shift
 
 **Removed Shift**:
-What a Staff Member sees when a Shift they were told about is deleted or reassigned to someone else.
+What a Staff Member sees when a Shift they were notified about is deleted or reassigned to someone else.
 _Avoid_: Cancelled shift
 
 **Send Updates**:
-Emailing only the Staff Members affected by Changed Shifts and Removed Shifts since they were last told.
+Emailing only the Staff Members affected by Changed Shifts and Removed Shifts since they were last notified.
 _Avoid_: Republish, notify all
