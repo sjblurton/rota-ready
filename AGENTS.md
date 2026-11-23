@@ -29,7 +29,7 @@ SET LOCAL lock_timeout = '5s';
 COMMIT;
 ```
 
-`pnpm lint:migrations` checks the wrapper and lints new migrations with squawk. Write changes the running API can live with: add first, and remove in a later deploy. When a statement must break a rule on purpose, put `-- squawk-ignore <rule>` above that statement only, and link the earlier deployed PR in the PR description.
+`pnpm lint:migrations` checks the wrapper and lints new migrations with squawk. `pnpm test:migrations` runs `main`'s API tests against your migrations, to prove the running API still works with them. Write changes the running API can live with: add first, and remove in a later deploy. When a statement must break a rule on purpose, put `-- squawk-ignore <rule>` above that statement only, and link the earlier deployed PR in the PR description.
 
 ## i18n
 

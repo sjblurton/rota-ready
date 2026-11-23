@@ -12,5 +12,11 @@ export default defineConfig(({ mode }) => ({
     fileParallelism: false,
     maxWorkers: 1,
     hookTimeout: 30_000,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/generated/**'],
+      reporter: ['text-summary', 'json-summary'],
+    },
   },
 }));
