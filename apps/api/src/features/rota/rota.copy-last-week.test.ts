@@ -8,7 +8,7 @@ import {
   createUser,
   createVenueFor,
 } from '#test/seed.js';
-import { startTestApp, type TestApp } from '#test/test-app.js';
+import { startTestApp, type StaffMemberLock, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 const OTHER_OWNER = {
@@ -314,6 +314,84 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/copy-last-week', () => {
 
     it('reports one Shift skipped', async () => {
       expect(((await response.json()) as CopyResult).skippedShifts).toBe(1);
+    });
+  });
+
+  describe("when the Owner copies last Week while another request holds Sam's row lock", () => {
+    let jo: { id: string };
+    let thisWeek: { id: string; venueId: string };
+    let lock: StaffMemberLock;
+    let pending: Promise<Response>;
+
+    beforeEach(async () => {
+      jo = await createActiveStaffMember(app.db, ownVenue, JO);
+      const lastWeek = await createRotaFor(app.db, ownVenue, LAST_WEEK);
+      await createShift(app.db, lastWeek, sam, LAST_MONDAY_9_TO_5);
+      await createShift(app.db, lastWeek, jo, {
+        startsAt: '2026-11-17T18:00:00.000Z',
+        endsAt: '2026-11-17T23:00:00.000Z',
+      });
+      thisWeek = await createRotaFor(app.db, ownVenue, THIS_WEEK);
+      lock = await app.holdStaffMemberLock(sam.id);
+      pending = app.request('POST', copyPath(ownVenue), { as: OWNER });
+      await lock.waitForBlockedRequest();
+    });
+
+    describe('when that request archives Sam and commits', () => {
+      beforeEach(async () => {
+        await lock.commitAfter((tx) =>
+          tx.staffMember.update({
+            where: { id: sam.id },
+            data: { archivedAt: new Date('2026-11-20T09:00:00.000Z'), email: null },
+          }),
+        );
+        response = await pending;
+      });
+
+      it("responds with only Jo's Shift", async () => {
+        const { rota } = (await response.json()) as CopyResult;
+        expect(rota.shifts.map(({ staffMemberId }) => staffMemberId)).toEqual([jo.id]);
+      });
+
+      it('reports one Shift skipped', async () => {
+        expect(((await response.json()) as CopyResult).skippedShifts).toBe(1);
+      });
+
+      it('stores no Shift for Sam this Week', async () => {
+        expect(
+          await app.db.shift.count({ where: { staffMemberId: sam.id, ...inWeek(THIS_WEEK) } }),
+        ).toBe(0);
+      });
+    });
+
+    describe('when that request adds a Shift for Sam overlapping the Monday copy and commits', () => {
+      beforeEach(async () => {
+        await lock.commitAfter((tx) =>
+          tx.shift.create({
+            data: {
+              venueId: thisWeek.venueId,
+              rotaId: thisWeek.id,
+              staffMemberId: sam.id,
+              startsAt: new Date('2026-11-23T12:00:00.000Z'),
+              endsAt: new Date('2026-11-23T20:00:00.000Z'),
+            },
+          }),
+        );
+        response = await pending;
+      });
+
+      it('reports one Shift skipped', async () => {
+        expect(((await response.json()) as CopyResult).skippedShifts).toBe(1);
+      });
+
+      it("stores only the other request's Shift for Sam this Week", async () => {
+        expect(
+          await app.db.shift.findMany({
+            where: { staffMemberId: sam.id, ...inWeek(THIS_WEEK) },
+            select: { startsAt: true },
+          }),
+        ).toEqual([{ startsAt: new Date('2026-11-23T12:00:00.000Z') }]);
+      });
     });
   });
 
