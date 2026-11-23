@@ -36,6 +36,10 @@ export function findActiveStaffMembersOnRota(db: DbClient, rotaId: string) {
   });
 }
 
+export function findStaffMembers(db: DbClient, ids: string[]) {
+  return db.staffMember.findMany({ where: { id: { in: ids } } });
+}
+
 export function markShiftsOfRotaTold(db: DbClient, rotaId: string) {
   return db.$executeRaw`
     UPDATE shifts

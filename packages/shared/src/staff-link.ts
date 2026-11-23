@@ -10,7 +10,9 @@ export const staffLinkSchema = z.object({
 
 export type StaffLink = z.infer<typeof staffLinkSchema>;
 
-export const staffLinkShiftSchema = shiftSchema.omit({ staffMemberId: true, changed: true });
+export const staffLinkShiftSchema = shiftSchema.omit({ staffMemberId: true }).extend({
+  previous: shiftSchema.pick({ startsAt: true, endsAt: true }).nullable(),
+});
 
 export type StaffLinkShift = z.infer<typeof staffLinkShiftSchema>;
 

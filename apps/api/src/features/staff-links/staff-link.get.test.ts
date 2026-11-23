@@ -205,9 +205,20 @@ describe('GET /api/staff-links/:token', () => {
       const { token: theirToken } = (await link.json()) as { token: string };
       const page = await app.request('GET', `/api/staff-links/${theirToken}`);
       return (await page.json()) as {
-        shifts: { id: string; response: string }[];
+        shifts: { id: string; response: string; changed: boolean; previous: object | null }[];
         removedShifts: { id: string }[];
       };
+    }
+
+    async function sendUpdates() {
+      await app.request('POST', `/api/venues/${venue.id}/rotas/2026-11-16/send-updates`, {
+        as: OWNER,
+      });
+    }
+
+    async function previousOf(staffMember: { id: string }, shift: { id: string }) {
+      const { shifts } = await staffLinkPageOf(staffMember);
+      return shifts.find(({ id }) => id === shift.id)?.previous;
     }
 
     beforeEach(async () => {
@@ -247,6 +258,67 @@ describe('GET /api/staff-links/:token', () => {
         expect((await staffLinkPageOf(jo)).removedShifts).toEqual([]);
       });
 
+      describe('when the Owner sends updates', () => {
+        beforeEach(sendUpdates);
+
+        it('still shows it to Sam as a Removed Shift, with the times Sam was told', async () => {
+          expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
+            { id: thursday.id, ...THURSDAY_9_TO_5 },
+          ]);
+        });
+
+        it('shows it to Jo with no earlier times, since Jo was never told them', async () => {
+          expect(await previousOf(jo, thursday)).toBeNull();
+        });
+
+        describe('when the Owner moves it an hour later for Jo and sends another update', () => {
+          beforeEach(async () => {
+            await app.request('PATCH', shiftPath(thursday), {
+              as: OWNER,
+              body: {
+                staffMemberId: jo.id,
+                startsAt: '2026-11-19T10:00:00.000Z',
+                endsAt: '2026-11-19T18:00:00.000Z',
+              },
+            });
+            await sendUpdates();
+          });
+
+          it('still shows it to Sam as a Removed Shift, with the times Sam was told', async () => {
+            expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
+              { id: thursday.id, ...THURSDAY_9_TO_5 },
+            ]);
+          });
+        });
+
+        describe('when the Owner deletes it and sends another update', () => {
+          beforeEach(async () => {
+            await app.request('DELETE', shiftPath(thursday), { as: OWNER });
+            await sendUpdates();
+          });
+
+          it('shows it to both Sam and Jo as a Removed Shift', async () => {
+            expect([
+              (await staffLinkPageOf(sam)).removedShifts,
+              (await staffLinkPageOf(jo)).removedShifts,
+            ]).toEqual([
+              [{ id: thursday.id, ...THURSDAY_9_TO_5 }],
+              [{ id: thursday.id, ...THURSDAY_9_TO_5 }],
+            ]);
+          });
+        });
+
+        describe('when the clock reaches the time the Thursday Shift starts', () => {
+          beforeEach(() => {
+            app.setClock(THURSDAY_9_TO_5.startsAt);
+          });
+
+          it('no longer shows Sam the Removed Shift', async () => {
+            expect((await staffLinkPageOf(sam)).removedShifts).toEqual([]);
+          });
+        });
+      });
+
       describe('when the Owner gives it back to Sam', () => {
         beforeEach(async () => {
           await app.request('PATCH', shiftPath(thursday), {
@@ -276,6 +348,59 @@ describe('GET /api/staff-links/:token', () => {
       it('shows Sam no Removed Shifts', async () => {
         expect((await staffLinkPageOf(sam)).removedShifts).toEqual([]);
       });
+
+      it('shows Sam no earlier times before the update is sent', async () => {
+        expect(await previousOf(sam, thursday)).toBeNull();
+      });
+
+      it('marks it Changed for Sam before the update is sent', async () => {
+        const { shifts } = await staffLinkPageOf(sam);
+        expect(shifts.find(({ id }) => id === thursday.id)?.changed).toBe(true);
+      });
+
+      describe('when the Owner sends updates', () => {
+        beforeEach(sendUpdates);
+
+        it('shows Sam the times Sam was told before', async () => {
+          expect(await previousOf(sam, thursday)).toEqual(THURSDAY_9_TO_5);
+        });
+
+        it('no longer marks it Changed for Sam', async () => {
+          const { shifts } = await staffLinkPageOf(sam);
+          expect(shifts.find(({ id }) => id === thursday.id)?.changed).toBe(false);
+        });
+
+        describe('when Sam Confirms it', () => {
+          beforeEach(async () => {
+            const link = await app.request('GET', staffLinkPath(), { as: OWNER });
+            const { token: samsToken } = (await link.json()) as { token: string };
+            await app.request('PUT', `/api/staff-links/${samsToken}/shifts/${thursday.id}/response`, {
+              body: { response: 'confirmed' },
+            });
+          });
+
+          it('no longer shows Sam the earlier times', async () => {
+            expect(await previousOf(sam, thursday)).toBeNull();
+          });
+        });
+
+        describe('when the Owner moves it again before sending another update', () => {
+          beforeEach(async () => {
+            await app.request('PATCH', shiftPath(thursday), {
+              as: OWNER,
+              body: {
+                staffMemberId: sam.id,
+                startsAt: '2026-11-19T11:00:00.000Z',
+                endsAt: '2026-11-19T19:00:00.000Z',
+              },
+            });
+          });
+
+          it('shows Sam no earlier times until that update is sent', async () => {
+            expect(await previousOf(sam, thursday)).toBeNull();
+          });
+        });
+      });
     });
 
     describe('when the Owner deletes the Friday Shift', () => {
@@ -291,6 +416,26 @@ describe('GET /api/staff-links/:token', () => {
 
       it("leaves it out of Sam's upcoming Shifts", async () => {
         expect((await staffLinkPageOf(sam)).shifts.map(({ id }) => id)).toEqual([thursday.id]);
+      });
+
+      describe('when the Owner sends updates', () => {
+        beforeEach(sendUpdates);
+
+        it('still shows it to Sam as a Removed Shift', async () => {
+          expect((await staffLinkPageOf(sam)).removedShifts).toEqual([
+            { id: friday.id, ...FRIDAY_6_TO_11 },
+          ]);
+        });
+
+        describe('when the clock reaches the time the Friday Shift would have started', () => {
+          beforeEach(() => {
+            app.setClock(FRIDAY_6_TO_11.startsAt);
+          });
+
+          it('no longer shows Sam the Removed Shift', async () => {
+            expect((await staffLinkPageOf(sam)).removedShifts).toEqual([]);
+          });
+        });
       });
 
       describe('when the clock reaches the time the Friday Shift would have started', () => {

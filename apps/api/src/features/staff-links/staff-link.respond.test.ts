@@ -109,6 +109,8 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
           response: 'confirmed',
           declineReason: null,
           started: false,
+          changed: true,
+          previous: null,
         },
       ]);
     });
@@ -159,6 +161,8 @@ describe('PUT /api/staff-links/:token/shifts/:shiftId/response', () => {
           response: 'declined',
           declineReason: 'Dentist appointment',
           started: false,
+          changed: true,
+          previous: null,
         },
       ]);
     });

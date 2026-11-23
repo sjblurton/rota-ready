@@ -11,18 +11,34 @@ import { z } from 'zod';
 import type { Shift } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
-import { shiftFields, toRemovedShift } from '#src/features/rota/shift-controller.js';
+import { shiftFields } from '#src/features/rota/shift-controller.js';
+import type { ShiftTimes } from '#src/features/rota/shift-data.js';
+import {
+  isChangedPublishedShift,
+  previousTimesShownWith,
+} from '#src/features/rota/shift-service.js';
 import type { StaffLinkService } from './staff-link-service.js';
 
 const shiftIdSchema = z.uuid();
 
+type Times = Omit<ShiftTimes, 'staffMemberId'>;
+
+function toIsoTimes({ startsAt, endsAt }: Times) {
+  return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
+
 export function staffLinkController(staffLinks: StaffLinkService, clock: Clock) {
   function toStaffLinkShift(shift: Shift) {
-    return staffLinkShiftSchema.parse(shiftFields(shift, clock.now()));
+    const previous = previousTimesShownWith(shift);
+    return staffLinkShiftSchema.parse({
+      ...shiftFields(shift, clock.now()),
+      changed: isChangedPublishedShift(shift),
+      previous: previous && toIsoTimes(previous),
+    });
   }
 
-  function toStaffLinkRemovedShift(shift: Shift) {
-    return removedShiftSchema.parse(toRemovedShift(shift));
+  function toStaffLinkRemovedShift({ id, ...times }: Times & { id: string }) {
+    return removedShiftSchema.parse({ id, ...toIsoTimes(times) });
   }
 
   return {

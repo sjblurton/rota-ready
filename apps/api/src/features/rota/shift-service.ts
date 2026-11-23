@@ -52,6 +52,23 @@ export function isRemovedShift(shift: Shift) {
   return told !== null && (shift.deletedAt !== null || told.staffMemberId !== shift.staffMemberId);
 }
 
+export function isChangedOrRemovedShift(shift: Shift, rotaStatus: RotaStatus) {
+  return (shift.deletedAt === null && isChangedShift(shift, rotaStatus)) || isRemovedShift(shift);
+}
+
+export function isChangedPublishedShift(shift: Shift) {
+  return isChangedShift(shift, RotaStatus.published);
+}
+
+export function previousTimesShownWith(shift: Shift) {
+  const { staffMemberId, toldStaffMemberId, previousStaffMemberId, previousStartsAt, previousEndsAt } =
+    shift;
+  const toldSinceSent = toldStaffMemberId === staffMemberId && previousStaffMemberId === staffMemberId;
+  if (!toldSinceSent || !previousStartsAt || !previousEndsAt) return null;
+  if (isChangedPublishedShift(shift)) return null;
+  return { startsAt: previousStartsAt, endsAt: previousEndsAt };
+}
+
 export function createShiftService({ db, clock }: { db: Db; clock: Clock }) {
   async function resolveTimes(
     venue: Venue,

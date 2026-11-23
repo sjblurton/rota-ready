@@ -85,6 +85,10 @@ export function publishPath(venueId: string, weekStart: string) {
   return `${rotaPath(venueId, weekStart)}/publish`;
 }
 
+export function sendUpdatesPath(venueId: string, weekStart: string) {
+  return `${rotaPath(venueId, weekStart)}/send-updates`;
+}
+
 export function markRotaPublished(queryClient: QueryClient, venueId: string, weekStart: string) {
   queryClient.setQueryData(rotaQuery(venueId, weekStart).queryKey, (rota) =>
     rota && { ...rota, status: 'published' as const },
