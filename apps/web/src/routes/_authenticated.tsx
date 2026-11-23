@@ -1,7 +1,14 @@
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { createFileRoute, Outlet, redirect, useNavigate } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  type ErrorComponentProps,
+} from '@tanstack/react-router';
 import { AppHeader } from '@/components/app-header';
 import { HealthStatus } from '@/components/health-status';
+import { PageLoadError } from '@/components/page-load-error';
 import { ApiError } from '@/lib/api';
 import { bootstrapCurrentUserQuery } from '@/features/users/current-user';
 import { accessToken, supabase } from '@/lib/supabase';
@@ -20,8 +27,17 @@ export const Route = createFileRoute('/_authenticated')({
       throw error;
     }
   },
+  errorComponent: AuthenticatedLoadError,
   component: AuthenticatedLayout,
 });
+
+function AuthenticatedLoadError({ error }: ErrorComponentProps) {
+  return (
+    <main className="mx-auto max-w-xl p-6 sm:p-10">
+      <PageLoadError error={error} />
+    </main>
+  );
+}
 
 async function endSession(queryClient: QueryClient) {
   await supabase.auth.signOut();

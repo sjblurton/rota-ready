@@ -294,6 +294,28 @@ test.describe.serial('MVP journey', () => {
     await expect(staffRows()).toHaveText([/Alex Smith/, /Sam Jones/]);
   });
 
+  test('shows a translated message with Try again in place of the Staff page when it fails to load', async () => {
+    await page.route('**/api/venues/*/staff-members', (route) =>
+      route.abort('internetdisconnected'),
+    );
+    await page.reload();
+    await expect(page.getByRole('tabpanel').getByRole('alert')).toHaveText(
+      'Something went wrong. Please try again.',
+    );
+    await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+  });
+
+  test("keeps the Venue's heading and tabs above the Staff page's error", async () => {
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+    await expect(page.getByRole('tab', { name: 'Staff' })).toBeVisible();
+  });
+
+  test('loads the Staff page with Try again once the API recovers', async () => {
+    await page.unroute('**/api/venues/*/staff-members');
+    await page.getByRole('button', { name: 'Try again' }).click();
+    await expect(staffRows()).toHaveText([/Alex Smith/, /Sam Jones/]);
+  });
+
   test("opens this Week's Draft Rota with a row per active Staff Member", async () => {
     await page.getByRole('tab', { name: 'Rota' }).click();
     await page.waitForURL(rotaWeekUrl);
@@ -898,6 +920,25 @@ test.describe.serial('MVP journey', () => {
   test('keeps a User with a Venue out of onboarding', async () => {
     await page.goto('/onboarding');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  });
+
+  test("shows another Owner's Venue as not found, with no Try again", async ({ browser }) => {
+    const otherOwner = await browser.newContext();
+    const otherOwnerPage = await otherOwner.newPage();
+    await otherOwnerPage.goto('/signup');
+    await otherOwnerPage.getByLabel('Email').fill(`other-${email}`);
+    await otherOwnerPage.getByLabel('Password').fill(password);
+    await otherOwnerPage.getByRole('button', { name: 'Create account' }).click();
+    await otherOwnerPage.getByLabel('Venue name').fill('The Anchor');
+    await otherOwnerPage.getByRole('button', { name: 'Create venue' }).click();
+    await expect(otherOwnerPage.getByRole('heading', { level: 1 })).toHaveText('The Anchor');
+    const otherVenuePath = new URL(otherOwnerPage.url()).pathname;
+    await otherOwner.close();
+    await page.goto(otherVenuePath);
+    await expect(page.getByRole('alert')).toHaveText(
+      "We couldn't find what you were looking for.",
+    );
+    await expect(page.getByRole('button', { name: 'Try again' })).toHaveCount(0);
   });
 
   test('shows the live API status once logged in', async () => {
