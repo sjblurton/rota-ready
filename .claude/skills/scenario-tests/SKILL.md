@@ -75,10 +75,10 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
 - **No result depends on the day a test runs.**
   - API tests run on the fixed default clock, and a test that depends on time sets its own.
   - React and shared tests never read the clock. Pass in the instants a test needs.
-  - The Playwright journey runs on real time, with its Shifts two Weeks ahead of today, so none starts during a run.
-  - Behaviour that depends on time passing ("has started", "No reply", clock changes) is tested in API, React or shared tests at fixed instants, never in the journey. A daylight saving bug gets its test there.
+  - The Playwright journey runs on real time. It plans its Shifts two Weeks ahead of today, so none starts during a run. When a step needs a Shift that has started, it uses last Week, where every Shift has.
+  - Rules about the moment a Shift starts and clock changes are tested in API, React or shared tests at fixed instants. A daylight saving bug gets its test there.
   - Only JWT expiry, Mailpit timestamps and unique values (such as the journey's sign-up email) read real time.
-- **Front-end tests** only for logic that's hard to check by hand (e.g. grid layout) or that the journey can't reach because it depends on time passing (e.g. "No reply"). Everything else is covered by API tests and Playwright.
+- **Front-end tests** only for logic that's hard to check by hand (e.g. grid layout) or that depends on time passing (e.g. "No reply"). Everything else is covered by API tests and Playwright.
 - **Playwright, where it fits**: the MVP journey spec grows one step per ticket. Use `test.describe('when …')` with setup in `test.beforeEach` for scenarios that can run independently; when steps must happen in order through one journey, use `test.describe.serial` with each `test` named after the outcome it checks. Always run against the real stack (local Supabase), with no auth bypass.
 
 ## Refactoring an existing test file without losing coverage

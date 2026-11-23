@@ -6,6 +6,7 @@ const password = 'correct-horse-battery-staple';
 const mailpitUrl = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
+const rotaWeekUrl = /\/rota\/\d{4}-\d{2}-\d{2}$/;
 const staffMembers = [
   { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: '07700 900123' },
   { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: '07700 900456' },
@@ -64,11 +65,13 @@ test.describe.serial('MVP journey', () => {
 
   async function openRota(weekStart: string) {
     await page.getByRole('tab', { name: 'Rota' }).click();
-    await page.waitForURL(/\/rota\/\d{4}-\d{2}-\d{2}$/);
+    await page.waitForURL(rotaWeekUrl);
     const shownWeek = page.url().slice(-10);
-    for (let weeks = 1; weeks <= daysBetween(shownWeek, weekStart) / 7; weeks++) {
-      await page.getByRole('link', { name: 'Next Week' }).click();
-      await expect(weekHeading(addDays(shownWeek, 7 * weeks))).toBeVisible();
+    const weeksAway = daysBetween(shownWeek, weekStart) / 7;
+    const link = weeksAway > 0 ? 'Next Week' : 'Previous Week';
+    for (let step = 1; step <= Math.abs(weeksAway); step++) {
+      await page.getByRole('link', { name: link }).click();
+      await expect(weekHeading(addDays(shownWeek, 7 * Math.sign(weeksAway) * step))).toBeVisible();
     }
     await expect(weekHeading(weekStart)).toBeVisible();
   }
@@ -277,7 +280,7 @@ test.describe.serial('MVP journey', () => {
 
   test("opens this Week's Draft Rota with a row per active Staff Member", async () => {
     await page.getByRole('tab', { name: 'Rota' }).click();
-    await page.waitForURL(/\/rota\/\d{4}-\d{2}-\d{2}$/);
+    await page.waitForURL(rotaWeekUrl);
     thisWeek = page.url().slice(-10);
     plannedWeek = addDays(thisWeek, 14);
     nextWeek = addDays(plannedWeek, 7);
@@ -764,6 +767,20 @@ test.describe.serial('MVP journey', () => {
     await expect(staffLinkShift(thursday)).toContainText('Pending');
     await expect(staffLinkPage.getByRole('list', { name: 'Removed Shifts' })).toHaveCount(0);
     await privateWindow.close();
+  });
+
+  test('shows a Pending Shift that has already started as No reply', async () => {
+    const lastWeek = addDays(thisWeek, -7);
+    await openRota(lastWeek);
+    await page.getByLabel('Staff Member').selectOption({ label: 'Sam Jones' });
+    await page.getByLabel('Start').selectOption('09:00');
+    await page.getByLabel('End').selectOption('17:00');
+    await page.getByRole('button', { name: 'Add Shift' }).click();
+    await expect(rotaCell('Sam Jones', lastWeek, lastWeek)).toHaveText('09:00–17:00');
+    await page.getByRole('button', { name: 'Publish' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Done' }).click();
+    await expect(rotaCell('Sam Jones', lastWeek, lastWeek)).toHaveText('09:00–17:00No reply');
   });
 
   test('keeps a User with a Venue out of onboarding', async () => {
