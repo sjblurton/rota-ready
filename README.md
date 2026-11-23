@@ -43,7 +43,7 @@ flowchart LR
 - **Nothing fakes the API.** No MSW or mocked API client in the web app. The only test doubles sit at outside boundaries (email outbox, clock, JWT signing key).
 - **Cross-venue 404 tests.** For every venue-scoped route, a member of venue A asks for venue B's data and must get a 404.
 - **A Playwright journey that grew with each slice.** The whole owner-and-staff journey runs in CI against the real stack.
-- **Screenshots of every journey step.** CI attaches them to each PR as a `journey-screenshots` download, so a reviewer can see each screen without running the app.
+- **Screenshots of every journey step.** CI attaches them to each PR as a `journey-screenshots` download, so a reviewer can see each screen without running the app. A "CI report" comment on the PR links them, with test coverage for every source file and for the files the PR changed. Coverage is information only and never fails the build.
 
 ### Lessons from the first attempt
 
@@ -137,6 +137,7 @@ Every email the app sends locally, such as the Staff Link email from Publish, la
 | Command | What it does |
 | --- | --- |
 | `pnpm test` | Unit and integration tests (Vitest) in every package. Needs `.env` and the local Supabase stack running (`pnpm db:start`). |
+| `pnpm test:coverage` | The same tests with V8 coverage, written to each package's `coverage/`. It counts every source file, including ones no test loads. |
 | `pnpm --filter @rota-ready/web e2e` | The Playwright journey against the real stack. Starts the API and web dev servers itself (or reuses running ones); needs the local Supabase stack. First run: `pnpm --filter @rota-ready/web exec playwright install chromium`. |
 | `pnpm --filter @rota-ready/web e2e:isolated` | The same journey on its own servers (API `:3200`, web `:5273`), so it never tests dev servers already running from another branch. Add `E2E_SCREENSHOTS=<dir>` to either command to save a screenshot after every step. |
 | `pnpm lint` | ESLint, including the React Compiler rules, with warnings treated as errors |

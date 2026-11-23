@@ -101,6 +101,24 @@ test.describe.serial('MVP journey', () => {
     await expect(toast()).toHaveCount(0);
   }
 
+  async function invalidateSessionToken() {
+    await page.evaluate(() => {
+      const key = Object.keys(localStorage).find((name) => /^sb-.+-auth-token$/.test(name));
+      if (!key) throw new Error('No Supabase session in localStorage');
+      const session = JSON.parse(localStorage.getItem(key) ?? '') as { access_token: string };
+      const [header, payload] = session.access_token.split('.');
+      session.access_token = `${header}.${payload}.not-the-signature`;
+      localStorage.setItem(key, JSON.stringify(session));
+    });
+  }
+
+  async function logBackInToRenamedVenue() {
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill(password);
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  }
+
   async function failRenameRequests() {
     await page.route('**/api/venues/*', (route) =>
       route.request().method() === 'PATCH' ? route.abort('internetdisconnected') : route.continue(),
@@ -874,7 +892,7 @@ test.describe.serial('MVP journey', () => {
     ).toHaveText([`${formatLocalDate(addDays(nextWeek, 3))}18:00–23:00Removed`]);
   });
 
-  test("shows Jo the reassigned Shift without old times, since Jo was never told them", async () => {
+  test("shows Jo the reassigned Shift without old times, since Jo was never notified of them", async () => {
     const thursday = addDays(nextWeek, 3);
     await staffLinkPage.goto(josLink);
     await expect(staffLinkShift(thursday)).toContainText('18:00–23:00');
@@ -972,6 +990,30 @@ test.describe.serial('MVP journey', () => {
 
   test('lands on the renamed Venue after logging back in', async () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
+  });
+
+  test('sends a User whose session the API rejects on a page load to log in again', async () => {
+    await invalidateSessionToken();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText(
+      'Your session has ended. Please log in again.',
+    );
+  });
+
+  test('sends a User whose session the API rejects on a form submit to log in again', async () => {
+    await logBackInToRenamedVenue();
+    await invalidateSessionToken();
+    await page.getByRole('button', { name: 'Save name' }).click();
+    await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText(
+      'Your session has ended. Please log in again.',
+    );
+  });
+
+  test('logs back in after the session ended', async () => {
+    await logBackInToRenamedVenue();
+    await expect(page.getByRole('banner')).toContainText(email);
   });
 
   test('shows a loading screen while the API is slow to answer', async () => {

@@ -8,7 +8,7 @@ import {
   createUser,
   createVenueFor,
 } from '#test/seed.js';
-import { startTestApp, type TestApp } from '#test/test-app.js';
+import { startTestApp, type StaffMemberLock, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 const OTHER_OWNER = {
@@ -293,6 +293,45 @@ describe('/api/venues/:venueId/staff-members', () => {
 
       it('responds with 204', () => {
         expect(response.status).toBe(204);
+      });
+    });
+
+    describe('when the Owner archives a Staff Member while another request holds their row lock', () => {
+      let lock: StaffMemberLock;
+      let pending: Promise<Response>;
+
+      beforeEach(async () => {
+        lock = await app.holdStaffMemberLock(staffMemberId);
+        pending = archive();
+        await lock.waitForBlockedRequest();
+      });
+
+      describe('when that request adds a Shift for them that starts later and commits', () => {
+        beforeEach(async () => {
+          await lock.commitAfter((tx) =>
+          tx.shift.create({
+            data: {
+              venueId: rota.venueId,
+              rotaId: rota.id,
+              staffMemberId: staffMemberId,
+              startsAt: new Date('2026-11-19T09:00:00.000Z'),
+              endsAt: new Date('2026-11-19T17:00:00.000Z'),
+            },
+          }),
+        );
+          response = await pending;
+        });
+
+        it('responds with 409 and the staff_member_has_upcoming_shifts code', async () => {
+          expect([response.status, await response.json()]).toEqual([
+            409,
+            { code: 'staff_member_has_upcoming_shifts' },
+          ]);
+        });
+
+        it('keeps them active with their email', async () => {
+          expect(await storedArchiveState()).toEqual({ archivedAt: null, email: ALEX.email });
+        });
       });
     });
 

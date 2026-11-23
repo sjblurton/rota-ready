@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b tsconfig.ui.json && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --passWithNoTests --coverage",
     "e2e": "playwright test",
     "e2e:isolated": "E2E_ISOLATED=true playwright test"
   },

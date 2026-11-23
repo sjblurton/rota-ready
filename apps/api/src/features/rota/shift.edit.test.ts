@@ -8,7 +8,7 @@ import {
   createUser,
   createVenueFor,
 } from '#test/seed.js';
-import { startTestApp, type TestApp } from '#test/test-app.js';
+import { startTestApp, type StaffMemberLock, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 const OTHER_OWNER = {
@@ -331,19 +331,19 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         expect(await changedInRota()).toBe(true);
       });
 
-      it('keeps the times Sam was told', async () => {
+      it('keeps the times Sam was notified of', async () => {
         expect(
           await app.db.shift.findUnique({
             where: { id: published.id },
-            select: { toldStartsAt: true, toldEndsAt: true },
+            select: { notifiedStartsAt: true, notifiedEndsAt: true },
           }),
         ).toEqual({
-          toldStartsAt: new Date(MONDAY_23_9_TO_5.startsAt),
-          toldEndsAt: new Date(MONDAY_23_9_TO_5.endsAt),
+          notifiedStartsAt: new Date(MONDAY_23_9_TO_5.startsAt),
+          notifiedEndsAt: new Date(MONDAY_23_9_TO_5.endsAt),
         });
       });
 
-      describe('when the Owner moves it back to the times Sam was told', () => {
+      describe('when the Owner moves it back to the times Sam was notified of', () => {
         beforeEach(async () => {
           response = await app.request('PATCH', shiftPath(ownVenue, PUBLISHED_WEEK, published), {
             as: OWNER,
@@ -386,7 +386,7 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         expect(await changedInRota()).toBe(true);
       });
 
-      it("lists it on the Rota as a Removed Shift in Sam's row, at the times Sam was told", async () => {
+      it("lists it on the Rota as a Removed Shift in Sam's row, at the times Sam was notified of", async () => {
         const opened = await app.request('GET', `/api/venues/${ownVenue.id}/rotas/${PUBLISHED_WEEK}`, {
           as: OWNER,
         });
@@ -430,13 +430,13 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
       expect(await response.json()).toMatchObject({ changed: false });
     });
 
-    it('records nobody as told', async () => {
+    it('records nobody as notified', async () => {
       expect(
         await app.db.shift.findUnique({
           where: { id: shift.id },
-          select: { toldStaffMemberId: true, toldStartsAt: true, toldEndsAt: true },
+          select: { notifiedStaffMemberId: true, notifiedStartsAt: true, notifiedEndsAt: true },
         }),
-      ).toEqual({ toldStaffMemberId: null, toldStartsAt: null, toldEndsAt: null });
+      ).toEqual({ notifiedStaffMemberId: null, notifiedStartsAt: null, notifiedEndsAt: null });
     });
   });
 
@@ -584,6 +584,54 @@ describe('PATCH /api/venues/:venueId/rotas/:weekStart/shifts/:shiftId', () => {
         expect(await app.db.shift.findUnique({ where: { id: shift.id } })).toMatchObject({
           staffMemberId: jo.id,
           startsAt: new Date('2026-11-16T08:00:00.000Z'),
+        });
+      });
+    });
+  });
+
+  describe("when Sam's Shift is moved to Tuesday while another request holds Sam's row lock", () => {
+    let lock: StaffMemberLock;
+    let pending: Promise<Response>;
+
+    beforeEach(async () => {
+      lock = await app.holdStaffMemberLock(sam.id);
+      pending = app.request('PATCH', shiftPath(ownVenue, WEEK_START, shift), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-17T09:00:00.000Z',
+          endsAt: '2026-11-17T17:00:00.000Z',
+        },
+      });
+      await lock.waitForBlockedRequest();
+    });
+
+    describe('when that request adds a Shift for Sam on Tuesday and commits', () => {
+      beforeEach(async () => {
+        await lock.commitAfter((tx) =>
+          tx.shift.create({
+            data: {
+              venueId: rota.venueId,
+              rotaId: rota.id,
+              staffMemberId: sam.id,
+              startsAt: new Date('2026-11-17T12:00:00.000Z'),
+              endsAt: new Date('2026-11-17T20:00:00.000Z'),
+            },
+          }),
+        );
+        response = await pending;
+      });
+
+      it('responds with 409 and the shift_overlaps code', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          409,
+          { code: 'shift_overlaps' },
+        ]);
+      });
+
+      it("leaves Sam's Shift on Monday", async () => {
+        expect(await app.db.shift.findUnique({ where: { id: shift.id } })).toMatchObject({
+          startsAt: new Date(MONDAY_9_TO_5.startsAt),
         });
       });
     });

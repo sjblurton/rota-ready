@@ -32,21 +32,21 @@ import {
   findRota,
   findStaffMembers,
   lockRotaUntilCommit,
-  markShiftsOfRotaTold,
+  markShiftsOfRotaNotified,
   publishDraftRota,
 } from './rota-data.js';
 import {
-  findLiveAndToldShiftsOfRota,
+  findLiveAndNotifiedShiftsOfRota,
   createShifts,
   findLiveShiftsOfActiveStaffInWeek,
   findLiveShiftsOfStaffBetween,
   findShiftsOfRota,
   hasLiveShifts,
-  findToldShiftsOfRota,
-  moveToldSnapshotForward,
+  findNotifiedShiftsOfRota,
+  moveNotifiedSnapshotForward,
   type ShiftTimes,
 } from './shift-data.js';
-import { isChangedOrRemovedShift, isRemovedShift, toldTimesOf } from './shift-service.js';
+import { isChangedOrRemovedShift, isRemovedShift, notifiedTimesOf } from './shift-service.js';
 import { lockActiveStaffMembersUntilCommit } from '#src/features/staff-members/staff-member-data.js';
 
 export interface RotaServiceDependencies {
@@ -75,20 +75,20 @@ type ShiftUpdate =
   | { kind: typeof shiftUpdateKind.changed; staffMemberId: string; times: ShiftTimes; previous: ShiftTimes };
 
 function updatesOf(shift: Shift): ShiftUpdate[] {
-  const told = toldTimesOf(shift);
+  const notified = notifiedTimesOf(shift);
   const { added, changed, removed } = shiftUpdateKind;
   if (shift.deletedAt !== null) {
-    return told ? [{ kind: removed, staffMemberId: told.staffMemberId, times: told }] : [];
+    return notified ? [{ kind: removed, staffMemberId: notified.staffMemberId, times: notified }] : [];
   }
   const { staffMemberId } = shift;
-  if (!told) return [{ kind: added, staffMemberId, times: shift }];
-  if (told.staffMemberId !== staffMemberId) {
+  if (!notified) return [{ kind: added, staffMemberId, times: shift }];
+  if (notified.staffMemberId !== staffMemberId) {
     return [
-      { kind: removed, staffMemberId: told.staffMemberId, times: told },
+      { kind: removed, staffMemberId: notified.staffMemberId, times: notified },
       { kind: added, staffMemberId, times: shift },
     ];
   }
-  return [{ kind: changed, staffMemberId, times: shift, previous: told }];
+  return [{ kind: changed, staffMemberId, times: shift, previous: notified }];
 }
 
 function describeUpdate(update: ShiftUpdate, timeZone: string) {
@@ -187,11 +187,11 @@ export function createRotaService({
   return {
     async get(venueId: string, weekStart: string) {
       const rota = await findOrCreateRota(db, venueId, weekStart);
-      const [shifts, told] = await Promise.all([
+      const [shifts, notified] = await Promise.all([
         findShiftsOfRota(db, rota.id),
-        findToldShiftsOfRota(db, rota.id),
+        findNotifiedShiftsOfRota(db, rota.id),
       ]);
-      return { rota, shifts, removedShifts: told.filter(isRemovedShift) };
+      return { rota, shifts, removedShifts: notified.filter(isRemovedShift) };
     },
 
     async publish(
@@ -201,7 +201,7 @@ export function createRotaService({
       const rota = await findOrCreateRota(db, venue.id, weekStart);
       const published = await db.$transaction(async (tx) => {
         if (!(await publishDraftRota(tx, rota.id, clock.now()))) return false;
-        await markShiftsOfRotaTold(tx, rota.id);
+        await markShiftsOfRotaNotified(tx, rota.id);
         return true;
       });
       if (!published) return refuse(apiErrorCode.rota_already_published);
@@ -251,10 +251,10 @@ export function createRotaService({
       if (rota.status !== RotaStatus.published) return refuse(apiErrorCode.rota_not_published);
       const unsent = await db.$transaction(async (tx) => {
         await lockRotaUntilCommit(tx, venue.id, weekStart);
-        const shifts = (await findLiveAndToldShiftsOfRota(tx, rota.id)).filter((shift) =>
+        const shifts = (await findLiveAndNotifiedShiftsOfRota(tx, rota.id)).filter((shift) =>
           isChangedOrRemovedShift(shift, rota.status),
         );
-        for (const shift of shifts) await moveToldSnapshotForward(tx, shift);
+        for (const shift of shifts) await moveNotifiedSnapshotForward(tx, shift);
         return shifts;
       });
       const updates = unsent.flatMap(updatesOf);

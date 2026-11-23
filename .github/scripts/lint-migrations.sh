@@ -2,10 +2,8 @@
 # Usage: lint-migrations.sh [base-ref]   (default origin/main)
 set -euo pipefail
 
-migrations=apps/api/prisma/migrations
-merge_base=$(git merge-base "${1:-origin/main}" HEAD)
-changes=$(git diff --name-status --diff-filter=AMR "$merge_base" -- "$migrations")
-untracked=$(git ls-files --others --exclude-standard -- "$migrations")
+source "$(dirname "$0")/migration-changes.sh"
+find_migration_changes "${1:-origin/main}"
 
 failed=0
 fail() {
@@ -13,26 +11,15 @@ fail() {
   failed=1
 }
 
-files=()
-while IFS=$'\t' read -r status path renamed; do
-  file=${renamed:-$path}
-  [[ $file == */migration.sql ]] || continue
-  if [[ $status == M* ]]; then
-    fail "$file" "This migration is already on the base branch. Don't edit an applied migration; add a new one."
-  else
-    files+=("$file")
-  fi
-done <<<"$changes"
-while IFS= read -r file; do
-  [[ $file == */migration.sql ]] && files+=("$file")
-done <<<"$untracked"
-
-if [ ${#files[@]} -eq 0 ] && [ "$failed" -eq 0 ]; then
+for file in "${edited_migrations[@]}"; do
+  fail "$file" "This migration is already on the base branch. Don't edit an applied migration; add a new one."
+done
+if [ ${#new_migrations[@]} -eq 0 ] && [ "$failed" -eq 0 ]; then
   echo "No new or changed migrations to lint."
   exit 0
 fi
 
-for file in "${files[@]}"; do
+for file in "${new_migrations[@]}"; do
   mapfile -t lines < <(sed -E 's/\r$//; s/[[:space:]]+$//' "$file" | grep -vE '^[[:space:]]*(--|$)' || true)
   if [ ${#lines[@]} -lt 3 ]; then
     fail "$file" "Wrap the migration in BEGIN; SET LOCAL lock_timeout = '5s'; … COMMIT; so it runs atomically."
@@ -49,8 +36,8 @@ for file in "${files[@]}"; do
   fi
 done
 
-if [ ${#files[@]} -gt 0 ]; then
-  pnpm exec squawk "${files[@]}" || failed=1
+if [ ${#new_migrations[@]} -gt 0 ]; then
+  pnpm exec squawk "${new_migrations[@]}" || failed=1
 fi
 
 if [ "$failed" -ne 0 ]; then
