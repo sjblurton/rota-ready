@@ -8,6 +8,26 @@ Render's pre-deploy command is only on paid plans, so neither service deploys it
 
 That order means each layer briefly runs against the newer layer beneath it, so changes must be backwards compatible in two places: every migration must work with the API that's already running, and every API change must work with the web app that's already running. Add first; remove in a later deploy.
 
+## Migrations are atomic and linted
+
+Prisma runs a migration's statements one at a time, not in a transaction, so a migration that fails part-way would leave production half-applied and block every later migration until someone repaired it by hand. So every new migration is wrapped:
+
+```sql
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+-- the statements Prisma generated
+COMMIT;
+```
+
+A failed migration then rolls back completely and the deploy stops. The lock timeout makes a migration that's waiting behind a long-running query give up after five seconds, instead of holding up every request that touches the table while it waits. Prisma generates migrations without the wrapper, so it's added by hand after `prisma migrate dev --create-only`.
+
+On every pull request, `pnpm lint:migrations` checks the migrations the PR adds or changes, never the ones already on `main`. It fails a migration that isn't wrapped or that edits one already on `main`, and runs squawk, which flags statements that break the running API or lock busy tables: dropping or renaming a column or table, adding a required column, adding a constraint to an existing table without `NOT VALID`, and the like. `.squawk.toml` turns off two of squawk's default rules:
+
+- **`require-concurrent-index-creation`**: `CREATE INDEX CONCURRENTLY` can't run inside a transaction. At today's table sizes a plain index build locks a table for milliseconds.
+- **`require-statement-timeout`**: a slow but legitimate data backfill shouldn't be failed. The lock timeout covers the danger to the running app.
+
+When a statement has to break a rule on purpose, such as the final drop of expand-then-contract, put `-- squawk-ignore <rule>` on the line above that one statement, naming only the rules it needs. `squawk-ignore-file` isn't allowed. The PR description must link the earlier, already-deployed PR that stopped the app using what's being dropped or renamed.
+
 ## One origin, no CORS
 
 The static site rewrites `/api/*` to the API service, so the browser only ever talks to `https://rota-ready.onrender.com`, just as it talks to the Vite proxy in development. The API needs no CORS configuration and `VITE_API_URL` stays empty.
@@ -18,7 +38,10 @@ Both the CI migrations and the API use Supabase's **session pooler** connection 
 
 ## Considered Options
 
-- **Render pre-deploy command for migrations**: simpler, but paid only. Revisit if the API moves to a paid plan.
+- **Render pre-deploy command for migrations**: simpler, but paid only. Revisit if the API moves to a paid plan. It wouldn't remove the need for backwards-compatible migrations, since the old API keeps serving until the new one is healthy, so the linter stays either way.
+- **A backwards-compatibility test** (#96): run `main`'s API tests against the PR's migrations. It catches problems a linter can't see, at the cost of CI time. Planned as a follow-up.
+- **Migrations in their own PRs**: makes "add first" the default, but splits every feature in two, and the journey can't test a migration on its own. Rejected.
+- **Concurrent index builds**: once tables are large enough for an index build to matter, allow an unwrapped migration that contains only `CREATE INDEX CONCURRENTLY` or `DROP INDEX CONCURRENTLY`, with the concurrent rule on for it. Not needed yet.
 - **Running migrations when the API starts**: every instance would race to migrate, and a failed migration would take the API down instead of failing the deploy. Rejected.
 - **Vercel for the web app and Fly.io for the API**: faster static hosting, but two providers and a Dockerfile to maintain. Rejected for the MVP.
 - **CORS between two origins**: works, but adds a config surface the development setup doesn't have. Rejected while the static site can proxy.

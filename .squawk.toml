@@ -1,0 +1,1 @@
+excluded_rules = ["require-concurrent-index-creation", "require-statement-timeout"]
