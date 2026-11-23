@@ -27,6 +27,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+
+      - name: Keep new migrations atomic and safe for the running API
+        if: github.event_name == 'pull_request'
+        run: pnpm lint:migrations "origin/${{ github.base_ref }}"
+
       - run: pnpm typecheck
 
       - name: Start local Supabase (Postgres and Auth)

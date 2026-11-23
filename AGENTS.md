@@ -18,6 +18,19 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 - Follow the Rules of React: components and hooks are pure, so never mutate props, state or values used in render while rendering. `eslint-plugin-react-hooks` enforces this as errors; fix the code rather than disabling the rule.
 - Before adding or changing a component, read `docs/building-ui.md`: compose shadcn components rather than wrapping them, and give product components a closed API.
 
+## Database migrations
+
+Read ADR-0006 before writing one. Every new migration runs in a transaction, so wrap what Prisma generates:
+
+```sql
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+-- the statements Prisma generated
+COMMIT;
+```
+
+`pnpm lint:migrations` checks the wrapper and lints new migrations with squawk. Write changes the running API can live with: add first, and remove in a later deploy. When a statement must break a rule on purpose, put `-- squawk-ignore <rule>` above that statement only, and link the earlier deployed PR in the PR description.
+
 ## i18n
 
 All UI text through `t()`; dates through the shared format helpers in `packages/shared`. API errors return `{ code }`, never an English message.

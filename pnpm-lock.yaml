@@ -190,6 +190,9 @@ importers:
       globals:
         specifier: ^17.14.0
         version: 17.14.0
+      squawk-cli:
+        specifier: 2.72.0
+        version: 2.72.0
       supabase:
         specifier: 3.2.0
         version: 3.2.0
@@ -2057,6 +2060,45 @@ packages:
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
+
+  '@squawk-cli/darwin-arm64@2.72.0':
+    resolution: {integrity: sha512-x9GbT+MpokUApC0hTO3aiZGXIk9NQRHIgilENX3078OVWtYQZ8K+nvZ8Fx3Hs2L3tDMVpK+G3ZO8eF7+vm+uIw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@squawk-cli/darwin-x64@2.72.0':
+    resolution: {integrity: sha512-U49fefGycKA6/ClFvG1N2XsVubKCKXXAWya2fizDi64wmKc+9khNEkniHwLb12Xr/0gd9cJTLF7pXCPhba4TDg==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@squawk-cli/linux-arm64-musl@2.72.0':
+    resolution: {integrity: sha512-unIaLzFKyDaSyOIXXKBBsXgHehr9/DqQvTNKKKMjVlNMOOsHlCHASwPQDmlfjnlRgcL0dGPGZ9j+jJqUhNbCYQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@squawk-cli/linux-arm64@2.72.0':
+    resolution: {integrity: sha512-Nb1SKgcrwnM+PWDFEn6Q1I0jYWdATicvbpkryiJcSGnr1SwwRKKEcM23qPNzjyxJvjQeE8GoAQ4O22J23ULWwQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@squawk-cli/linux-x64-musl@2.72.0':
+    resolution: {integrity: sha512-VS5Lste4yQyrwrXJ1TuRO40BZlq898MZtRTb49X9KDQl0yj6ZrQ8KD8K00bZUzH2m/iv9QQtSNLynyMt533Xbw==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@squawk-cli/linux-x64@2.72.0':
+    resolution: {integrity: sha512-7M2tL5E8EhI9aCAFiUQe5jfMcdSBk3aSboep1U16ZqRQo6fXLUVfvpATdEXj0c4J8e9AcavTAMXSc2rQnNBRVA==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@squawk-cli/win32-x64@2.72.0':
+    resolution: {integrity: sha512-PeSXhOZIlB7n4eMApujqDF1jGrTPDBnMAYohL95RZ5IoYvr9TSDqoH23rpdguj+TBDxfA9GA3KSO2fXB5NwwBw==}
+    cpu: [x64]
+    os: [win32]
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -4351,6 +4393,10 @@ packages:
     resolution: {integrity: sha512-ZgP6E9SPnhrhWXxd8+nLKPot3Euzyo3Rpxe6EFAYz2Ffaq9Xg2SH+6d4yJi7vsQDHaQlhzQ1phAopgE6+a1UCQ==}
     engines: {bun: '>=1.0.0', deno: '>=2.0.0', node: '>=12.0.0'}
 
+  squawk-cli@2.72.0:
+    resolution: {integrity: sha512-4vKiq4quUG8lMBZvzh19NBsqPgoB5CFNAhZwFLFk3exFLJD58viyKR9Jd8jyvRdJ6Y4GBGp23upirSPRMI5WlQ==}
+    hasBin: true
+
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
@@ -6441,6 +6487,27 @@ snapshots:
       - supports-color
 
   '@sindresorhus/merge-streams@4.0.0': {}
+
+  '@squawk-cli/darwin-arm64@2.72.0':
+    optional: true
+
+  '@squawk-cli/darwin-x64@2.72.0':
+    optional: true
+
+  '@squawk-cli/linux-arm64-musl@2.72.0':
+    optional: true
+
+  '@squawk-cli/linux-arm64@2.72.0':
+    optional: true
+
+  '@squawk-cli/linux-x64-musl@2.72.0':
+    optional: true
+
+  '@squawk-cli/linux-x64@2.72.0':
+    optional: true
+
+  '@squawk-cli/win32-x64@2.72.0':
+    optional: true
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -8739,6 +8806,16 @@ snapshots:
   split2@4.2.0: {}
 
   sql-escaper@1.7.0: {}
+
+  squawk-cli@2.72.0:
+    optionalDependencies:
+      '@squawk-cli/darwin-arm64': 2.72.0
+      '@squawk-cli/darwin-x64': 2.72.0
+      '@squawk-cli/linux-arm64': 2.72.0
+      '@squawk-cli/linux-arm64-musl': 2.72.0
+      '@squawk-cli/linux-x64': 2.72.0
+      '@squawk-cli/linux-x64-musl': 2.72.0
+      '@squawk-cli/win32-x64': 2.72.0
 
   statuses@2.0.2: {}
 
