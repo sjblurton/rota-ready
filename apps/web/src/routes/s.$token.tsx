@@ -29,9 +29,9 @@ function StaffLinkPage() {
       </div>
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">{t('staffLink.page.shifts')}</h2>
-        <UpcomingShifts token={token} shifts={page.shifts} timeZone={page.timeZone} />
+        <UpcomingShifts token={token} />
       </section>
-      <RemovedShifts removedShifts={page.removedShifts} timeZone={page.timeZone} />
+      <RemovedShifts token={token} />
     </main>
   );
 }

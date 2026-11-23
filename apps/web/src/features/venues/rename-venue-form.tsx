@@ -1,41 +1,22 @@
-import {
-  renameVenueRequestSchema,
-  venueSchema,
-  type RenameVenueRequest,
-  type Venue,
-} from '@rota-ready/shared';
+import { renameVenueRequestSchema, type RenameVenueRequest } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { VenueNameField } from '@/features/venues/venue-name-field';
-import { myVenuesQuery, venueQuery } from '@/features/venues/venue-queries';
-import { apiErrorMessage } from '@/i18n/api-error-message';
-import { apiPatch } from '@/lib/api';
+import { useRenameVenue } from '@/features/venues/venue-mutations';
+import { venueQuery } from '@/features/venues/venue-queries';
 
-export function RenameVenueForm({ venue }: { venue: Venue }) {
+export function RenameVenueForm({ venueId }: { venueId: string }) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
+  const { data: venue } = useSuspenseQuery(venueQuery(venueId));
   const form = useForm({
     resolver: zodResolver(renameVenueRequestSchema),
     defaultValues: { name: venue.name },
   });
-  const rename = useMutation({
-    mutationFn: (request: RenameVenueRequest) =>
-      apiPatch(`/api/venues/${venue.id}`, request, venueSchema),
-    onSuccess: (renamed) => {
-      queryClient.setQueryData(venueQuery(renamed.id).queryKey, renamed);
-      queryClient.setQueryData(myVenuesQuery.queryKey, (venues) =>
-        venues?.map((existing) => (existing.id === renamed.id ? renamed : existing)),
-      );
-    },
-    onError: (error) => {
-      toast.error(apiErrorMessage(t, error));
-    },
-  });
+  const rename = useRenameVenue(venueId);
 
   function onSubmit(request: RenameVenueRequest) {
     rename.mutate(request);

@@ -1,23 +1,17 @@
-import {
-  formatDate,
-  formatPreviousShiftTimes,
-  formatShiftTimes,
-  type StaffLinkShift,
-} from '@rota-ready/shared';
+import { formatDate, formatPreviousShiftTimes, formatShiftTimes } from '@rota-ready/shared';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { RespondToShift } from '@/features/staff-links/respond-to-shift';
 import { ShiftResponseBadge } from '@/features/staff-links/shift-response-badge';
+import { staffLinkPageQuery } from '@/features/staff-links/staff-link-queries';
 
-interface UpcomingShiftsProps {
-  token: string;
-  shifts: StaffLinkShift[];
-  timeZone: string;
-}
-
-export function UpcomingShifts({ token, shifts, timeZone }: UpcomingShiftsProps) {
+export function UpcomingShifts({ token }: { token: string }) {
   const { t } = useTranslation();
+  const {
+    data: { shifts, timeZone },
+  } = useSuspenseQuery(staffLinkPageQuery(token));
 
   if (shifts.length === 0) {
     return <p className="text-muted-foreground">{t('staffLink.page.noShifts')}</p>;
