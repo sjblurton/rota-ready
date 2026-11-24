@@ -9,9 +9,16 @@ import {
 } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/components/ui/item';
 import { useRotaWeek } from '@/features/rota/rota-queries';
 import { useCopyStaffLink } from '@/features/staff-links/copy-staff-link';
-
 
 interface StaffToNotifyListProps {
   venueId: string;
@@ -40,30 +47,29 @@ export function StaffToNotifyList({ venueId, weekStart, staffMembers }: StaffToN
   if (staffMembers.length === 0) return null;
 
   return (
-    <ul aria-label={t('rota.notify.label')} className="flex max-h-[50vh] flex-col divide-y overflow-y-auto text-sm">
+    <ItemGroup aria-label={t('rota.notify.label')} className="max-h-[50vh] gap-2 overflow-y-auto">
       {staffMembers.map(({ staffMemberId, name, staffLinkToken, updates = [] }) => (
-        <li key={staffMemberId} className="flex items-start justify-between gap-3 py-2">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="font-medium">{name}</span>
+        <Item key={staffMemberId} role="listitem" variant="outline" size="sm" className="flex-nowrap">
+          <ItemContent className="min-w-0">
+            <ItemTitle>{name}</ItemTitle>
             {updates.map((update) => (
-              <span
-                key={`${update.kind}-${update.startsAt}`}
-                className="text-muted-foreground tabular-nums"
-              >
+              <ItemDescription key={`${update.kind}-${update.startsAt}`} className="tabular-nums">
                 {describe(update)}
-              </span>
+              </ItemDescription>
             ))}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label={t('rota.notify.copyLabel', { name })}
-            onClick={() => void copyStaffLink(staffLinkToken)}
-          >
-            {t('staffLink.copy')}
-          </Button>
-        </li>
+          </ItemContent>
+          <ItemActions>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={t('rota.notify.copyLabel', { name })}
+              onClick={() => void copyStaffLink(staffLinkToken)}
+            >
+              {t('staffLink.copy')}
+            </Button>
+          </ItemActions>
+        </Item>
       ))}
-    </ul>
+    </ItemGroup>
   );
 }

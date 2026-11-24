@@ -2,6 +2,7 @@ import { emailStatusSchema, type EmailStatus, type StaffLinkEmail } from '@rota-
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Item, ItemActions, ItemContent, ItemGroup, ItemTitle } from '@/components/ui/item';
 
 const variants = {
   sent: 'secondary',
@@ -20,14 +21,18 @@ export function StaffLinkEmailResults({ emails }: StaffLinkEmailResultsProps) {
 
   return (
     <>
-      <ul aria-label={t('rota.emails.label')} className="flex flex-col gap-2 text-sm">
+      <ItemGroup aria-label={t('rota.emails.label')} className="max-h-[50vh] gap-2 overflow-y-auto">
         {emails.map(({ staffMemberId, name, status }) => (
-          <li key={staffMemberId} className="flex items-center justify-between gap-2">
-            <span>{name}</span>
-            <Badge variant={variants[status]}>{t(`rota.emails.status.${status}`)}</Badge>
-          </li>
+          <Item key={staffMemberId} role="listitem" variant="outline" size="sm" className="flex-nowrap">
+            <ItemContent className="min-w-0">
+              <ItemTitle>{name}</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+              <Badge variant={variants[status]}>{t(`rota.emails.status.${status}`)}</Badge>
+            </ItemActions>
+          </Item>
         ))}
-      </ul>
+      </ItemGroup>
       {emails.some(({ status }) => status === emailStatusSchema.enum.failed) && (
         <Alert variant="destructive">
           <AlertDescription>{t('rota.emails.someFailed')}</AlertDescription>
