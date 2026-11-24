@@ -7,6 +7,7 @@
 [![Projects board](https://img.shields.io/badge/board-Rota_Ready_MVP-blue)](https://github.com/users/sjblurton/projects/1)
 [![Future work](https://img.shields.io/badge/board-future_work-blueviolet)](https://github.com/users/sjblurton/projects/2)
 [![PRD](https://img.shields.io/badge/PRD-%231-informational)](https://github.com/sjblurton/rota-ready/issues/1)
+[![Pro PRD](https://img.shields.io/badge/Pro_PRD-%23152-informational)](https://github.com/sjblurton/rota-ready/issues/152)
 
 <p align="center">
   <img src="docs/images/landing-page.png" alt="The Rota Ready landing page: the pitch, How it works in three steps, and two plans, Free with a Start free button and Pro marked Coming soon" width="860">
@@ -30,9 +31,15 @@ Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
 **Plans.** [The landing page](https://rota-ready.onrender.com) offers two:
 
 - **Free**, the working app today: one Venue, up to 15 Staff Members who aren't archived, weekly Rotas, Publish, Send Updates and Copy Last Week, with Staff Members confirming or declining from their Staff Link. Rota Ready sends Staff Members nothing on Free: Publish and Send Updates list each Staff Member to tell, with a Copy link button and, for Send Updates, what changed.
-- **Pro**, coming soon: email and text notifications that reach every Staff Member, text reminders the day before a Shift, unlimited Staff Members, more than one Venue, and more than one manager per Venue.
+- **Pro**, coming soon: Rota Ready emails each Staff Member their Staff Link and what changed, sends an email Reminder the day before each Shift, and allows unlimited Staff Members. Texts are optional, paid per text up to a monthly limit the Owner sets. More than one Venue and Managers come in a later version.
 
-This is a proof of concept with no paid services, so there's no price yet and nothing to buy. The [future-work board](https://github.com/users/sjblurton/projects/2) holds what Pro would need.
+<p align="center">
+  <img src="docs/images/send-updates-free.png" alt="The Send Updates dialog on Free, listing Jo Bloggs with one new Shift and Sam Jones with a changed and a removed Shift, each with a Copy link button" width="420">
+  <br>
+  <em>On Free, Send Updates lists who to tell and what changed, with a Copy link for each</em>
+</p>
+
+This is a proof of concept with no paid services, so nothing is for sale yet. [The Pro PRD](https://github.com/sjblurton/rota-ready/issues/152) plans the paid version: what Pro includes, pricing and texts, Stripe, Twilio and Resend, what has to be in place first, and the break-even point. It came out of a [map of eight decisions](https://github.com/sjblurton/rota-ready/issues/140), including research into SMS, payment providers and running costs.
 
 **Built AI-first, human-verified.** AI agents write the code from small, fully specified tickets. I check every change in the browser, review it, and only merge it when tests against a real database pass. [How it's built](#how-its-built) explains the workflow and what "verified" means here.
 
@@ -231,6 +238,13 @@ Stretch goals:
 
 - [x] [#15](https://github.com/sjblurton/rota-ready/issues/15) Copy last week
 
+The Free plan, which finishes the MVP for real Venues:
+
+- [x] [#133](https://github.com/sjblurton/rota-ready/issues/133) A landing page with a Free plan and a Pro plan coming soon
+- [x] [#134](https://github.com/sjblurton/rota-ready/issues/134) Each Venue has a Plan; Free sends no emails, and Publish and Send Updates list who to tell with a Copy link
+- [x] [#135](https://github.com/sjblurton/rota-ready/issues/135) Free allows up to 15 Staff Members per Venue
+- [x] [#137](https://github.com/sjblurton/rota-ready/issues/137) An Upgrade to Pro button shows what Pro will offer
+
 Since the MVP:
 
 - [x] [#27](https://github.com/sjblurton/rota-ready/issues/27), [#96](https://github.com/sjblurton/rota-ready/issues/96) Migrations run atomically, pass a linter, and must pass the running API's tests
@@ -240,15 +254,15 @@ Since the MVP:
 - [x] [#40](https://github.com/sjblurton/rota-ready/issues/40) A page that fails to load shows the error and Try again in its place
 - [x] [#92](https://github.com/sjblurton/rota-ready/issues/92) [An audit of the testing approach](docs/testing-audit-2026-11.md)
 - [x] [#95](https://github.com/sjblurton/rota-ready/issues/95) "told" renamed to "notified" across three deploys, without breaking the running API
-- [x] [#133](https://github.com/sjblurton/rota-ready/issues/133) A landing page with a Free plan and a Pro plan coming soon
+- [x] [#140](https://github.com/sjblurton/rota-ready/issues/140) A map of decisions for the paid version, ending in [the Pro PRD](https://github.com/sjblurton/rota-ready/issues/152)
 
 ### Future work
 
 The [future-work board](https://github.com/users/sjblurton/projects/2) groups what's next by theme:
 
-- **Paid version:** what needs a paid plan, a domain or an email sender, such as a sign-up that never reveals whether an email already belongs to a User
+- **Paid version:** [the Pro PRD](https://github.com/sjblurton/rota-ready/issues/152), and what needs a paid plan, a domain or an email sender, such as a sign-up that never reveals whether an email already belongs to a User
 - **Product:** one history of what each Staff Member was notified about, the Staff Link page at phone width in the journey, and more
-- **Engineering:** faster CI, more row-lock tests, the journey against production builds, and lint rules
+- **Engineering:** faster CI, more row-lock tests, the journey against production builds, lint rules, and list rows built on shadcn's Item
 - **Agent workflow:** guardrails and skills for the agents that build the app
 
 Other ideas, not yet ticketed: open (unassigned) Shifts, shift swaps, and availability and time off.
