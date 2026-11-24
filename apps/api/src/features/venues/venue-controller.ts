@@ -9,8 +9,8 @@ import { parseBody, sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from './require-venue-member.js';
 import type { VenueService } from './venue-service.js';
 
-function toVenue({ id, name, timeZone }: Venue) {
-  return venueSchema.parse({ id, name, timeZone });
+function toVenue({ id, name, timeZone, plan }: Venue) {
+  return venueSchema.parse({ id, name, timeZone, plan });
 }
 
 export function venueController(venues: VenueService) {

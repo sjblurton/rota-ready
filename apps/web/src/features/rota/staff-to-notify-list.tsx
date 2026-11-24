@@ -3,22 +3,20 @@ import {
   formatPreviousShiftTimes,
   formatShiftTimes,
   shiftUpdateKind,
-  type PublishResult,
-  type SendUpdatesResult,
   type ShiftUpdate,
+  type StaffMemberToNotify,
+  type StaffMemberToUpdate,
 } from '@rota-ready/shared';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useRotaWeek } from '@/features/rota/rota-queries';
 import { useCopyStaffLink } from '@/features/staff-links/copy-staff-link';
 
-type StaffMemberToNotify = PublishResult['staffMembers'][number] &
-  Partial<Pick<SendUpdatesResult['staffMembers'][number], 'updates'>>;
 
 interface StaffToNotifyListProps {
   venueId: string;
   weekStart: string;
-  staffMembers: StaffMemberToNotify[];
+  staffMembers: (StaffMemberToNotify & Partial<Pick<StaffMemberToUpdate, 'updates'>>)[];
 }
 
 export function StaffToNotifyList({ venueId, weekStart, staffMembers }: StaffToNotifyListProps) {

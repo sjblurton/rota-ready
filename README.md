@@ -128,7 +128,7 @@ The tests exist to keep `main` deployable (merging deploys), make refactoring sa
 | Seam | What it covers | Tooling |
 | --- | --- | --- |
 | HTTP API | Almost all behaviour, including auth failures and cross-venue 404s. The default place for a new test | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
-| Email | That Free sends no email (#134). The sender stays passed into `createApp` for Pro | In-memory outbox passed into `createApp` from #11 |
+| Email | Who was and wasn't emailed on a Pro Venue, and which link they got, and that a Free Venue is sent nothing (#134) | In-memory outbox passed into `createApp` from #11. A test moves the Venue to Pro in the database, since no API does yet |
 | Clock | "Upcoming", "has started", "No reply", March/October clock changes | API tests run on a fixed default instant passed into `createApp`; a time scenario sets its own. React and shared tests take instants as input. No test result depends on the day it runs |
 | Row locks | Two requests racing on the same Staff Member or Rota | API tests that force the race: a second connection holds the row lock (`holdStaffMemberLock` in `test-app.ts`) until the request is blocked on it. The Staff Member lock is covered (#82); the Rota lock isn't yet (#113) |
 | Shared logic | Week attribution, Shift times across clock changes, date formatting | Vitest unit tests in `packages/shared` |
@@ -152,7 +152,7 @@ pnpm dev                     # web on http://localhost:5173, API on http://local
 
 Open http://localhost:5173 and you'll see the landing page. Choose **Start free** or **Sign up** to create an account (local sign-ups need no email confirmation). Your email address appears in the header, and the page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
 
-Every email sent locally lands in the local Supabase inbox (Mailpit) at http://127.0.0.1:54324, while `pnpm db:start` is running. On Free, Publish and Send Updates send none.
+Every email the app sends locally, such as the Staff Link email from Publish on a Pro Venue, lands in the local Supabase inbox (Mailpit) at http://127.0.0.1:54324, while `pnpm db:start` is running. Venues are on Free unless you set `venues.plan` to `pro` in the database, and Free sends no emails.
 
 | Command | What it does |
 | --- | --- |
@@ -192,7 +192,7 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready` | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`), safe to ship to browsers |
 | Render `rota-ready-api` | `SMTP_URL` | Resend's SMTP endpoint with the API key as the password: `smtps://resend:<api-key>@smtp.resend.com:2465`. Use port 2465, because Render's free plan blocks outbound 25, 465 and 587, so sends on those ports time out and show as Failed |
 | Render `rota-ready-api` | `EMAIL_FROM` | `Rota Ready <onboarding@resend.dev>`, Resend's test sender, until a domain is verified in Resend. It only delivers to the Resend account's own address, so emails to anyone else show as Failed |
-| Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails. Unread while every Venue is on Free, which sends no emails (#134); kept for Pro |
+| Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, and uses asymmetric (ES256) JWT signing keys. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 
@@ -205,7 +205,7 @@ Rota Ready is a free proof of concept: no paid Supabase plan, no domain and no p
 | Email confirmation (Supabase: Authentication → Sign In / Providers → Email → Confirm email) | Off | A new User is logged in straight away, with no email. Signing up with an email that already belongs to a User shows an error, which reveals that the User exists (#38) |
 | Phone confirmation (Supabase: Authentication → Sign In / Providers → Phone → Confirm phone) | Not checked | Measured locally (#38): Supabase only stops revealing existing Users at sign-up when this and email confirmation are both on, even with SMS off. Locally it's `[auth.sms] enable_confirmations` in `supabase/config.toml` |
 | Auth email sender (Supabase: Authentication → Emails → SMTP Settings) | Supabase's built-in sender | As far as we know, it only reaches the project's team members and is rate-limited, so Supabase's own emails, such as sign-up confirmation, can't reach real Users. A real sender needs a verified domain |
-| App email sender (Render `rota-ready-api`: `SMTP_URL`, `EMAIL_FROM`) | Resend's test sender, `onboarding@resend.dev` | Unused while every Venue is on Free, which sends no emails (#134). It would only reach the Resend account's own address (see `EMAIL_FROM` above) |
+| App email sender (Render `rota-ready-api`: `SMTP_URL`, `EMAIL_FROM`) | Resend's test sender, `onboarding@resend.dev` | Only Pro Venues send emails (#134), and no Venue can become Pro yet. Pro's Publish and Send Updates emails would only reach the Resend account's own address (see `EMAIL_FROM` above) |
 | Site URL (Supabase: Authentication → URL Configuration) | `https://rota-ready.onrender.com` | Where links in Supabase's auth emails point |
 
 ### Roadmap

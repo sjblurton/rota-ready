@@ -27,10 +27,17 @@ export const venueNameSchema = z
   .min(1, validationMessage.required)
   .max(VENUE_NAME_MAX_LENGTH, validationMessage.venueNameTooLong);
 
+export const planSchema = z.enum(['free', 'pro']);
+
+export const plan = planSchema.enum;
+
+export type Plan = z.infer<typeof planSchema>;
+
 export const venueSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   timeZone: z.string(),
+  plan: planSchema,
 });
 
 export type Venue = z.infer<typeof venueSchema>;

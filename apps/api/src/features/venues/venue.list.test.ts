@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { plan } from '@rota-ready/shared';
 import { createUser, createVenueFor } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
 
@@ -89,7 +90,11 @@ describe('/api/venues', () => {
 
     describe('when the User and another User each have a Venue', () => {
       beforeEach(async () => {
-        await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' });
+        await createVenueFor(app.db, OWNER, {
+          name: 'The Crown',
+          timeZone: 'Europe/London',
+          plan: plan.free,
+        });
         await createVenueFor(app.db, OTHER_OWNER, {
           name: 'The Anchor',
           timeZone: 'Europe/London',
@@ -99,7 +104,7 @@ describe('/api/venues', () => {
 
       it('returns only the Venue the User is a member of', async () => {
         expect(await response.json()).toEqual([
-          { id: expect.any(String), name: 'The Crown', timeZone: 'Europe/London' },
+          { id: expect.any(String), name: 'The Crown', timeZone: 'Europe/London', plan: 'free' },
         ]);
       });
     });

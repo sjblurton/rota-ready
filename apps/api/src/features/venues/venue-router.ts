@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import type { Logger } from 'pino';
 import type { AuthConfig } from '#src/lib/auth.js';
 import type { Clock } from '#src/lib/clock.js';
 import type { Db } from '#src/lib/db.js';
+import type { EmailSender } from '#src/lib/email-sender.js';
 import { rotaRouter } from '#src/features/rota/rota-router.js';
 import { staffMemberRouter } from '#src/features/staff-members/staff-member-router.js';
 import { withUser } from '#src/features/users/require-user.js';
@@ -14,6 +16,9 @@ interface VenueRouterDependencies {
   clock: Clock;
   authConfig: AuthConfig;
   staffLinkKey: Buffer;
+  emailSender: EmailSender;
+  webUrl: string;
+  logger: Logger;
 }
 
 export function venueRouter(dependencies: VenueRouterDependencies): Router {

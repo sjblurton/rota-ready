@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { StaffMemberDetails } from '@rota-ready/shared';
+import { Plan } from '#src/generated/prisma/client.js';
 import type { Db } from '#src/lib/db.js';
 
 export function createUser(
@@ -12,15 +13,24 @@ export function createUser(
 export function createVenueFor(
   db: Db,
   user: { id: string },
-  { name = 'The Crown', timeZone = 'Europe/London' } = {},
+  {
+    name = 'The Crown',
+    timeZone = 'Europe/London',
+    plan = Plan.free,
+  }: { name?: string; timeZone?: string; plan?: Plan } = {},
 ) {
   return db.venue.create({
     data: {
       name,
       timeZone,
+      plan,
       members: { create: { userId: user.id, role: 'owner' } },
     },
   });
+}
+
+export function moveVenueToPro(db: Db, venue: { id: string }) {
+  return db.venue.update({ where: { id: venue.id }, data: { plan: Plan.pro } });
 }
 
 export function createActiveStaffMember(

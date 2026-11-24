@@ -1,4 +1,4 @@
-import { formatLocalDate } from '@rota-ready/shared';
+import { formatLocalDate, plan } from '@rota-ready/shared';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,9 +13,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useHasUnsentChanges } from '@/features/rota/rota-queries';
+import { useHasUnsentChanges, useRotaWeek } from '@/features/rota/rota-queries';
 import { useSendUpdates } from '@/features/rota/notify-staff-mutations';
-import { StaffToNotifyList } from '@/features/rota/staff-to-notify-list';
+import { NotifyResultList } from '@/features/rota/notify-result-list';
 
 interface SendUpdatesDialogProps {
   venueId: string;
@@ -28,6 +28,8 @@ export function SendUpdatesDialog({ venueId, weekStart }: SendUpdatesDialogProps
   const [open, setOpen] = useState(false);
   const sendUpdates = useSendUpdates(venueId, weekStart);
   const result = sendUpdates.data;
+  const notified = result && (result.plan === plan.pro ? result.emails : result.staffMembers);
+  const venuePlan = useRotaWeek(venueId, weekStart).plan;
   const date = formatLocalDate(weekStart, { withYear: true });
 
   function confirm(event: MouseEvent) {
@@ -48,21 +50,17 @@ export function SendUpdatesDialog({ venueId, weekStart }: SendUpdatesDialogProps
         <Button size="sm">{t('rota.sendUpdates.button')}</Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="data-[size=default]:sm:max-w-md">
-        {result ? (
+        {result && notified ? (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t('rota.sendUpdates.resultTitle', { date })}</AlertDialogTitle>
+              <AlertDialogTitle>{t(`rota.sendUpdates.resultTitle.${result.plan}`, { date })}</AlertDialogTitle>
               <AlertDialogDescription>
-                {result.staffMembers.length === 0
-                  ? t('rota.sendUpdates.nobodyToTell')
-                  : t('rota.sendUpdates.tellEach')}
+                {notified.length === 0
+                  ? t(`rota.sendUpdates.nobodyToNotify.${result.plan}`)
+                  : t(`rota.sendUpdates.notified.${result.plan}`)}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <StaffToNotifyList
-              venueId={venueId}
-              weekStart={weekStart}
-              staffMembers={result.staffMembers}
-            />
+            <NotifyResultList venueId={venueId} weekStart={weekStart} result={result} />
             <AlertDialogFooter>
               <AlertDialogAction>{t('rota.sendUpdates.done')}</AlertDialogAction>
             </AlertDialogFooter>
@@ -71,7 +69,7 @@ export function SendUpdatesDialog({ venueId, weekStart }: SendUpdatesDialogProps
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('rota.sendUpdates.title', { date })}</AlertDialogTitle>
-              <AlertDialogDescription>{t('rota.sendUpdates.description')}</AlertDialogDescription>
+              <AlertDialogDescription>{t(`rota.sendUpdates.description.${venuePlan}`)}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>{t('rota.sendUpdates.cancel')}</AlertDialogCancel>

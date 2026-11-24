@@ -26,6 +26,7 @@ export function useRotaWeek(venueId: string, weekStart: string) {
     removedShifts: rota.removedShifts,
     staffMembers,
     timeZone: venue.timeZone,
+    plan: venue.plan,
   };
 }
 

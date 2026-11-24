@@ -19,6 +19,7 @@ export interface AppDependencies {
   logger: Logger;
   staffLinkKey: Buffer;
   emailSender: EmailSender;
+  webUrl: string;
 }
 
 const DB_HEALTH_TIMEOUT_MS = 1_000;

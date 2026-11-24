@@ -1,6 +1,7 @@
 import {
   byStaffMemberName,
   copyLastWeekResultSchema,
+  plan,
   publishResultSchema,
   rotaSchema,
   sendUpdatesResultSchema,
@@ -11,8 +12,10 @@ import type { Clock } from '#src/lib/clock.js';
 import { sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from '#src/features/venues/require-venue-member.js';
 import type {
+  NotifyResult,
   RotaService,
   ShiftUpdate,
+  StaffLinkEmailResult,
   StaffMemberToNotify,
   StaffMemberToUpdate,
 } from './rota-service.js';
@@ -35,15 +38,29 @@ function toShiftUpdate(update: ShiftUpdate): ShiftUpdateResponse {
   return { kind: update.kind, ...toShiftTimes(update.times) };
 }
 
-function toPublishResult(staffMembers: StaffMemberToNotify[]) {
+function toEmails(emails: StaffLinkEmailResult[]) {
+  return emails
+    .map(({ staffMember: { id, name }, status }) => ({ staffMemberId: id, name, status }))
+    .sort(byStaffMemberName);
+}
+
+function toPublishResult(result: NotifyResult<StaffMemberToNotify>) {
+  if (result.plan === plan.pro) {
+    return publishResultSchema.parse({ plan: result.plan, emails: toEmails(result.emails) });
+  }
   return publishResultSchema.parse({
-    staffMembers: staffMembers.map(toStaffMemberToNotify).sort(byStaffMemberName),
+    plan: result.plan,
+    staffMembers: result.staffMembers.map(toStaffMemberToNotify).sort(byStaffMemberName),
   });
 }
 
-function toSendUpdatesResult(staffMembers: StaffMemberToUpdate[]) {
+function toSendUpdatesResult(result: NotifyResult<StaffMemberToUpdate>) {
+  if (result.plan === plan.pro) {
+    return sendUpdatesResultSchema.parse({ plan: result.plan, emails: toEmails(result.emails) });
+  }
   return sendUpdatesResultSchema.parse({
-    staffMembers: staffMembers
+    plan: result.plan,
+    staffMembers: result.staffMembers
       .map((each) => ({ ...toStaffMemberToNotify(each), updates: each.updates.map(toShiftUpdate) }))
       .sort(byStaffMemberName),
   });
@@ -79,13 +96,13 @@ export function rotaController(rotas: RotaService, clock: Clock) {
   const publishRota: RotaRequestHandler = async (req, res) => {
     const result = await rotas.publish(res.locals.venue, req.params.weekStart);
     if (!result.ok) return sendError(res, result.code);
-    res.json(toPublishResult(result.staffMembers));
+    res.json(toPublishResult(result));
   };
 
   const sendUpdates: RotaRequestHandler = async (req, res) => {
     const result = await rotas.sendUpdates(res.locals.venue, req.params.weekStart);
     if (!result.ok) return sendError(res, result.code);
-    res.json(toSendUpdatesResult(result.staffMembers));
+    res.json(toSendUpdatesResult(result));
   };
 
   return { getRota, publishRota, sendUpdates, copyLastWeek };

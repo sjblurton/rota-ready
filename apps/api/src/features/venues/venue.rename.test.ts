@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { plan } from '@rota-ready/shared';
 import { createUser, createVenueFor } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
 
@@ -86,7 +87,11 @@ describe('/api/venues', () => {
 
     beforeEach(async () => {
       ownVenueId = (
-        await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })
+        await createVenueFor(app.db, OWNER, {
+          name: 'The Crown',
+          timeZone: 'Europe/London',
+          plan: plan.free,
+        })
       ).id;
       otherVenueId = (
         await createVenueFor(app.db, OTHER_OWNER, { name: 'The Anchor', timeZone: 'Europe/London' })
@@ -111,6 +116,7 @@ describe('/api/venues', () => {
             id: ownVenueId,
             name: 'The Rose & Crown',
             timeZone: 'Europe/London',
+            plan: 'free',
           });
         });
 

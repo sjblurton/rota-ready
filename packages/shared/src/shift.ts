@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { formatTime } from './date-time.js';
 import { STAFF_MEMBER_ROLE_MAX_LENGTH } from './staff-member.js';
+import { plan } from './venue.js';
 import { optionalText, validationMessage, type ValidationMessageKey } from './validation.js';
 import { addDays, isLocalDate, isWeekStart, localDateOf, zonedTimeToUtc } from './week.js';
 
@@ -222,20 +223,53 @@ export const shiftUpdateSchema = z.discriminatedUnion('kind', [
 
 export type ShiftUpdate = z.infer<typeof shiftUpdateSchema>;
 
+export const emailStatusSchema = z.enum(['sent', 'no_email', 'failed']);
+
+export type EmailStatus = z.infer<typeof emailStatusSchema>;
+
+const staffLinkEmailSchema = z.object({
+  staffMemberId: z.uuid(),
+  name: z.string(),
+  status: emailStatusSchema,
+});
+
+export type StaffLinkEmail = z.infer<typeof staffLinkEmailSchema>;
+
 const staffMemberToNotifySchema = z.object({
   staffMemberId: z.uuid(),
   name: z.string(),
   staffLinkToken: z.string(),
 });
 
-export const publishResultSchema = z.object({
-  staffMembers: z.array(staffMemberToNotifySchema),
+export type StaffMemberToNotify = z.infer<typeof staffMemberToNotifySchema>;
+
+const staffMemberToUpdateSchema = staffMemberToNotifySchema.extend({
+  updates: z.array(shiftUpdateSchema),
 });
+
+export type StaffMemberToUpdate = z.infer<typeof staffMemberToUpdateSchema>;
+
+const proNotifyResultSchema = z.object({
+  plan: z.literal(plan.pro),
+  emails: z.array(staffLinkEmailSchema),
+});
+
+export const publishResultSchema = z.discriminatedUnion('plan', [
+  z.object({
+    plan: z.literal(plan.free),
+    staffMembers: z.array(staffMemberToNotifySchema),
+  }),
+  proNotifyResultSchema,
+]);
 
 export type PublishResult = z.infer<typeof publishResultSchema>;
 
-export const sendUpdatesResultSchema = z.object({
-  staffMembers: z.array(staffMemberToNotifySchema.extend({ updates: z.array(shiftUpdateSchema) })),
-});
+export const sendUpdatesResultSchema = z.discriminatedUnion('plan', [
+  z.object({
+    plan: z.literal(plan.free),
+    staffMembers: z.array(staffMemberToUpdateSchema),
+  }),
+  proNotifyResultSchema,
+]);
 
 export type SendUpdatesResult = z.infer<typeof sendUpdatesResultSchema>;

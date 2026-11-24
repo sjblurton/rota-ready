@@ -20,6 +20,9 @@ if (!smtpUrl) throw new Error('SMTP_URL is not set');
 const emailFrom = process.env.EMAIL_FROM;
 if (!emailFrom) throw new Error('EMAIL_FROM is not set');
 
+const webUrl = process.env.WEB_URL;
+if (!webUrl) throw new Error('WEB_URL is not set');
+
 const port = Number(process.env.PORT ?? 3000);
 const logger = pino({
   redact: ['req.headers.authorization', 'req.headers.cookie'],
@@ -33,6 +36,7 @@ createApp({
   logger,
   staffLinkKey: parseStaffLinkKey(staffLinkKey),
   emailSender: smtpEmailSender({ url: smtpUrl, from: emailFrom }),
+  webUrl,
 }).listen(port, () => {
   logger.info({ port }, 'API listening');
 });
