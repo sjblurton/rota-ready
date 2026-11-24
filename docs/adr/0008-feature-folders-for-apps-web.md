@@ -1,8 +1,8 @@
 # apps/web groups code into feature folders named after glossary terms
 
-`apps/web/src/features/` holds one folder per area of the glossary: `venues/` (Venue, Venue Member, Owner, Member Role), `staff-members/` (Staff Member, Role, Archive), `rota/` (Week, Rota, Shift, Overnight Shift, Draft and Published, Publish, Copy Last Week, Changed Shift, Removed Shift, Send Updates), `staff-links/` (the Staff Link page, Shift Response, Decline Reason) and `users/` (logging in, signing up and the current User). A feature folder holds its components, queries and mutations together.
+`apps/web/src/features/` holds one folder per area of the glossary: `venues/` (Venue, Venue Member, Owner, Member Role), `staff-members/` (Staff Member, Role, Archive), `rota/` (Week, Rota, Shift, Overnight Shift, Draft and Published, Publish, Copy Last Week, Changed Shift, Removed Shift, Send Updates), `staff-links/` (the Staff Link page, Shift Response, Decline Reason), `plans/` (Plan, Free, Pro and the landing page that shows them) and `users/` (logging in, signing up, the current User and the header that shows them). A feature folder holds its components, queries and mutations together.
 
-Anything that names a glossary concept lives in its feature, however many features use it. `components/` holds app-wide UI with no domain concept, such as `PageLoading` and the application header. `components/ui/` stays shadcn. `lib/` is infrastructure: the API client, Supabase and `cn`. `i18n/` stays app-wide.
+Anything that names a glossary concept lives in its feature, however many features use it. `components/` holds app-wide UI with no domain concept, such as `PageLoading`. `components/ui/` stays shadcn. `lib/` is infrastructure: the API client, Supabase and `cn`. `i18n/` stays app-wide.
 
 Feature folders are flat. Each filename says what the file is (`venue-queries.ts`, `create-venue-form.tsx`), and tests sit next to the file they cover. Subfolders are added only when a feature gets hard to scan.
 
