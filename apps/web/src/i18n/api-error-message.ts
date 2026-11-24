@@ -15,6 +15,7 @@ const messageKeys = {
   rota_has_shifts: 'errors.rotaHasShifts',
   shift_started: 'errors.shiftStarted',
   staff_member_has_upcoming_shifts: 'errors.staffMemberHasUpcomingShifts',
+  staff_member_limit_reached: 'errors.staffMemberLimitReached',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

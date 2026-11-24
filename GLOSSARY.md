@@ -109,7 +109,7 @@ What a Venue can use in Rota Ready: one of a fixed set, Free and Pro today. More
 _Avoid_: Tier, package, Subscription (that's how a Plan is paid for)
 
 **Free**:
-The Plan that costs nothing: one Venue and up to 15 Staff Members. Rota Ready sends Staff Members nothing; the Owner shares each Staff Link.
+The Plan that costs nothing: one Venue and up to 15 Staff Members who aren't archived. A Venue with more keeps them all but can't add another. Rota Ready sends Staff Members nothing; the Owner shares each Staff Link.
 _Avoid_: Basic, trial
 
 **Pro**:

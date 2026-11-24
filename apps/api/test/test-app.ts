@@ -33,6 +33,7 @@ interface RequestOptions {
 
 export type TestApp = Awaited<ReturnType<typeof startTestApp>>;
 export type StaffMemberLock = Awaited<ReturnType<TestApp['holdStaffMemberLock']>>;
+export type VenueLock = Awaited<ReturnType<TestApp['holdVenueLock']>>;
 type CompetingChange = (tx: Prisma.TransactionClient) => Promise<unknown>;
 
 function createEmailOutbox() {
@@ -118,14 +119,14 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     return fetch(`${baseUrl}${path}`, init);
   }
 
-  async function holdStaffMemberLock(staffMemberId: string) {
+  async function holdRowLock(row: string, lockRow: (tx: Prisma.TransactionClient) => Promise<unknown>) {
     let lockTaken!: (holderPid: number) => void;
     const locked = new Promise<number>((resolve) => (lockTaken = resolve));
     let runChange!: (change: CompetingChange) => void;
     const changeReady = new Promise<CompetingChange>((resolve) => (runChange = resolve));
     const transaction = db.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`;
+        await lockRow(tx);
         const [{ pid }] = await tx.$queryRaw<[{ pid: number }]>`SELECT pg_backend_pid() AS pid`;
         lockTaken(pid);
         await (await changeReady)(tx);
@@ -151,7 +152,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
         const deadline = Date.now() + BLOCKED_REQUEST_TIMEOUT_MS;
         while (!(await isAQueryBlockedByTheHolder())) {
           if (Date.now() > deadline) {
-            throw new Error('No query waited on the Staff Member row lock in time');
+            throw new Error(`No query waited on the ${row} row lock in time`);
           }
           await new Promise((resolve) => setTimeout(resolve, 10));
         }
@@ -161,6 +162,20 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
         await transaction;
       },
     };
+  }
+
+  function holdStaffMemberLock(staffMemberId: string) {
+    return holdRowLock(
+      'Staff Member',
+      (tx) => tx.$queryRaw`SELECT 1 FROM staff_members WHERE id = ${staffMemberId}::uuid FOR UPDATE`,
+    );
+  }
+
+  function holdVenueLock(venueId: string) {
+    return holdRowLock(
+      'Venue',
+      (tx) => tx.$queryRaw`SELECT 1 FROM venues WHERE id = ${venueId}::uuid FOR NO KEY UPDATE`,
+    );
   }
 
   async function close() {
@@ -187,6 +202,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     setClock,
     request,
     holdStaffMemberLock,
+    holdVenueLock,
     signToken,
     signTokenWithAnotherKey,
     signExpiredToken,

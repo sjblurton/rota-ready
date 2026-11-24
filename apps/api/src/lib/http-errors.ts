@@ -15,6 +15,7 @@ const statusByCode = {
   rota_has_shifts: 409,
   shift_started: 409,
   staff_member_has_upcoming_shifts: 409,
+  staff_member_limit_reached: 409,
   internal_error: 500,
 } as const satisfies Record<ApiErrorCode, number>;
 
