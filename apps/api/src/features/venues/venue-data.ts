@@ -1,5 +1,5 @@
 import type { CreateVenueRequest } from '@rota-ready/shared';
-import { MemberRole } from '#src/generated/prisma/client.js';
+import { MemberRole, type Prisma } from '#src/generated/prisma/client.js';
 import type { DbClient } from '#src/lib/db.js';
 
 export function createVenueOwnedBy(db: DbClient, userId: string, details: CreateVenueRequest) {
@@ -24,4 +24,8 @@ export function findVenueMembership(db: DbClient, userId: string, venueId: strin
     where: { userId_venueId: { userId, venueId } },
     include: { venue: true },
   });
+}
+
+export async function lockVenueUntilCommit(tx: Prisma.TransactionClient, venueId: string) {
+  await tx.$queryRaw`SELECT 1 FROM venues WHERE id = ${venueId}::uuid FOR NO KEY UPDATE`;
 }

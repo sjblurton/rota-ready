@@ -13,6 +13,7 @@ export const apiErrorCodeSchema = z.enum([
   'rota_has_shifts',
   'shift_started',
   'staff_member_has_upcoming_shifts',
+  'staff_member_limit_reached',
   'internal_error',
 ]);
 

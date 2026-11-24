@@ -14,6 +14,10 @@ export function findActiveStaffMembers(db: DbClient, venueId: string) {
   return db.staffMember.findMany({ where: { venueId, archivedAt: null } });
 }
 
+export function countActiveStaffMembers(db: DbClient, venueId: string) {
+  return db.staffMember.count({ where: { venueId, archivedAt: null } });
+}
+
 export function findActiveStaffMember(db: DbClient, key: StaffMemberKey) {
   return db.staffMember.findFirst({ where: active(key) });
 }

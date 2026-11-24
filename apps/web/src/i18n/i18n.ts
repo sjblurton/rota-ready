@@ -1,5 +1,6 @@
 import {
   DECLINE_REASON_MAX_LENGTH,
+  FREE_PLAN_STAFF_MEMBER_LIMIT,
   MAX_SHIFT_HOURS,
   SHIFT_NOTES_MAX_LENGTH,
   STAFF_MEMBER_NAME_MAX_LENGTH,
@@ -35,6 +36,7 @@ await i18n.use(initReactI18next).init({
       staffMemberRoleMaxLength: STAFF_MEMBER_ROLE_MAX_LENGTH,
       declineReasonMaxLength: DECLINE_REASON_MAX_LENGTH,
       shiftNotesMaxLength: SHIFT_NOTES_MAX_LENGTH,
+      freePlanStaffMemberLimit: FREE_PLAN_STAFF_MEMBER_LIMIT,
     },
   },
 });

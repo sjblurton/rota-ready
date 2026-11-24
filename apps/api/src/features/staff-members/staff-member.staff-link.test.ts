@@ -117,6 +117,27 @@ describe('GET /api/venues/:venueId/staff-members/:staffMemberId/staff-link', () 
       });
     });
   });
+
+  describe('when Sam is one of 20 active Staff Members, more than the Free plan lets the Venue add', () => {
+    let sam: { id: string };
+
+    beforeEach(async () => {
+      sam = await createActiveStaffMember(app.db, venue, SAM);
+      for (let number = 2; number <= 20; number++) {
+        await createActiveStaffMember(app.db, venue, {
+          name: `Staff Member ${number}`,
+          role: 'Bar',
+          email: `staff-${number}@example.com`,
+          phone: null,
+        });
+      }
+      response = await app.request('GET', staffLinkPath(venue, sam), { as: OWNER });
+    });
+
+    it("returns Sam's Staff Link with 200", () => {
+      expect(response.status).toBe(200);
+    });
+  });
 });
 
 describe('/api/venues/:venueId/staff-members', () => {
