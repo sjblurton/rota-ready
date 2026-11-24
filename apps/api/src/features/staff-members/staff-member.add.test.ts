@@ -5,7 +5,7 @@ import {
   createUser,
   createVenueFor,
 } from '#test/seed.js';
-import { startTestApp, type TestApp } from '#test/test-app.js';
+import { startTestApp, type TestApp, type VenueLock } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
 const OTHER_OWNER = {
@@ -14,6 +14,7 @@ const OTHER_OWNER = {
 };
 
 const ALEX = { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: null };
+const JO = { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: null };
 const SAM = { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: '07700 900123' };
 
 describe('/api/venues/:venueId/staff-members', () => {
@@ -40,6 +41,17 @@ describe('/api/venues/:venueId/staff-members', () => {
 
   function staffMembersPath(venue: { id: string }) {
     return `/api/venues/${venue.id}/staff-members`;
+  }
+
+  async function createActiveStaffMembers(venue: { id: string }, count: number) {
+    for (let number = 1; number <= count; number++) {
+      await createActiveStaffMember(app.db, venue, {
+        name: `Staff Member ${number}`,
+        role: 'Bar',
+        email: `staff-${number}@example.com`,
+        phone: null,
+      });
+    }
   }
 
   describe.each([
@@ -200,6 +212,147 @@ describe('/api/venues/:venueId/staff-members', () => {
 
       it('responds with 201', () => {
         expect(response.status).toBe(201);
+      });
+    });
+
+    describe('when the Venue has 14 active Staff Members', () => {
+      beforeEach(async () => {
+        await createActiveStaffMembers(ownVenue, 14);
+      });
+
+      describe('when the Owner adds a 15th', () => {
+        beforeEach(async () => {
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('responds with 201', () => {
+          expect(response.status).toBe(201);
+        });
+      });
+
+      describe('when another request adds a 15th while the Owner adds one', () => {
+        let lock: VenueLock;
+
+        beforeEach(async () => {
+          lock = await app.holdVenueLock(ownVenue.id);
+          const pending = app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+          await lock.waitForBlockedRequest();
+          await lock.commitAfter((tx) =>
+            tx.staffMember.create({ data: { ...SAM, venueId: ownVenue.id } }),
+          );
+          response = await pending;
+        });
+
+        it('refuses the Owner with 409 and the staff_member_limit_reached code', async () => {
+          expect([response.status, await response.json()]).toEqual([
+            409,
+            { code: 'staff_member_limit_reached' },
+          ]);
+        });
+
+        it('leaves the Venue with 15 Staff Members on its list', async () => {
+          const list = await app.request('GET', staffMembersPath(ownVenue), { as: OWNER });
+          expect(await list.json()).toHaveLength(15);
+        });
+      });
+
+      describe('when the Venue also has archived Staff Members', () => {
+        beforeEach(async () => {
+          await createArchivedStaffMember(app.db, ownVenue, JO);
+          await createArchivedStaffMember(app.db, ownVenue, SAM);
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('adds the 15th, because archived Staff Members do not count', () => {
+          expect(response.status).toBe(201);
+        });
+      });
+    });
+
+    describe('when the Venue has 15 active Staff Members', () => {
+      let jo: { id: string };
+
+      beforeEach(async () => {
+        await createActiveStaffMembers(ownVenue, 14);
+        jo = await createActiveStaffMember(app.db, ownVenue, JO);
+      });
+
+      describe('when the Owner adds a 16th', () => {
+        beforeEach(async () => {
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('responds with 409', () => {
+          expect(response.status).toBe(409);
+        });
+
+        it('carries the staff_member_limit_reached code', async () => {
+          expect(await response.json()).toEqual({ code: 'staff_member_limit_reached' });
+        });
+
+        it('creates no Staff Member', async () => {
+          expect(await app.db.staffMember.count({ where: { venueId: ownVenue.id } })).toBe(15);
+        });
+      });
+
+      describe('when the Owner adds back someone archived', () => {
+        beforeEach(async () => {
+          await createArchivedStaffMember(app.db, ownVenue, ALEX);
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('refuses them like anyone new, with the staff_member_limit_reached code', async () => {
+          expect([response.status, await response.json()]).toEqual([
+            409,
+            { code: 'staff_member_limit_reached' },
+          ]);
+        });
+      });
+
+      describe('when the Owner archives Jo and then adds a Staff Member', () => {
+        beforeEach(async () => {
+          await app.request('POST', `${staffMembersPath(ownVenue)}/${jo.id}/archive`, { as: OWNER });
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('responds with 201', () => {
+          expect(response.status).toBe(201);
+        });
+      });
+    });
+
+    describe('when the Venue already has 20 active Staff Members', () => {
+      beforeEach(async () => {
+        await createActiveStaffMembers(ownVenue, 20);
+        response = await app.request('POST', staffMembersPath(ownVenue), {
+          as: OWNER,
+          body: ALEX,
+        });
+      });
+
+      it('refuses the 21st with 409 and the staff_member_limit_reached code', async () => {
+        expect([response.status, await response.json()]).toEqual([
+          409,
+          { code: 'staff_member_limit_reached' },
+        ]);
       });
     });
 

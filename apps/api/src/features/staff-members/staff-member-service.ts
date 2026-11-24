@@ -1,4 +1,9 @@
-import { apiErrorCode, type StaffMemberDetails } from '@rota-ready/shared';
+import {
+  apiErrorCode,
+  FREE_PLAN_STAFF_MEMBER_LIMIT,
+  type ApiErrorCode,
+  type StaffMemberDetails,
+} from '@rota-ready/shared';
 import type { Prisma, StaffMember } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { isPrismaError, type Db } from '#src/lib/db.js';
@@ -9,7 +14,9 @@ import {
   generateStaffLinkToken,
   hashStaffLinkToken,
 } from '#src/features/staff-links/staff-link-token.js';
+import { lockVenueUntilCommit } from '#src/features/venues/venue-data.js';
 import {
+  countActiveStaffMembers,
   createStaffMember,
   findActiveStaffMember,
   findActiveStaffMembers,
@@ -27,7 +34,7 @@ interface StaffMemberServiceDependencies {
   staffLinkKey: Buffer;
 }
 
-type StaffMemberResult<Code extends 'not_found' | 'staff_member_email_taken'> =
+type StaffMemberResult<Code extends ApiErrorCode> =
   | { ok: true; staffMember: StaffMember }
   | Refused<Code>;
 
@@ -75,14 +82,20 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
     async add(
       venueId: string,
       details: StaffMemberDetails,
-    ): Promise<StaffMemberResult<'staff_member_email_taken'>> {
+    ): Promise<StaffMemberResult<'staff_member_email_taken' | 'staff_member_limit_reached'>> {
       try {
-        const staffMember = await createStaffMember(db, {
-          ...details,
-          ...newStaffLinkColumns().columns,
-          venueId,
+        return await db.$transaction(async (tx) => {
+          await lockVenueUntilCommit(tx, venueId);
+          if ((await countActiveStaffMembers(tx, venueId)) >= FREE_PLAN_STAFF_MEMBER_LIMIT) {
+            return refuse(apiErrorCode.staff_member_limit_reached);
+          }
+          const staffMember = await createStaffMember(tx, {
+            ...details,
+            ...newStaffLinkColumns().columns,
+            venueId,
+          });
+          return { ok: true, staffMember };
         });
-        return { ok: true, staffMember };
       } catch (error) {
         if (isPrismaError(error, 'P2002')) return refuse(apiErrorCode.staff_member_email_taken);
         throw error;

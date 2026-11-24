@@ -27,7 +27,8 @@
     "shiftStarted": "This Shift has already started, so you can't change your answer.",
     "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them.",
     "rotaNotPublished": "Publish this Week's Rota before sending updates.",
-    "rotaHasShifts": "This Week already has Shifts, so Copy Last Week can only fill an empty Week."
+    "rotaHasShifts": "This Week already has Shifts, so Copy Last Week can only fill an empty Week.",
+    "staffMemberLimitReached": "The Free plan allows up to {{freePlanStaffMemberLimit}} Staff Members. Archive someone who has left to add someone new."
   },
   "validation": {
     "required": "This field is required.",
@@ -183,6 +184,10 @@
     "add": {
       "title": "Add a staff member",
       "submit": "Add staff member"
+    },
+    "limit": {
+      "title": "The Free plan allows up to {{freePlanStaffMemberLimit}} Staff Members",
+      "description": "You have {{staffMemberCount}} Staff Members. Archive someone who has left to add someone new. Pro, coming soon, removes the limit."
     },
     "edit": {
       "button": "Edit",

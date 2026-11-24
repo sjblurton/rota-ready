@@ -1,8 +1,10 @@
+import { FREE_PLAN_STAFF_MEMBER_LIMIT } from '@rota-ready/shared';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddStaffMemberForm } from '@/features/staff-members/add-staff-member-form';
+import { StaffMemberLimitCard } from '@/features/staff-members/staff-member-limit-card';
 import { ArchiveStaffMemberDialog } from '@/features/staff-members/archive-staff-member-dialog';
 import { EditStaffMemberForm } from '@/features/staff-members/edit-staff-member-form';
 import { StaffLinkDialog } from '@/features/staff-links/staff-link-dialog';
@@ -102,16 +104,20 @@ function StaffPage() {
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h2>{t('staff.add.title')}</h2>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AddStaffMemberForm venueId={venueId} />
-        </CardContent>
-      </Card>
+      {staffMembers.length >= FREE_PLAN_STAFF_MEMBER_LIMIT ? (
+        <StaffMemberLimitCard venueId={venueId} />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>{t('staff.add.title')}</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AddStaffMemberForm venueId={venueId} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

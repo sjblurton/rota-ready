@@ -125,5 +125,23 @@ describe('/api/venues/:venueId/staff-members', () => {
         ]);
       });
     });
+
+    describe('when the venue has 20 active Staff Members, more than the Free plan lets it add', () => {
+      beforeEach(async () => {
+        for (let number = 1; number <= 20; number++) {
+          await createActiveStaffMember(app.db, ownVenue, {
+            name: `Staff Member ${number}`,
+            role: 'Bar',
+            email: `staff-${number}@example.com`,
+            phone: null,
+          });
+        }
+        response = await app.request('GET', staffMembersPath(ownVenue), { as: OWNER });
+      });
+
+      it('returns all 20', async () => {
+        expect(await response.json()).toHaveLength(20);
+      });
+    });
   });
 });

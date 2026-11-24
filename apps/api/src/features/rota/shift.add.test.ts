@@ -100,6 +100,31 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/shifts', () => {
     });
   });
 
+  describe('when Sam is one of 20 active Staff Members, more than the Free plan lets the Venue add', () => {
+    beforeEach(async () => {
+      for (let number = 2; number <= 20; number++) {
+        await createActiveStaffMember(app.db, ownVenue, {
+          name: `Staff Member ${number}`,
+          role: 'Bar',
+          email: `staff-${number}@example.com`,
+          phone: null,
+        });
+      }
+      response = await app.request('POST', shiftsPath(ownVenue, WEEK_START), {
+        as: OWNER,
+        body: {
+          staffMemberId: sam.id,
+          startsAt: '2026-11-16T09:00:00.000Z',
+          endsAt: '2026-11-16T17:00:00.000Z',
+        },
+      });
+    });
+
+    it('adds the Shift for Sam with 201', () => {
+      expect(response.status).toBe(201);
+    });
+  });
+
   describe('when the Owner adds an Overnight Shift that starts on Sunday', () => {
     beforeEach(async () => {
       app.setClock('2026-11-16T08:00:00.000Z');

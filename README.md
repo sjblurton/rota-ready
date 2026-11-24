@@ -29,7 +29,7 @@ Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
 
 **Plans.** [The landing page](https://rota-ready.onrender.com) offers two:
 
-- **Free**, the working app today: one Venue, up to 15 Staff Members (not enforced yet, [#135](https://github.com/sjblurton/rota-ready/issues/135)), weekly Rotas, Publish, Send Updates and Copy Last Week, with Staff Members confirming or declining from their Staff Link. Publish emails each Staff Link, but production's test sender only reaches one address, so Owners can also copy each Staff Link to send it themselves.
+- **Free**, the working app today: one Venue, up to 15 Staff Members who aren't archived, weekly Rotas, Publish, Send Updates and Copy Last Week, with Staff Members confirming or declining from their Staff Link. Publish emails each Staff Link, but production's test sender only reaches one address, so Owners can also copy each Staff Link to send it themselves.
 - **Pro**, coming soon: email and text notifications that reach every Staff Member, text reminders the day before a Shift, unlimited Staff Members, more than one Venue, and more than one manager per Venue.
 
 This is a proof of concept with no paid services, so there's no price yet and nothing to buy. The [future-work board](https://github.com/users/sjblurton/projects/2) holds what Pro would need.
@@ -247,7 +247,7 @@ Since the MVP:
 The [future-work board](https://github.com/users/sjblurton/projects/2) groups what's next by theme:
 
 - **Paid version:** what needs a paid plan, a domain or an email sender, such as a sign-up that never reveals whether an email already belongs to a User
-- **Product:** the Upgrade to Pro button, the Free plan's 15 Staff Member limit, turning off emails until a real sender exists, and more
+- **Product:** the Upgrade to Pro button, turning off emails until a real sender exists, and more
 - **Engineering:** faster CI, more row-lock tests, the journey against production builds, and lint rules
 - **Agent workflow:** guardrails and skills for the agents that build the app
 

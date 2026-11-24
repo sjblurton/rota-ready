@@ -1013,6 +1013,40 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', lastWeek, lastWeek)).toHaveText('09:00–17:00No reply');
   });
 
+  test('explains the Free plan limit in place of the add form once the Venue has 15 Staff Members', async () => {
+    await page.getByRole('tab', { name: 'Staff' }).click();
+    await expect(staffRows()).toHaveText([/Jo Bloggs/, /Sam Jones/]);
+    const addForm = staffForm('Add staff member');
+    for (let number = 3; number <= 15; number++) {
+      const name = `Staff Member ${String(number).padStart(2, '0')}`;
+      await addForm.getByLabel('Name').fill(name);
+      await addForm.getByLabel('Role').fill('Bar');
+      await addForm.getByLabel('Email').fill(`staff-${number}@example.com`);
+      await addForm.getByLabel('Email').press('Enter');
+      await expect(staffTable().getByText(name)).toBeVisible();
+    }
+    await expect(staffRows()).toHaveCount(15);
+    await expect(
+      page.getByRole('heading', { name: 'The Free plan allows up to 15 Staff Members' }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        'You have 15 Staff Members. Archive someone who has left to add someone new. Pro, coming soon, removes the limit.',
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add staff member' })).toHaveCount(0);
+  });
+
+  test('offers the add form again once a Staff Member is archived', async () => {
+    await page.getByRole('button', { name: 'Archive Staff Member 15' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
+    await expect(staffRows()).toHaveCount(14);
+    await expect(page.getByRole('button', { name: 'Add staff member' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'The Free plan allows up to 15 Staff Members' }),
+    ).toHaveCount(0);
+  });
+
   test('keeps a User with a Venue out of onboarding', async () => {
     await page.goto('/onboarding');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
