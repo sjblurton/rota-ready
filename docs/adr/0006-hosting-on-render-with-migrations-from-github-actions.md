@@ -8,6 +8,8 @@ Render's pre-deploy command is only on paid plans, so neither service deploys it
 
 That order means each layer briefly runs against the newer layer beneath it, so changes must be backwards compatible in two places: every migration must work with the API that's already running, and every API change must work with the web app that's already running. Add first; remove in a later deploy.
 
+Prisma reads every column its model declares, even ones the code never uses. So the PR that stops the code using a column also removes it from `schema.prisma`, with no migration, and a later PR drops it once that's live.
+
 ## Migrations are atomic and linted
 
 Prisma runs a migration's statements one at a time, not in a transaction, so a migration that fails part-way would leave production half-applied and block every later migration until someone repaired it by hand. So every new migration is wrapped:

@@ -62,7 +62,6 @@ model StaffMember {
   createdAt                DateTime       @default(now()) @map("created_at") @db.Timestamptz
   venue                    Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
   shifts                   Shift[]        @relation("ShiftStaffMember")
-  toldShifts               Shift[]        @relation("ShiftToldStaffMember")
   notifiedShifts           Shift[]        @relation("ShiftNotifiedStaffMember")
   previousShifts           Shift[]        @relation("ShiftPreviousStaffMember")
   shiftRemovals            ShiftRemoval[]
@@ -112,9 +111,6 @@ model Shift {
   response              ShiftResponse  @default(pending)
   declineReason         String?        @map("decline_reason")
   respondedAt           DateTime?      @map("responded_at") @db.Timestamptz
-  toldStaffMemberId     String?        @map("told_staff_member_id") @db.Uuid
-  toldStartsAt          DateTime?      @map("told_starts_at") @db.Timestamptz
-  toldEndsAt            DateTime?      @map("told_ends_at") @db.Timestamptz
   notifiedStaffMemberId String?        @map("notified_staff_member_id") @db.Uuid
   notifiedStartsAt      DateTime?      @map("notified_starts_at") @db.Timestamptz
   notifiedEndsAt        DateTime?      @map("notified_ends_at") @db.Timestamptz
@@ -126,14 +122,12 @@ model Shift {
   venue                 Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
   rota                  Rota           @relation(fields: [rotaId], references: [id], onDelete: Cascade)
   staffMember           StaffMember    @relation("ShiftStaffMember", fields: [staffMemberId], references: [id], onDelete: Restrict)
-  toldStaffMember       StaffMember?   @relation("ShiftToldStaffMember", fields: [toldStaffMemberId], references: [id], onDelete: Restrict)
   notifiedStaffMember   StaffMember?   @relation("ShiftNotifiedStaffMember", fields: [notifiedStaffMemberId], references: [id], onDelete: Restrict)
   previousStaffMember   StaffMember?   @relation("ShiftPreviousStaffMember", fields: [previousStaffMemberId], references: [id], onDelete: Restrict)
   removals              ShiftRemoval[]
 
   @@index([rotaId, startsAt])
   @@index([staffMemberId, startsAt])
-  @@index([toldStaffMemberId, toldStartsAt])
   @@index([notifiedStaffMemberId, notifiedStartsAt])
   @@map("shifts")
 }
