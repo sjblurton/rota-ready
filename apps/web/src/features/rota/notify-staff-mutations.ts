@@ -1,4 +1,4 @@
-import { apiErrorCode, staffLinkEmailsResultSchema } from '@rota-ready/shared';
+import { apiErrorCode, publishResultSchema, sendUpdatesResultSchema } from '@rota-ready/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ export function usePublishRota(
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => apiPost(publishPath(venueId, weekStart), undefined, staffLinkEmailsResultSchema),
+    mutationFn: () => apiPost(publishPath(venueId, weekStart), undefined, publishResultSchema),
     onSuccess: () => {
       markRotaPublished(queryClient, venueId, weekStart);
     },
@@ -43,7 +43,7 @@ export function useSendUpdates(venueId: string, weekStart: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiPost(sendUpdatesPath(venueId, weekStart), undefined, staffLinkEmailsResultSchema),
+      apiPost(sendUpdatesPath(venueId, weekStart), undefined, sendUpdatesResultSchema),
     onSuccess: () => {
       refetchRota(queryClient, venueId, weekStart);
     },

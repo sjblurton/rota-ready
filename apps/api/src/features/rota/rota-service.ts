@@ -9,10 +9,12 @@ import {
   addDays,
   shiftTimesIssue,
   shiftTimesOneWeekLater,
+  shiftUpdateKind,
   type EmailStatus,
 } from '@rota-ready/shared';
 import type { Logger } from 'pino';
 import {
+  Plan,
   RotaStatus,
   type Prisma,
   type Rota,
@@ -68,9 +70,20 @@ interface Email {
   text: string;
 }
 
-const shiftUpdateKind = { added: 'added', changed: 'changed', removed: 'removed' } as const;
+export interface StaffMemberToNotify {
+  staffMember: StaffMember;
+  staffLinkToken: string;
+}
 
-type ShiftUpdate =
+export interface StaffMemberToUpdate extends StaffMemberToNotify {
+  updates: ShiftUpdate[];
+}
+
+export type NotifyResult<FreeStaffMember> =
+  | { plan: typeof Plan.free; staffMembers: FreeStaffMember[] }
+  | { plan: typeof Plan.pro; emails: StaffLinkEmailResult[] };
+
+export type ShiftUpdate =
   | { kind: typeof shiftUpdateKind.added | typeof shiftUpdateKind.removed; staffMemberId: string; times: ShiftTimes }
   | { kind: typeof shiftUpdateKind.changed; staffMemberId: string; times: ShiftTimes; previous: ShiftTimes };
 
@@ -101,6 +114,12 @@ function describeUpdate(update: ShiftUpdate, timeZone: string) {
     timeZone,
   });
   return t('shiftUpdatesEmail.changed', { day, times, previousTimes });
+}
+
+function updatesFor(staffMember: StaffMember, updates: ShiftUpdate[]) {
+  return updates
+    .filter(({ staffMemberId }) => staffMemberId === staffMember.id)
+    .sort((a, b) => a.times.startsAt.getTime() - b.times.startsAt.getTime());
 }
 
 type ShiftCopy = ShiftTimes & {
@@ -184,6 +203,15 @@ export function createRotaService({
     };
   }
 
+  async function withStaffLinkTokens(toNotify: StaffMember[]): Promise<StaffMemberToNotify[]> {
+    return Promise.all(
+      toNotify.map(async (staffMember) => ({
+        staffMember,
+        staffLinkToken: await staffMembers.staffLinkTokenOf(staffMember),
+      })),
+    );
+  }
+
   return {
     async get(venueId: string, weekStart: string) {
       const rota = await findOrCreateRota(db, venueId, weekStart);
@@ -197,7 +225,9 @@ export function createRotaService({
     async publish(
       venue: Venue,
       weekStart: string,
-    ): Promise<{ ok: true; emails: StaffLinkEmailResult[] } | Refused<'rota_already_published'>> {
+    ): Promise<
+      ({ ok: true } & NotifyResult<StaffMemberToNotify>) | Refused<'rota_already_published'>
+    > {
       const rota = await findOrCreateRota(db, venue.id, weekStart);
       const published = await db.$transaction(async (tx) => {
         if (!(await publishDraftRota(tx, rota.id, clock.now()))) return false;
@@ -206,6 +236,9 @@ export function createRotaService({
       });
       if (!published) return refuse(apiErrorCode.rota_already_published);
       const onRota = await findActiveStaffMembersOnRota(db, rota.id);
+      if (venue.plan === Plan.free) {
+        return { ok: true, plan: Plan.free, staffMembers: await withStaffLinkTokens(onRota) };
+      }
       const emails = await Promise.all(
         onRota.map((staffMember) =>
           emailStaffLink(staffMember, (staffLinkUrl) => {
@@ -217,7 +250,7 @@ export function createRotaService({
           }),
         ),
       );
-      return { ok: true, emails };
+      return { ok: true, plan: Plan.pro, emails };
     },
 
     async copyLastWeek(
@@ -246,7 +279,9 @@ export function createRotaService({
     async sendUpdates(
       venue: Venue,
       weekStart: string,
-    ): Promise<{ ok: true; emails: StaffLinkEmailResult[] } | Refused<'rota_not_published'>> {
+    ): Promise<
+      ({ ok: true } & NotifyResult<StaffMemberToUpdate>) | Refused<'rota_not_published'>
+    > {
       const rota = await findOrCreateRota(db, venue.id, weekStart);
       if (rota.status !== RotaStatus.published) return refuse(apiErrorCode.rota_not_published);
       const unsent = await db.$transaction(async (tx) => {
@@ -261,12 +296,21 @@ export function createRotaService({
       const affected = await findStaffMembers(db, [
         ...new Set(updates.map(({ staffMemberId }) => staffMemberId)),
       ]);
+      if (venue.plan === Plan.free) {
+        const toNotify = await withStaffLinkTokens(affected.filter(({ archivedAt }) => !archivedAt));
+        return {
+          ok: true,
+          plan: Plan.free,
+          staffMembers: toNotify.map((each) => ({
+            ...each,
+            updates: updatesFor(each.staffMember, updates),
+          })),
+        };
+      }
       const emails = await Promise.all(
         affected.map((staffMember) =>
           emailStaffLink(staffMember, (staffLinkUrl) => {
-            const changes = updates
-              .filter(({ staffMemberId }) => staffMemberId === staffMember.id)
-              .sort((a, b) => a.times.startsAt.getTime() - b.times.startsAt.getTime())
+            const changes = updatesFor(staffMember, updates)
               .map((update) => describeUpdate(update, venue.timeZone))
               .join('\n');
             const details = { ...emailDetails(venue, weekStart, staffMember), staffLinkUrl, changes };
@@ -277,7 +321,7 @@ export function createRotaService({
           }),
         ),
       );
-      return { ok: true, emails };
+      return { ok: true, plan: Plan.pro, emails };
     },
   };
 }

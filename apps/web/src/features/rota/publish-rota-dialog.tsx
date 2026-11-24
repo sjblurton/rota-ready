@@ -1,4 +1,4 @@
-import { formatLocalDate } from '@rota-ready/shared';
+import { formatLocalDate, plan } from '@rota-ready/shared';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useRotaWeek } from '@/features/rota/rota-queries';
-import { usePublishRota } from '@/features/rota/staff-link-email-mutations';
-import { StaffLinkEmailResults } from '@/features/rota/staff-link-email-results';
+import { usePublishRota } from '@/features/rota/notify-staff-mutations';
+import { NotifyResultList } from '@/features/rota/notify-result-list';
 
 interface PublishRotaDialogProps {
   venueId: string;
@@ -29,6 +29,7 @@ export function PublishRotaDialog({ venueId, weekStart }: PublishRotaDialogProps
   const date = formatLocalDate(weekStart, { withYear: true });
   const publish = usePublishRota(venueId, weekStart, { onAlreadyPublished: () => setOpen(false) });
   const result = publish.data;
+  const notified = result && (result.plan === plan.pro ? result.emails : result.staffMembers);
 
   function confirm(event: MouseEvent) {
     event.preventDefault();
@@ -44,18 +45,18 @@ export function PublishRotaDialog({ venueId, weekStart }: PublishRotaDialogProps
           <Button size="sm">{t('rota.publish.button')}</Button>
         </AlertDialogTrigger>
       )}
-      <AlertDialogContent>
-        {result ? (
+      <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+        {result && notified ? (
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('rota.publish.publishedTitle', { date })}</AlertDialogTitle>
               <AlertDialogDescription>
-                {result.emails.length === 0
-                  ? t('rota.publish.noEmails')
-                  : t('rota.publish.emailsSent')}
+                {notified.length === 0
+                  ? t(`rota.publish.nobodyToNotify.${result.plan}`)
+                  : t(`rota.publish.notified.${result.plan}`)}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <StaffLinkEmailResults emails={result.emails} />
+            <NotifyResultList venueId={venueId} weekStart={weekStart} result={result} />
             <AlertDialogFooter>
               <AlertDialogAction>{t('rota.publish.done')}</AlertDialogAction>
             </AlertDialogFooter>

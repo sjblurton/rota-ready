@@ -67,7 +67,7 @@ A Rota whose Shifts staff can see and respond to. A Published Rota can still be 
 _Avoid_: Live, sent, final
 
 **Publish**:
-Making a Draft Rota Published and emailing each Staff Member with Shifts that Week their Staff Link.
+Making a Draft Rota Published and notifying each Staff Member with Shifts that Week of their Staff Link: on Free the Owner tells them, on Pro Rota Ready does.
 _Avoid_: Send, release
 
 **Copy Last Week**:
@@ -91,7 +91,7 @@ How a Shift shows once it has started while its Shift Response is still Pending.
 _Avoid_: Missed, expired, no-show (it says nothing about whether they turned up)
 
 **Changed Shift**:
-A Shift in a Published Rota whose date, time or Staff Member has been changed since the affected staff were last notified. A change of this kind resets the Shift Response to Pending; changing notes or Role does not.
+A Shift in a Published Rota whose date, time or Staff Member has been changed since the affected staff were last notified, by the Owner on Free or by Rota Ready on Pro. A change of this kind resets the Shift Response to Pending; changing notes or Role does not.
 _Avoid_: Edited shift, dirty shift
 
 **Removed Shift**:
@@ -99,7 +99,7 @@ What a Staff Member sees when a Shift they were notified about is deleted or rea
 _Avoid_: Cancelled shift
 
 **Send Updates**:
-Emailing only the Staff Members affected by Changed Shifts and Removed Shifts since they were last notified.
+Notifying only the Staff Members affected by Changed Shifts and Removed Shifts since they were last notified: on Free the Owner tells them, on Pro Rota Ready does. Either way, they then count as notified.
 _Avoid_: Republish, notify all
 
 ## Plans

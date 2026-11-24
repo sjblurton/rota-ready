@@ -141,19 +141,37 @@
       "confirm": "Publish",
       "cancel": "Cancel",
       "publishedTitle": "Published the Week of {{date}}",
-      "emailsSent": "Each Staff Member with Shifts this Week was emailed their Staff Link.",
-      "noEmails": "Nobody has Shifts this Week, so no one was emailed.",
+      "notified": {
+        "free": "Send each Staff Member with Shifts this Week their Staff Link, so they can see and confirm their Shifts.",
+        "pro": "Each Staff Member with Shifts this Week was emailed their Staff Link."
+      },
+      "nobodyToNotify": {
+        "free": "Nobody has Shifts this Week, so there's no one to notify.",
+        "pro": "Nobody has Shifts this Week, so no one was emailed."
+      },
       "done": "Done"
     },
     "sendUpdates": {
       "button": "Send Updates",
       "title": "Send updates for the Week of {{date}}?",
-      "description": "Each Staff Member affected by a Changed or Removed Shift gets one email with their Staff Link and what changed.",
+      "description": {
+        "free": "Everyone affected by a Changed or Removed Shift is marked as notified. Next you'll see who they are, what changed for each, and their Staff Link to send them.",
+        "pro": "Each Staff Member affected by a Changed or Removed Shift gets one email with their Staff Link and what changed."
+      },
       "confirm": "Send Updates",
       "cancel": "Cancel",
-      "sentTitle": "Sent updates for the Week of {{date}}",
-      "emailsSent": "Each affected Staff Member was emailed their Staff Link and what changed.",
-      "noEmails": "Nothing had changed since the last update, so no one was emailed.",
+      "resultTitle": {
+        "free": "Updates for the Week of {{date}}",
+        "pro": "Sent updates for the Week of {{date}}"
+      },
+      "notified": {
+        "free": "Tell each Staff Member what changed and send them their Staff Link.",
+        "pro": "Each affected Staff Member was emailed their Staff Link and what changed."
+      },
+      "nobodyToNotify": {
+        "free": "Nothing had changed since the last update, so there's no one to notify.",
+        "pro": "Nothing had changed since the last update, so no one was emailed."
+      },
       "done": "Done"
     },
     "emails": {
@@ -164,6 +182,15 @@
         "failed": "Failed"
       },
       "someFailed": "Some emails didn't send. Copy those Staff Links from the Staff page and send them another way."
+    },
+    "notify": {
+      "label": "Staff Members to notify",
+      "copyLabel": "Copy {{name}}'s Staff Link",
+      "update": {
+        "added": "{{day}}, {{times}}: new",
+        "changed": "{{day}}, {{times}}: was {{previousTimes}}",
+        "removed": "{{day}}, {{times}}: removed"
+      }
     },
     "copyLastWeek": {
       "button": "Copy Last Week",

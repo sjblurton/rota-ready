@@ -3,7 +3,6 @@ import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
-const mailpitUrl = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324';
 const venueName = 'The Crown';
 const renamedVenue = 'The Rose & Crown';
 const rotaWeekUrl = /\/rota\/\d{4}-\d{2}-\d{2}$/;
@@ -12,36 +11,6 @@ const staffMembers = [
   { name: 'Jo Bloggs', role: 'Floor', email: 'jo@example.com', phone: '07700 900456' },
   { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
 ];
-
-interface MailpitMessage {
-  ID: string;
-  Created: string;
-}
-
-async function latestEmailTextTo(address: string, since: Date): Promise<string | undefined> {
-  const search = await fetch(
-    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:${address}`)}&limit=1`,
-  );
-  const { messages } = (await search.json()) as { messages: MailpitMessage[] };
-  const latest = messages[0];
-  if (!latest || new Date(latest.Created) < since) return undefined;
-  const message = await fetch(`${mailpitUrl}/api/v1/message/${latest.ID}`);
-  return ((await message.json()) as { Text: string }).Text;
-}
-
-async function emailTextsTo(address: string, since: Date): Promise<string[]> {
-  const search = await fetch(
-    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:${address}`)}&limit=10`,
-  );
-  const { messages } = (await search.json()) as { messages: MailpitMessage[] };
-  const recent = messages.filter((message) => new Date(message.Created) >= since);
-  return Promise.all(
-    recent.map(async ({ ID }) => {
-      const message = await fetch(`${mailpitUrl}/api/v1/message/${ID}`);
-      return ((await message.json()) as { Text: string }).Text;
-    }),
-  );
-}
 
 async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -61,11 +30,9 @@ test.describe.serial('MVP journey', () => {
   let plannedWeek: string;
   let nextWeek: string;
   let samsLink: string;
-  let samsEmailedLink: string;
-  let publishedWeekAt: Date;
+  let samsPublishedLink: string;
   let samsNewLink: string;
   let josLink: string;
-  let updatesSentAt: Date;
   let privateWindow: BrowserContext;
   let staffLinkPage: Page;
 
@@ -658,16 +625,32 @@ test.describe.serial('MVP journey', () => {
     );
   });
 
-  test('Publishes the Week and shows who was emailed their Staff Link', async () => {
-    publishedWeekAt = new Date(Date.now() - 1_000);
+  test('Publishes the Week and lists Sam to notify, with a Copy link button', async () => {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Publish' }).click();
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toContainText(
       `Published the Week of ${formatLocalDate(plannedWeek, { withYear: true })}`,
     );
     await expect(
-      dialog.getByRole('list', { name: 'Staff Link emails' }).getByRole('listitem'),
-    ).toHaveText(['Sam JonesSent']);
+      dialog.getByRole('list', { name: 'Staff Members to notify' }).getByRole('listitem'),
+    ).toHaveText(['Sam JonesCopy link']);
+  });
+
+  test("copies Sam's Staff Link from the Publish result, which opens Sam's page", async ({
+    browser,
+  }) => {
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: "Copy Sam Jones's Staff Link" })
+      .click();
+    await expect(toast()).toHaveText('Link copied');
+    samsPublishedLink = await page.evaluate(() => navigator.clipboard.readText());
+    await dismissToasts();
+    const linkWindow = await browser.newContext();
+    const linkPage = await linkWindow.newPage();
+    await linkPage.goto(samsPublishedLink);
+    await expect(linkPage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
+    await linkWindow.close();
   });
 
   test('closes the results and shows the Published badge in place of the Publish button', async () => {
@@ -675,19 +658,6 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('alertdialog')).toBeHidden();
     await expect(page.getByRole('tabpanel').getByText('Published', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publish' })).toHaveCount(0);
-  });
-
-  test("emails Sam their Staff Link, which opens Sam's page", async ({ browser }) => {
-    await expect
-      .poll(() => latestEmailTextTo('sam@example.com', publishedWeekAt))
-      .toMatch(/\/s\/[\w-]{43}/);
-    const text = await latestEmailTextTo('sam@example.com', publishedWeekAt);
-    samsEmailedLink = text?.match(/https?:\/\/\S+\/s\/[\w-]{43}/)?.[0] ?? '';
-    const emailWindow = await browser.newContext();
-    const emailPage = await emailWindow.newPage();
-    await emailPage.goto(samsEmailedLink);
-    await expect(emailPage.getByRole('heading', { level: 1 })).toHaveText('Hi Sam');
-    await emailWindow.close();
   });
 
   test('keeps the Week Published after a reload', async () => {
@@ -713,7 +683,7 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByRole('dialog')).toContainText("Sam Jones's Staff Link");
     await expect(page.getByRole('dialog').getByLabel('Link')).toHaveValue(/\/s\/[\w-]{43}$/);
     samsLink = await page.getByRole('dialog').getByLabel('Link').inputValue();
-    expect(samsLink).toBe(samsEmailedLink);
+    expect(samsLink).toBe(samsPublishedLink);
   });
 
   test("copies Sam's Staff Link", async () => {
@@ -921,16 +891,30 @@ test.describe.serial('MVP journey', () => {
     );
   });
 
-  test('Sends Updates and shows that Jo and Sam were emailed', async () => {
-    updatesSentAt = new Date(Date.now() - 1_000);
+  test('Sends Updates and lists Jo and Sam to notify, with what changed for each', async () => {
+    const wednesday = formatLocalDate(addDays(nextWeek, 2));
+    const thursday = formatLocalDate(addDays(nextWeek, 3));
     await page.getByRole('alertdialog').getByRole('button', { name: 'Send Updates' }).click();
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toContainText(
-      `Sent updates for the Week of ${formatLocalDate(nextWeek, { withYear: true })}`,
+      `Updates for the Week of ${formatLocalDate(nextWeek, { withYear: true })}`,
     );
     await expect(
-      dialog.getByRole('list', { name: 'Staff Link emails' }).getByRole('listitem'),
-    ).toHaveText(['Jo BloggsSent', 'Sam JonesSent']);
+      dialog.getByRole('list', { name: 'Staff Members to notify' }).getByRole('listitem'),
+    ).toHaveText([
+      `Jo Bloggs${thursday}, 18:00–23:00: newCopy link`,
+      `Sam Jones${wednesday}, 13:00–18:00: was 12:00–18:00${thursday}, 18:00–23:00: removedCopy link`,
+    ]);
+  });
+
+  test("copies Jo's Staff Link from the update list", async () => {
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: "Copy Jo Bloggs's Staff Link" })
+      .click();
+    await expect(toast()).toHaveText('Link copied');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(josLink);
+    await dismissToasts();
   });
 
   test('clears the Changed and Removed markers and the Send Updates button once sent', async () => {
@@ -944,16 +928,6 @@ test.describe.serial('MVP journey', () => {
       '18:00–23:00FloorOpen up at 17:45Pending',
     );
     await expect(page.getByRole('button', { name: 'Send Updates' })).toHaveCount(0);
-  });
-
-  test('emails Sam and Jo one update each, saying what changed', async () => {
-    await expect.poll(() => emailTextsTo('sam@example.com', updatesSentAt)).toHaveLength(1);
-    const [samsUpdate] = await emailTextsTo('sam@example.com', updatesSentAt);
-    const [josUpdate] = await emailTextsTo('jo@example.com', updatesSentAt);
-    expect(samsUpdate).toContain(`${formatLocalDate(addDays(nextWeek, 2))}, 13:00–18:00: was 12:00–18:00`);
-    expect(samsUpdate).toContain(`${formatLocalDate(addDays(nextWeek, 3))}, 18:00–23:00: removed`);
-    expect(josUpdate).toContain(`${formatLocalDate(addDays(nextWeek, 3))}, 18:00–23:00: new`);
-    expect(await emailTextsTo('jo@example.com', updatesSentAt)).toHaveLength(1);
   });
 
   test("shows the Wednesday Shift's old times on Sam's Staff Link page, and keeps the Removed Shift", async ({

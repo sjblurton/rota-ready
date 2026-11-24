@@ -29,7 +29,7 @@ Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
 
 **Plans.** [The landing page](https://rota-ready.onrender.com) offers two:
 
-- **Free**, the working app today: one Venue, up to 15 Staff Members who aren't archived, weekly Rotas, Publish, Send Updates and Copy Last Week, with Staff Members confirming or declining from their Staff Link. Publish emails each Staff Link, but production's test sender only reaches one address, so Owners can also copy each Staff Link to send it themselves.
+- **Free**, the working app today: one Venue, up to 15 Staff Members who aren't archived, weekly Rotas, Publish, Send Updates and Copy Last Week, with Staff Members confirming or declining from their Staff Link. Rota Ready sends Staff Members nothing on Free: Publish and Send Updates list each Staff Member to tell, with a Copy link button and, for Send Updates, what changed.
 - **Pro**, coming soon: email and text notifications that reach every Staff Member, text reminders the day before a Shift, unlimited Staff Members, more than one Venue, and more than one manager per Venue.
 
 This is a proof of concept with no paid services, so there's no price yet and nothing to buy. The [future-work board](https://github.com/users/sjblurton/projects/2) holds what Pro would need.
@@ -123,12 +123,12 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 
 ### Testing approach
 
-The tests exist to keep `main` deployable (merging deploys), make refactoring safe, protect the risky rules (tenancy, clock changes, who is emailed, row locks), show what the user sees, stay fast and deterministic (CI under 5 minutes), and make the right place for a new test obvious. [The November 2026 audit](docs/testing-audit-2026-11.md) measured the approach against those goals.
+The tests exist to keep `main` deployable (merging deploys), make refactoring safe, protect the risky rules (tenancy, clock changes, who is notified, row locks), show what the user sees, stay fast and deterministic (CI under 5 minutes), and make the right place for a new test obvious. [The November 2026 audit](docs/testing-audit-2026-11.md) measured the approach against those goals.
 
 | Seam | What it covers | Tooling |
 | --- | --- | --- |
 | HTTP API | Almost all behaviour, including auth failures and cross-venue 404s. The default place for a new test | Vitest against `createApp`, real Postgres (a dedicated test database, truncated before each test) |
-| Email | Who was and wasn't emailed, and which link they got | In-memory outbox passed into `createApp` from #11 |
+| Email | Who was and wasn't emailed on a Pro Venue, and which link they got, and that a Free Venue is sent nothing (#134) | In-memory outbox passed into `createApp` from #11. A test moves the Venue to Pro in the database, since no API does yet |
 | Clock | "Upcoming", "has started", "No reply", March/October clock changes | API tests run on a fixed default instant passed into `createApp`; a time scenario sets its own. React and shared tests take instants as input. No test result depends on the day it runs |
 | Row locks | Two requests racing on the same Staff Member or Rota | API tests that force the race: a second connection holds the row lock (`holdStaffMemberLock` in `test-app.ts`) until the request is blocked on it. The Staff Member lock is covered (#82); the Rota lock isn't yet (#113) |
 | Shared logic | Week attribution, Shift times across clock changes, date formatting | Vitest unit tests in `packages/shared` |
@@ -152,7 +152,7 @@ pnpm dev                     # web on http://localhost:5173, API on http://local
 
 Open http://localhost:5173 and you'll see the landing page. Choose **Start free** or **Sign up** to create an account (local sign-ups need no email confirmation). Your email address appears in the header, and the page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
 
-Every email the app sends locally, such as the Staff Link email from Publish, lands in the local Supabase inbox (Mailpit) at http://127.0.0.1:54324, while `pnpm db:start` is running.
+Every email the app sends locally, such as the Staff Link email from Publish on a Pro Venue, lands in the local Supabase inbox (Mailpit) at http://127.0.0.1:54324, while `pnpm db:start` is running. Venues are on Free unless you set `venues.plan` to `pro` in the database, and Free sends no emails.
 
 | Command | What it does |
 | --- | --- |
@@ -205,7 +205,7 @@ Rota Ready is a free proof of concept: no paid Supabase plan, no domain and no p
 | Email confirmation (Supabase: Authentication → Sign In / Providers → Email → Confirm email) | Off | A new User is logged in straight away, with no email. Signing up with an email that already belongs to a User shows an error, which reveals that the User exists (#38) |
 | Phone confirmation (Supabase: Authentication → Sign In / Providers → Phone → Confirm phone) | Not checked | Measured locally (#38): Supabase only stops revealing existing Users at sign-up when this and email confirmation are both on, even with SMS off. Locally it's `[auth.sms] enable_confirmations` in `supabase/config.toml` |
 | Auth email sender (Supabase: Authentication → Emails → SMTP Settings) | Supabase's built-in sender | As far as we know, it only reaches the project's team members and is rate-limited, so Supabase's own emails, such as sign-up confirmation, can't reach real Users. A real sender needs a verified domain |
-| App email sender (Render `rota-ready-api`: `SMTP_URL`, `EMAIL_FROM`) | Resend's test sender, `onboarding@resend.dev` | Publish and Send Updates emails only reach the Resend account's own address (see `EMAIL_FROM` above) |
+| App email sender (Render `rota-ready-api`: `SMTP_URL`, `EMAIL_FROM`) | Resend's test sender, `onboarding@resend.dev` | Only Pro Venues send emails (#134), and no Venue can become Pro yet. Pro's Publish and Send Updates emails would only reach the Resend account's own address (see `EMAIL_FROM` above) |
 | Site URL (Supabase: Authentication → URL Configuration) | `https://rota-ready.onrender.com` | Where links in Supabase's auth emails point |
 
 ### Roadmap
@@ -247,7 +247,7 @@ Since the MVP:
 The [future-work board](https://github.com/users/sjblurton/projects/2) groups what's next by theme:
 
 - **Paid version:** what needs a paid plan, a domain or an email sender, such as a sign-up that never reveals whether an email already belongs to a User
-- **Product:** the Upgrade to Pro button, turning off emails until a real sender exists, and more
+- **Product:** one history of what each Staff Member was notified about, the Staff Link page at phone width in the journey, and more
 - **Engineering:** faster CI, more row-lock tests, the journey against production builds, and lint rules
 - **Agent workflow:** guardrails and skills for the agents that build the app
 

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createUser, createVenueFor } from '#test/seed.js';
+import { plan } from '@rota-ready/shared';
+import { createUser, createVenueFor, moveVenueToPro } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
@@ -83,7 +84,11 @@ describe('/api/venues', () => {
 
     beforeEach(async () => {
       ownVenueId = (
-        await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' })
+        await createVenueFor(app.db, OWNER, {
+          name: 'The Crown',
+          timeZone: 'Europe/London',
+          plan: plan.free,
+        })
       ).id;
       otherVenueId = (
         await createVenueFor(app.db, OTHER_OWNER, { name: 'The Anchor', timeZone: 'Europe/London' })
@@ -115,7 +120,19 @@ describe('/api/venues', () => {
             id: ownVenueId,
             name: 'The Crown',
             timeZone: 'Europe/London',
+            plan: 'free',
           });
+        });
+      });
+
+      describe('when the Owner requests their Venue on Pro', () => {
+        beforeEach(async () => {
+          await moveVenueToPro(app.db, { id: ownVenueId });
+          response = await app.request('GET', `/api/venues/${ownVenueId}`, { as: OWNER });
+        });
+
+        it('returns the Venue with the Pro Plan', async () => {
+          expect(await response.json()).toMatchObject({ id: ownVenueId, plan: 'pro' });
         });
       });
 

@@ -20,6 +20,7 @@ model Venue {
   id           String        @id @default(uuid()) @db.Uuid
   name         String
   timeZone     String        @map("time_zone")
+  plan         Plan          @default(free)
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
   members      VenueMember[]
   staffMembers StaffMember[]
@@ -27,6 +28,13 @@ model Venue {
   shifts       Shift[]
 
   @@map("venues")
+}
+
+enum Plan {
+  free
+  pro
+
+  @@map("plan")
 }
 
 enum MemberRole {

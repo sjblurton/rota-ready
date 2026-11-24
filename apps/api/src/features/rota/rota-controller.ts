@@ -1,21 +1,67 @@
 import {
   byStaffMemberName,
   copyLastWeekResultSchema,
+  plan,
+  publishResultSchema,
   rotaSchema,
-  staffLinkEmailsResultSchema,
+  sendUpdatesResultSchema,
+  shiftUpdateKind,
+  type ShiftUpdate as ShiftUpdateResponse,
 } from '@rota-ready/shared';
 import type { Clock } from '#src/lib/clock.js';
 import { sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from '#src/features/venues/require-venue-member.js';
-import type { RotaService, StaffLinkEmailResult } from './rota-service.js';
+import type {
+  NotifyResult,
+  RotaService,
+  ShiftUpdate,
+  StaffLinkEmailResult,
+  StaffMemberToNotify,
+  StaffMemberToUpdate,
+} from './rota-service.js';
 import { toRemovedShift, toShift } from './shift-controller.js';
 
 export type RotaRequestHandler = VenueRequestHandler<{ weekStart: string }>;
 
-function toEmailsResult(emails: StaffLinkEmailResult[]) {
-  return staffLinkEmailsResultSchema.parse({
-    emails: emails
-      .map(({ staffMember: { id, name }, status }) => ({ staffMemberId: id, name, status }))
+function toStaffMemberToNotify({ staffMember: { id, name }, staffLinkToken }: StaffMemberToNotify) {
+  return { staffMemberId: id, name, staffLinkToken };
+}
+
+function toShiftTimes({ startsAt, endsAt }: { startsAt: Date; endsAt: Date }) {
+  return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
+
+function toShiftUpdate(update: ShiftUpdate): ShiftUpdateResponse {
+  if (update.kind === shiftUpdateKind.changed) {
+    return { kind: update.kind, ...toShiftTimes(update.times), previous: toShiftTimes(update.previous) };
+  }
+  return { kind: update.kind, ...toShiftTimes(update.times) };
+}
+
+function toEmails(emails: StaffLinkEmailResult[]) {
+  return emails
+    .map(({ staffMember: { id, name }, status }) => ({ staffMemberId: id, name, status }))
+    .sort(byStaffMemberName);
+}
+
+function toPublishResult(result: NotifyResult<StaffMemberToNotify>) {
+  if (result.plan === plan.pro) {
+    return publishResultSchema.parse({ plan: result.plan, emails: toEmails(result.emails) });
+  }
+  return publishResultSchema.parse({
+    plan: result.plan,
+    staffMembers: result.staffMembers.map(toStaffMemberToNotify).sort(byStaffMemberName),
+  });
+}
+
+function toSendUpdatesResult(result: NotifyResult<StaffMemberToUpdate>) {
+  if (result.plan === plan.pro) {
+    return sendUpdatesResultSchema.parse({ plan: result.plan, emails: toEmails(result.emails) });
+  }
+  return sendUpdatesResultSchema.parse({
+    plan: result.plan,
+    staffMembers: result.staffMembers
+      .map((each) => ({ ...toStaffMemberToNotify(each), updates: each.updates.map(toShiftUpdate) }))
       .sort(byStaffMemberName),
   });
 }
@@ -50,13 +96,13 @@ export function rotaController(rotas: RotaService, clock: Clock) {
   const publishRota: RotaRequestHandler = async (req, res) => {
     const result = await rotas.publish(res.locals.venue, req.params.weekStart);
     if (!result.ok) return sendError(res, result.code);
-    res.json(toEmailsResult(result.emails));
+    res.json(toPublishResult(result));
   };
 
   const sendUpdates: RotaRequestHandler = async (req, res) => {
     const result = await rotas.sendUpdates(res.locals.venue, req.params.weekStart);
     if (!result.ok) return sendError(res, result.code);
-    res.json(toEmailsResult(result.emails));
+    res.json(toSendUpdatesResult(result));
   };
 
   return { getRota, publishRota, sendUpdates, copyLastWeek };

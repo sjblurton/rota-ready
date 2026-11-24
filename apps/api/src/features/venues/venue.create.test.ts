@@ -113,6 +113,7 @@ describe('/api/venues', () => {
           id: expect.any(String),
           name: 'The Crown',
           timeZone: 'Europe/Dublin',
+          plan: 'free',
         });
       });
 
