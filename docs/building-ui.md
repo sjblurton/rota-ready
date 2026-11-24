@@ -25,7 +25,8 @@ apps/web/src/
 │   │                      Publish, Copy Last Week, Changed Shift, Removed Shift,
 │   │                      Send Updates
 │   ├── staff-links/       the Staff Link page, Shift Response, Decline Reason
-│   └── users/             logging in, signing up and the current User
+│   ├── plans/             Plan, Free, Pro and the landing page that shows them
+│   └── users/             logging in, signing up, the current User and the header
 ├── i18n/                  translations, shared by every feature
 ├── lib/                   infrastructure: the API client, Supabase, cn
 └── routes/                route config and page layout only
