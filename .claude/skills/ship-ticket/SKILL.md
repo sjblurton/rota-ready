@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Ship a ticket
 
-Run the whole loop without pausing between steps. Stop to ask only for a genuine product decision, a ticket split (step 2), a destructive action, or work outside the ticket. Report once, at the end.
+Run the whole loop without pausing between steps. Stop to ask only for a genuine product decision, a ticket split (step 2), a destructive action, work outside the ticket, or a change that only works with a production setting changed (such as those in the README's **Production auth and email settings**) or a paid service added. That last one stops you even when running unattended. Report once, at the end.
 
 ## 1. Pick the ticket
 
