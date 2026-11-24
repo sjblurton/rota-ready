@@ -180,7 +180,19 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready-api` | `EMAIL_FROM` | `Rota Ready <onboarding@resend.dev>`, Resend's test sender, until a domain is verified in Resend. It only delivers to the Resend account's own address, so emails to anyone else show as Failed |
 | Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
 
-The Supabase project has the Data API and "Automatically expose new tables" turned off, uses asymmetric (ES256) JWT signing keys, and has email confirmation off until SMTP arrives in #11. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
+The Supabase project has the Data API and "Automatically expose new tables" turned off, and uses asymmetric (ES256) JWT signing keys. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
+
+#### Production auth and email settings
+
+Rota Ready is a free proof of concept: no paid Supabase plan, no domain and no paid email service. These settings live in the Supabase and Render dashboards, where no agent can see them, so keep this table current when one changes. A change that only works with one of these changed, or with a paid service added, needs the go-ahead first.
+
+| Setting | Value | What it means |
+| --- | --- | --- |
+| Email confirmation (Supabase: Authentication → Sign In / Providers → Email → Confirm email) | Off | A new User is logged in straight away, with no email. Signing up with an email that already belongs to a User shows an error, which reveals that the User exists (#38) |
+| Phone confirmation (Supabase: Authentication → Sign In / Providers → Phone → Confirm phone) | Not checked | Measured locally (#38): Supabase only stops revealing existing Users at sign-up when this and email confirmation are both on, even with SMS off. Locally it's `[auth.sms] enable_confirmations` in `supabase/config.toml` |
+| Auth email sender (Supabase: Authentication → Emails → SMTP Settings) | Supabase's built-in sender | As far as we know, it only reaches the project's team members and is rate-limited, so Supabase's own emails, such as sign-up confirmation, can't reach real Users. A real sender needs a verified domain |
+| App email sender (Render `rota-ready-api`: `SMTP_URL`, `EMAIL_FROM`) | Resend's test sender, `onboarding@resend.dev` | Publish and Send Updates emails only reach the Resend account's own address (see `EMAIL_FROM` above) |
+| Site URL (Supabase: Authentication → URL Configuration) | `https://rota-ready.onrender.com` | Where links in Supabase's auth emails point |
 
 ### Roadmap
 
