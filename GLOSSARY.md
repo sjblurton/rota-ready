@@ -109,11 +109,11 @@ What a Venue can use in Rota Ready: one of a fixed set, Free and Pro today. More
 _Avoid_: Tier, package, Subscription (that's how a Plan is paid for)
 
 **Free**:
-The Plan that costs nothing: one Venue and up to 15 Staff Members.
+The Plan that costs nothing: one Venue and up to 15 Staff Members. Rota Ready sends Staff Members nothing; the Owner shares each Staff Link.
 _Avoid_: Basic, trial
 
 **Pro**:
-The paid Plan: text notifications, Reminders and unlimited Staff Members on top of everything in Free.
+The paid Plan: Rota Ready emails Staff Members their Staff Link and changes, sends Reminders, and allows unlimited Staff Members. Texts are optional, billed per part up to the Text Cap.
 _Avoid_: Premium, paid tier
 
 **Subscription**:
@@ -121,13 +121,9 @@ The paid arrangement through which an Owner keeps one Venue on Pro. An Owner of 
 _Avoid_: Plan (that's what the Venue can use), membership, licence
 
 **Reminder**:
-A text sent to a Staff Member the day before one of their Shifts in a Published Rota.
+An email, and a text if texts are on, sent to a Staff Member the day before one of their Shifts in a Published Rota.
 _Avoid_: Alert, nudge
 
-**Text Allowance**:
-How many text parts Pro includes each month. A long text uses more than one part.
-_Avoid_: Credits, quota
-
-**Extra Texts**:
-Texts beyond the Text Allowance, charged per part. They're sent only when the Owner has turned them on, and stop at the Owner's monthly spending cap.
-_Avoid_: Overage, top-up
+**Text Cap**:
+The most an Owner lets a Venue spend on texts in a month. Texts are billed per part (a long text uses more than one) and pause when the cap is reached; emails carry on.
+_Avoid_: Allowance, credits, quota, Extra Texts
