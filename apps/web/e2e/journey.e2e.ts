@@ -172,8 +172,42 @@ test.describe.serial('MVP journey', () => {
     await page.screenshot({ path: `${dir}/${step}-${browserName}-${slug}.png`, fullPage: true });
   });
 
-  test('sends a logged-out visitor to the login page', async () => {
+  test('shows a logged-out visitor the landing page, with a Free plan and Pro coming soon', async () => {
     await page.goto('/');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Weekly staff rotas for UK bars and restaurants' }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Free' })).toBeVisible();
+    const proPlan = page
+      .locator('[data-slot="card"]')
+      .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
+    await expect(proPlan.getByText('Coming soon')).toBeVisible();
+    await expect(proPlan.getByRole('link')).toHaveCount(0);
+  });
+
+  test('starts the Free plan at sign-up', async () => {
+    await expect(page.getByRole('link', { name: 'Start free' })).toHaveCount(2);
+    await page.getByRole('link', { name: 'Start free' }).last().click();
+    await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+    await page.goBack();
+  });
+
+  test("opens sign-up from the landing page's header", async () => {
+    await page.getByRole('banner').getByRole('link', { name: 'Sign up' }).click();
+    await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+    await page.goBack();
+  });
+
+  test('stacks the plans on a phone, Free above Pro', async () => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const free = await page.getByRole('heading', { name: 'Free' }).boundingBox();
+    const pro = await page.getByRole('heading', { name: 'Pro' }).boundingBox();
+    expect(pro?.y).toBeGreaterThan((free?.y ?? 0) + (free?.height ?? 0));
+  });
+
+  test("opens the login page from the landing page's header", async () => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.getByRole('banner').getByRole('link', { name: 'Log in' }).click();
     await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   });
 
@@ -969,7 +1003,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('keeps a logged-out visitor out of the app', async () => {
-    await page.goto('/');
+    await page.goto('/onboarding');
     await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   });
 
@@ -1044,6 +1078,12 @@ test.describe.serial('MVP journey', () => {
 
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
     await page.getByRole('banner').getByRole('button').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
+    expect(await textLeftInPlainEnglish(page)).toEqual([]);
+  });
+
+  test('shows the landing page as pseudo-text with ?lng=pseudo', async () => {
+    await page.goto('/?lng=pseudo');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
     expect(await textLeftInPlainEnglish(page)).toEqual([]);
   });

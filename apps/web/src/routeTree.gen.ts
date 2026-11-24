@@ -9,10 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as AuthenticatedVenuesVenueIdRouteRouteImport } from './routes/_authenticated/venues/$venueId/route'
@@ -21,6 +21,11 @@ import { Route as AuthenticatedVenuesVenueIdStaffRouteImport } from './routes/_a
 import { Route as AuthenticatedVenuesVenueIdRotaIndexRouteImport } from './routes/_authenticated/venues/$venueId/rota/index'
 import { Route as AuthenticatedVenuesVenueIdRotaWeekStartRouteImport } from './routes/_authenticated/venues/$venueId/rota/$weekStart'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -34,11 +39,6 @@ const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
@@ -82,7 +82,7 @@ const AuthenticatedVenuesVenueIdRotaWeekStartRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -94,11 +94,11 @@ export interface FileRoutesByFullPath {
   '/venues/$venueId/rota/': typeof AuthenticatedVenuesVenueIdRotaIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/s/$token': typeof STokenRoute
-  '/': typeof AuthenticatedIndexRoute
   '/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/venues/$venueId': typeof AuthenticatedVenuesVenueIdIndexRoute
   '/venues/$venueId/rota/$weekStart': typeof AuthenticatedVenuesVenueIdRotaWeekStartRoute
@@ -106,12 +106,12 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/s/$token': typeof STokenRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/venues/$venueId': typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
   '/_authenticated/venues/$venueId/staff': typeof AuthenticatedVenuesVenueIdStaffRoute
   '/_authenticated/venues/$venueId/': typeof AuthenticatedVenuesVenueIdIndexRoute
@@ -133,23 +133,23 @@ export interface FileRouteTypes {
     | '/venues/$venueId/rota/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/login'
     | '/signup'
     | '/onboarding'
     | '/s/$token'
-    | '/'
     | '/venues/$venueId/staff'
     | '/venues/$venueId'
     | '/venues/$venueId/rota/$weekStart'
     | '/venues/$venueId/rota'
   id:
     | '__root__'
+    | '/'
     | '/_authenticated'
     | '/login'
     | '/signup'
     | '/_authenticated/onboarding'
     | '/s/$token'
-    | '/_authenticated/'
     | '/_authenticated/venues/$venueId'
     | '/_authenticated/venues/$venueId/staff'
     | '/_authenticated/venues/$venueId/'
@@ -158,6 +158,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -166,6 +167,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -186,13 +194,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
@@ -270,13 +271,11 @@ const AuthenticatedVenuesVenueIdRouteRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedVenuesVenueIdRouteRoute: typeof AuthenticatedVenuesVenueIdRouteRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedVenuesVenueIdRouteRoute:
     AuthenticatedVenuesVenueIdRouteRouteWithChildren,
 }
@@ -286,6 +285,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
