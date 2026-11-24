@@ -5,7 +5,14 @@
 [![CI](https://github.com/sjblurton/rota-ready/actions/workflows/ci.yml/badge.svg)](https://github.com/sjblurton/rota-ready/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/live_demo-rota--ready.onrender.com-brightgreen)](https://rota-ready.onrender.com)
 [![Projects board](https://img.shields.io/badge/board-Rota_Ready_MVP-blue)](https://github.com/users/sjblurton/projects/1)
+[![Future work](https://img.shields.io/badge/board-future_work-blueviolet)](https://github.com/users/sjblurton/projects/2)
 [![PRD](https://img.shields.io/badge/PRD-%231-informational)](https://github.com/sjblurton/rota-ready/issues/1)
+
+<p align="center">
+  <img src="docs/images/landing-page.png" alt="The Rota Ready landing page: the pitch, How it works in three steps, and two plans, Free with a Start free button and Pro marked Coming soon" width="860">
+  <br>
+  <em>The landing page: Free today, Pro coming soon</em>
+</p>
 
 <table>
   <tr>
@@ -19,6 +26,13 @@
 </table>
 
 Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
+
+**Plans.** [The landing page](https://rota-ready.onrender.com) offers two:
+
+- **Free**, the working app today: one Venue, up to 15 Staff Members (not enforced yet, [#135](https://github.com/sjblurton/rota-ready/issues/135)), weekly Rotas, Publish, Send Updates and Copy Last Week, with Staff Members confirming or declining from their Staff Link. Publish emails each Staff Link, but production's test sender only reaches one address, so Owners can also copy each Staff Link to send it themselves.
+- **Pro**, coming soon: email and text notifications that reach every Staff Member, text reminders the day before a Shift, unlimited Staff Members, more than one Venue, and more than one manager per Venue.
+
+This is a proof of concept with no paid services, so there's no price yet and nothing to buy. The [future-work board](https://github.com/users/sjblurton/projects/2) holds what Pro would need.
 
 **Built AI-first, human-verified.** AI agents write the code from small, fully specified tickets. I check every change in the browser, review it, and only merge it when tests against a real database pass. [How it's built](#how-its-built) explains the workflow and what "verified" means here.
 
@@ -136,7 +150,7 @@ pnpm db:migrate              # apply Prisma migrations to the local database
 pnpm dev                     # web on http://localhost:5173, API on http://localhost:3000
 ```
 
-Open http://localhost:5173 and you'll land on the login page. Create an account (local sign-ups need no email confirmation); your email address appears in the header, and the page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
+Open http://localhost:5173 and you'll see the landing page. Choose **Start free** or **Sign up** to create an account (local sign-ups need no email confirmation). Your email address appears in the header, and the page shows **API ok · DB ok**, fetched live from the API. Run `pnpm db:stop` and it switches to **API ok · DB down** within a few seconds; stop the API and it shows **API unreachable**. Open http://localhost:5173/?lng=pseudo to see every string as pseudo-text (dev builds only), so any untranslated text stands out.
 
 Every email the app sends locally, such as the Staff Link email from Publish, lands in the local Supabase inbox (Mailpit) at http://127.0.0.1:54324, while `pnpm db:start` is running.
 
@@ -216,7 +230,28 @@ The MVP is complete. Its tickets, in order, each ending with a check you can cli
 Stretch goals:
 
 - [x] [#15](https://github.com/sjblurton/rota-ready/issues/15) Copy last week
-- [ ] Later: SMS links, open (unassigned) shifts, managers and multiple venues, shift swaps, availability and time off
+
+Since the MVP:
+
+- [x] [#27](https://github.com/sjblurton/rota-ready/issues/27), [#96](https://github.com/sjblurton/rota-ready/issues/96) Migrations run atomically, pass a linter, and must pass the running API's tests
+- [x] [#102](https://github.com/sjblurton/rota-ready/issues/102) Every PR gets a CI report comment with journey screenshots and coverage
+- [x] [#82](https://github.com/sjblurton/rota-ready/issues/82) Tests that go red when the Staff Member row lock is missing
+- [x] [#39](https://github.com/sjblurton/rota-ready/issues/39) An ended session signs the User out and says so on the login page
+- [x] [#40](https://github.com/sjblurton/rota-ready/issues/40) A page that fails to load shows the error and Try again in its place
+- [x] [#92](https://github.com/sjblurton/rota-ready/issues/92) [An audit of the testing approach](docs/testing-audit-2026-11.md)
+- [x] [#95](https://github.com/sjblurton/rota-ready/issues/95) "told" renamed to "notified" across three deploys, without breaking the running API
+- [x] [#133](https://github.com/sjblurton/rota-ready/issues/133) A landing page with a Free plan and a Pro plan coming soon
+
+### Future work
+
+The [future-work board](https://github.com/users/sjblurton/projects/2) groups what's next by theme:
+
+- **Paid version:** what needs a paid plan, a domain or an email sender, such as a sign-up that never reveals whether an email already belongs to a User
+- **Product:** the Upgrade to Pro button, the Free plan's 15 Staff Member limit, turning off emails until a real sender exists, and more
+- **Engineering:** faster CI, more row-lock tests, the journey against production builds, and lint rules
+- **Agent workflow:** guardrails and skills for the agents that build the app
+
+Other ideas, not yet ticketed: open (unassigned) Shifts, shift swaps, and availability and time off.
 
 ---
 
