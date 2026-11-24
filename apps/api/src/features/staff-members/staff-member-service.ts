@@ -1,4 +1,9 @@
-import { apiErrorCode, FREE_PLAN_STAFF_MEMBER_LIMIT, type StaffMemberDetails } from '@rota-ready/shared';
+import {
+  apiErrorCode,
+  FREE_PLAN_STAFF_MEMBER_LIMIT,
+  type ApiErrorCode,
+  type StaffMemberDetails,
+} from '@rota-ready/shared';
 import type { Prisma, StaffMember } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { isPrismaError, type Db } from '#src/lib/db.js';
@@ -29,9 +34,7 @@ interface StaffMemberServiceDependencies {
   staffLinkKey: Buffer;
 }
 
-type StaffMemberCode = 'not_found' | 'staff_member_email_taken' | 'staff_member_limit_reached';
-
-type StaffMemberResult<Code extends StaffMemberCode> =
+type StaffMemberResult<Code extends ApiErrorCode> =
   | { ok: true; staffMember: StaffMember }
   | Refused<Code>;
 
