@@ -18,7 +18,11 @@ _Avoid_: User (when you mean someone linked to a Venue), admin, account
 
 **Owner**:
 A Venue Member whose Member Role is `owner`.
-_Avoid_: Manager (reserved for a future Member Role), boss
+_Avoid_: Manager (a different Member Role), boss
+
+**Manager**:
+A Venue Member whose Member Role is `manager`, on Pro. A Manager runs the Venue's Rotas and Staff Members, but not its Plan, billing, text costs or Venue Members, which stay with the Owner.
+_Avoid_: Admin, supervisor
 
 **Staff Member**:
 A person who works shifts at a Venue. Staff Members never log in; they reach their shifts through their Staff Link. The same human working at two Venues is two Staff Members. On Pro, a Staff Member can turn texts off from their Staff Link, but not emails.
@@ -102,7 +106,7 @@ _Avoid_: Republish, notify all
 
 **Plan**:
 What a Venue can use in Rota Ready: one of a fixed set, Free and Pro today. More Plans may join the set later.
-_Avoid_: Tier, package, subscription
+_Avoid_: Tier, package, Subscription (that's how a Plan is paid for)
 
 **Free**:
 The Plan that costs nothing: one Venue and up to 15 Staff Members.
@@ -111,6 +115,10 @@ _Avoid_: Basic, trial
 **Pro**:
 The paid Plan: text notifications, Reminders and unlimited Staff Members on top of everything in Free.
 _Avoid_: Premium, paid tier
+
+**Subscription**:
+The paid arrangement through which an Owner keeps one Venue on Pro. An Owner of several Pro Venues has one Subscription for each.
+_Avoid_: Plan (that's what the Venue can use), membership, licence
 
 **Reminder**:
 A text sent to a Staff Member the day before one of their Shifts in a Published Rota.
