@@ -1,7 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { CheckIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,6 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { PlanFeatureList } from '@/features/plans/plan-feature-list';
+import { ProPlanCard } from '@/features/plans/pro-plan-card';
 
 export function LandingPage() {
   const { t } = useTranslation();
@@ -25,13 +25,6 @@ export function LandingPage() {
     t('landing.plans.free.rotas'),
     t('landing.plans.free.responses'),
     t('landing.plans.free.copyLinks'),
-  ];
-  const proFeatures = [
-    t('landing.plans.pro.notifications'),
-    t('landing.plans.pro.reminders'),
-    t('landing.plans.pro.staff'),
-    t('landing.plans.pro.venues'),
-    t('landing.plans.pro.managers'),
   ];
 
   return (
@@ -85,7 +78,7 @@ export function LandingPage() {
                 <CardDescription>{t('landing.plans.free.description')}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
-                <FeatureList features={freeFeatures} />
+                <PlanFeatureList features={freeFeatures} />
               </CardContent>
               <CardFooter>
                 <Button asChild className="w-full">
@@ -93,21 +86,7 @@ export function LandingPage() {
                 </Button>
               </CardFooter>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <h3 className="text-xl">{t('landing.plans.pro.name')}</h3>
-                  <Badge variant="secondary">{t('landing.plans.pro.comingSoon')}</Badge>
-                </CardTitle>
-                <CardDescription>{t('landing.plans.pro.description')}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col gap-4">
-                <FeatureList features={proFeatures} />
-                <p className="text-sm text-muted-foreground">
-                  {t('landing.plans.pro.textAllowance')}
-                </p>
-              </CardContent>
-            </Card>
+            <ProPlanCard />
           </div>
         </section>
       </main>
@@ -115,15 +94,3 @@ export function LandingPage() {
   );
 }
 
-function FeatureList({ features }: { features: string[] }) {
-  return (
-    <ul role="list" className="flex flex-col gap-3 text-sm">
-      {features.map((feature) => (
-        <li key={feature} className="flex gap-2">
-          <CheckIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
-          <span>{feature}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}

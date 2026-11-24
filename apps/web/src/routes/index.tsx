@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { LandingPage } from '@/components/landing-page';
+import { LandingPage } from '@/features/plans/landing-page';
 import { accessToken } from '@/lib/supabase';
 
 export const Route = createFileRoute('/')({

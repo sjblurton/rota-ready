@@ -182,6 +182,7 @@ test.describe.serial('MVP journey', () => {
       .locator('[data-slot="card"]')
       .filter({ has: page.getByRole('heading', { name: 'Pro' }) });
     await expect(proPlan.getByText('Coming soon')).toBeVisible();
+    await expect(proPlan.getByText('An email Reminder the day before each Shift')).toBeVisible();
     await expect(proPlan.getByRole('link')).toHaveCount(0);
   });
 
@@ -250,7 +251,50 @@ test.describe.serial('MVP journey', () => {
     await expect(page.getByText('Timezone: Europe/London')).toBeVisible();
   });
 
+  test('opens Upgrade to Pro from the header, showing Pro coming soon with no price or purchase', async () => {
+    await page.getByRole('banner').getByRole('button', { name: 'Upgrade to Pro' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Upgrade to Pro' });
+    await expect(dialog.getByRole('heading', { name: 'Pro', exact: true })).toBeVisible();
+    await expect(dialog.getByText('Coming soon', { exact: true })).toBeVisible();
+    await expect(dialog.getByText('An email Reminder the day before each Shift')).toBeVisible();
+    await expect(dialog).not.toContainText('£');
+    await expect(dialog.getByRole('link')).toHaveCount(0);
+    await expect(dialog.getByRole('button')).toHaveText(['Close']);
+  });
+
+  test('closes the Pro dialog with Close', async () => {
+    await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('keeps the header on one line on a phone, shortening the button to Pro', async () => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const upgrade = page.getByRole('banner').getByRole('button', { name: 'Upgrade to Pro' });
+    await expect(upgrade).toHaveText('Pro', { useInnerText: true });
+    const banner = page.getByRole('banner');
+    const appName = await banner.getByText('Rota Ready').boundingBox();
+    const logOut = await banner.getByRole('button', { name: 'Log out' }).boundingBox();
+    expect(logOut?.y).toBeLessThan((appName?.y ?? 0) + (appName?.height ?? 0));
+    const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(pageWidth).toBeLessThanOrEqual(390);
+  });
+
+  test('opens the Pro dialog on a phone', async () => {
+    await page.getByRole('banner').getByRole('button', { name: 'Upgrade to Pro' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Upgrade to Pro' });
+    await expect(dialog.getByText('Coming soon', { exact: true })).toBeVisible();
+    await dialog.evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    );
+  });
+
+  test('closes the Pro dialog with Escape', async () => {
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('renames the Venue', async () => {
+    await page.setViewportSize({ width: 1280, height: 720 });
     await page.getByLabel('Venue name').fill(renamedVenue);
     await page.getByRole('button', { name: 'Save name' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
@@ -1068,6 +1112,17 @@ test.describe.serial('MVP journey', () => {
     expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
   });
 
+  test('shows the Pro dialog as pseudo-text with ?lng=pseudo', async () => {
+    await page.getByRole('banner').getByRole('button').first().click();
+    await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText(/^\[.*\]$/);
+    expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
+  });
+
+  test('closes the pseudo-text Pro dialog with Escape', async () => {
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('shows toasts as pseudo-text with ?lng=pseudo', async () => {
     await failRenameRequests();
     await page.locator('form').getByRole('button').click();
@@ -1077,7 +1132,7 @@ test.describe.serial('MVP journey', () => {
   });
 
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
-    await page.getByRole('banner').getByRole('button').click();
+    await page.getByRole('banner').getByRole('button').last().click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
     expect(await textLeftInPlainEnglish(page)).toEqual([]);
   });

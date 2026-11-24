@@ -278,18 +278,27 @@
         "rotas": "Weekly Rotas, Publish, Copy Last Week and Send Updates",
         "responses": "Staff confirm or decline from their Staff Link",
         "copyLinks": "Copy each Staff Member's Staff Link to send it yourself"
-      },
-      "pro": {
-        "name": "Pro",
-        "comingSoon": "Coming soon",
-        "description": "For busier Venues, or more than one.",
-        "notifications": "Email and text notifications: Publish and Send Updates reach every Staff Member for you",
-        "reminders": "Text reminders the day before a Shift",
-        "staff": "Unlimited Staff Members",
-        "venues": "More than one Venue, all in one place",
-        "managers": "More than one manager per Venue",
-        "textAllowance": "Texts come from a monthly allowance included with Pro."
       }
+    }
+  },
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "comingSoon": "Coming soon",
+      "description": "For busier Venues, or more than one.",
+      "notifications": "Rota Ready emails each Staff Member their Staff Link on Publish, and what changed on Send Updates",
+      "reminders": "An email Reminder the day before each Shift",
+      "staff": "Unlimited Staff Members",
+      "texts": "Optional texts for notifications and Reminders, paid per text, up to a monthly limit you set",
+      "venues": "More than one Venue, all in one place",
+      "managers": "More than one Manager per Venue"
+    },
+    "upgrade": {
+      "button": "Upgrade to Pro",
+      "buttonShort": "Pro",
+      "title": "Upgrade to Pro",
+      "description": "Pro is coming soon. Here's what it will add to Rota Ready.",
+      "close": "Close"
     }
   }
 }

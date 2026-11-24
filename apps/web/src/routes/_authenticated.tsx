@@ -6,7 +6,7 @@ import {
   useNavigate,
   type ErrorComponentProps,
 } from '@tanstack/react-router';
-import { AppHeader } from '@/components/app-header';
+import { AppHeader } from '@/features/users/app-header';
 import { HealthStatus } from '@/components/health-status';
 import { PageLoadError } from '@/components/page-load-error';
 import { bootstrapCurrentUserQuery } from '@/features/users/current-user';
