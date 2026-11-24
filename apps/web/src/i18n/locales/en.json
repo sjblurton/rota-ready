@@ -246,5 +246,50 @@
       "previousTimes": "was {{times}}",
       "changed": "Changed"
     }
+  },
+  "landing": {
+    "logIn": "Log in",
+    "signUp": "Sign up",
+    "title": "Weekly staff rotas for UK bars and restaurants",
+    "pitch": "Build the week, publish it, and every Staff Member confirms their Shifts from a private link. No app to install, and staff never need to log in.",
+    "startFree": "Start free",
+    "howItWorks": {
+      "title": "How it works",
+      "build": {
+        "title": "Build the week",
+        "body": "Add your Staff Members and drop Shifts onto the week. Copy Last Week fills a new week in one click."
+      },
+      "publish": {
+        "title": "Publish it",
+        "body": "Publishing puts the week's Shifts on each Staff Member's private Staff Link. Change a Shift later and they see what changed."
+      },
+      "confirm": {
+        "title": "Staff confirm",
+        "body": "Staff Members open their link on their phone and confirm or decline each Shift, saying why if they decline. You see every answer on the Rota."
+      }
+    },
+    "plans": {
+      "title": "Plans",
+      "free": {
+        "name": "Free",
+        "description": "Everything you need to run one Venue's Rota.",
+        "venue": "One Venue",
+        "staff": "Up to 15 Staff Members",
+        "rotas": "Weekly Rotas, Publish, Copy Last Week and Send Updates",
+        "responses": "Staff confirm or decline from their Staff Link",
+        "copyLinks": "Copy each Staff Member's Staff Link to send it yourself"
+      },
+      "pro": {
+        "name": "Pro",
+        "comingSoon": "Coming soon",
+        "description": "For busier Venues, or more than one.",
+        "notifications": "Email and text notifications: Publish and Send Updates reach every Staff Member for you",
+        "reminders": "Text reminders the day before a Shift",
+        "staff": "Unlimited Staff Members",
+        "venues": "More than one Venue, all in one place",
+        "managers": "More than one manager per Venue",
+        "textAllowance": "Texts come from a monthly allowance included with Pro."
+      }
+    }
   }
 }
