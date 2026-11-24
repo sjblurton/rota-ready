@@ -21,7 +21,7 @@ A Venue Member whose Member Role is `owner`.
 _Avoid_: Manager (reserved for a future Member Role), boss
 
 **Staff Member**:
-A person who works shifts at a Venue. Staff Members never log in; they reach their shifts through their Staff Link. The same human working at two Venues is two Staff Members.
+A person who works shifts at a Venue. Staff Members never log in; they reach their shifts through their Staff Link. The same human working at two Venues is two Staff Members. On Pro, a Staff Member can turn texts off from their Staff Link, but not emails.
 _Avoid_: Employee, worker, user, team member
 
 **Archive**:
@@ -97,3 +97,29 @@ _Avoid_: Cancelled shift
 **Send Updates**:
 Emailing only the Staff Members affected by Changed Shifts and Removed Shifts since they were last notified.
 _Avoid_: Republish, notify all
+
+## Plans
+
+**Plan**:
+What a Venue can use in Rota Ready: one of a fixed set, Free and Pro today. More Plans may join the set later.
+_Avoid_: Tier, package, subscription
+
+**Free**:
+The Plan that costs nothing: one Venue and up to 15 Staff Members.
+_Avoid_: Basic, trial
+
+**Pro**:
+The paid Plan: text notifications, Reminders and unlimited Staff Members on top of everything in Free.
+_Avoid_: Premium, paid tier
+
+**Reminder**:
+A text sent to a Staff Member the day before one of their Shifts in a Published Rota.
+_Avoid_: Alert, nudge
+
+**Text Allowance**:
+How many text parts Pro includes each month. A long text uses more than one part.
+_Avoid_: Credits, quota
+
+**Extra Texts**:
+Texts beyond the Text Allowance, charged per part. They're sent only when the Owner has turned them on, and stop at the Owner's monthly spending cap.
+_Avoid_: Overage, top-up
