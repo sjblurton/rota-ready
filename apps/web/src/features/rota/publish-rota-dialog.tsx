@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useRotaWeek } from '@/features/rota/rota-queries';
-import { usePublishRota } from '@/features/rota/staff-link-email-mutations';
-import { StaffLinkEmailResults } from '@/features/rota/staff-link-email-results';
+import { usePublishRota } from '@/features/rota/notify-staff-mutations';
+import { StaffToNotifyList } from '@/features/rota/staff-to-notify-list';
 
 interface PublishRotaDialogProps {
   venueId: string;
@@ -44,18 +44,22 @@ export function PublishRotaDialog({ venueId, weekStart }: PublishRotaDialogProps
           <Button size="sm">{t('rota.publish.button')}</Button>
         </AlertDialogTrigger>
       )}
-      <AlertDialogContent>
+      <AlertDialogContent className="data-[size=default]:sm:max-w-md">
         {result ? (
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('rota.publish.publishedTitle', { date })}</AlertDialogTitle>
               <AlertDialogDescription>
-                {result.emails.length === 0
-                  ? t('rota.publish.noEmails')
-                  : t('rota.publish.emailsSent')}
+                {result.staffMembers.length === 0
+                  ? t('rota.publish.nobodyToTell')
+                  : t('rota.publish.tellEach')}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <StaffLinkEmailResults emails={result.emails} />
+            <StaffToNotifyList
+              venueId={venueId}
+              weekStart={weekStart}
+              staffMembers={result.staffMembers}
+            />
             <AlertDialogFooter>
               <AlertDialogAction>{t('rota.publish.done')}</AlertDialogAction>
             </AlertDialogFooter>

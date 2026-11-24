@@ -115,7 +115,7 @@ const archive = useArchiveStaffMember(venueId, staffMember.id, {
 
 ```tsx
 // ❌ Bad: a second copy of the result, which has to be cleared by hand.
-const [result, setResult] = useState<StaffLinkEmailsResult | null>(null);
+const [result, setResult] = useState<SendUpdatesResult | null>(null);
 const sendUpdates = useMutation({ mutationFn: …, onSuccess: setResult });
 ```
 

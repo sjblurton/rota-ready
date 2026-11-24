@@ -85,7 +85,7 @@ These follow from the spec (#1) and ADRs, and take precedence over the generic p
   - React and shared tests never read the clock. Pass in the instants a test needs.
   - The Playwright journey runs on real time. It plans its Shifts two Weeks ahead of today, so none starts during a run. When a step needs a Shift that has started, it uses last Week, where every Shift has.
   - Rules about the moment a Shift starts and clock changes are tested in API, React or shared tests at fixed instants. A daylight saving bug gets its test there.
-  - Only JWT expiry, Mailpit timestamps and unique values (such as the journey's sign-up email) read real time.
+  - Only JWT expiry and unique values (such as the journey's sign-up email) read real time.
 - **Front-end tests** only for logic that's hard to check by hand (e.g. grid layout) or that depends on time passing (e.g. "No reply"). Everything else is covered by API tests and Playwright.
 - **Playwright, where it fits**: the MVP journey spec grows with each ticket, adding steps for the screens and messages it changes. Rule variants that show the same message belong in API tests. Use `test.describe('when …')` with setup in `test.beforeEach` for scenarios that can run independently; when steps must happen in order through one journey, use `test.describe.serial` with each `test` named after the outcome it checks. Always run against the real stack (local Supabase), with no auth bypass.
 

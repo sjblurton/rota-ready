@@ -10,7 +10,6 @@ import type { Email, EmailSender } from '#src/lib/email-sender.js';
 
 const ISSUER = 'http://auth.test/auth/v1';
 const KEY_ID = 'test-key';
-const WEB_URL = 'http://web.test';
 const DEFAULT_NOW = '2026-01-05T12:00:00.000Z';
 const BLOCKED_REQUEST_TIMEOUT_MS = 2_000;
 
@@ -37,20 +36,12 @@ type CompetingChange = (tx: Prisma.TransactionClient) => Promise<unknown>;
 
 function createEmailOutbox() {
   const sent: Email[] = [];
-  const failingAddresses = new Set<string>();
   const sender: EmailSender = {
     async send(email) {
-      if (failingAddresses.has(email.to)) throw new Error(`SMTP refused ${email.to}`);
       sent.push(email);
     },
   };
-  return {
-    sender,
-    sent,
-    failFor(address: string) {
-      failingAddresses.add(address);
-    },
-  };
+  return { sender, sent };
 }
 
 export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {}) {
@@ -67,7 +58,6 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     logger: pino({}, { write: (line: string) => logLines.push(line) }),
     staffLinkKey: randomBytes(32),
     emailSender: outbox.sender,
-    webUrl: WEB_URL,
     authConfig: {
       keys: createLocalJWKSet({ keys: [publicJwk] }),
       issuer: ISSUER,
@@ -182,7 +172,6 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   return {
     db,
     outbox,
-    webUrl: WEB_URL,
     logs,
     setClock,
     request,

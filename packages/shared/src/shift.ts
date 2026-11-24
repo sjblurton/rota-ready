@@ -202,18 +202,40 @@ export const copyLastWeekResultSchema = z.object({
 
 export type CopyLastWeekResult = z.infer<typeof copyLastWeekResultSchema>;
 
-export const emailStatusSchema = z.enum(['sent', 'no_email', 'failed']);
-
-export type EmailStatus = z.infer<typeof emailStatusSchema>;
-
-export const staffLinkEmailsResultSchema = z.object({
-  emails: z.array(
-    z.object({
-      staffMemberId: z.uuid(),
-      name: z.string(),
-      status: emailStatusSchema,
-    }),
-  ),
+const shiftTimesSchema = z.object({
+  startsAt: z.iso.datetime(),
+  endsAt: z.iso.datetime(),
 });
 
-export type StaffLinkEmailsResult = z.infer<typeof staffLinkEmailsResultSchema>;
+export const shiftUpdateKindSchema = z.enum(['added', 'changed', 'removed']);
+
+export const shiftUpdateKind = shiftUpdateKindSchema.enum;
+
+export const shiftUpdateSchema = z.discriminatedUnion('kind', [
+  shiftTimesSchema.extend({ kind: z.literal(shiftUpdateKind.added) }),
+  shiftTimesSchema.extend({ kind: z.literal(shiftUpdateKind.removed) }),
+  shiftTimesSchema.extend({
+    kind: z.literal(shiftUpdateKind.changed),
+    previous: shiftTimesSchema,
+  }),
+]);
+
+export type ShiftUpdate = z.infer<typeof shiftUpdateSchema>;
+
+const staffMemberToNotifySchema = z.object({
+  staffMemberId: z.uuid(),
+  name: z.string(),
+  staffLinkToken: z.string(),
+});
+
+export const publishResultSchema = z.object({
+  staffMembers: z.array(staffMemberToNotifySchema),
+});
+
+export type PublishResult = z.infer<typeof publishResultSchema>;
+
+export const sendUpdatesResultSchema = z.object({
+  staffMembers: z.array(staffMemberToNotifySchema.extend({ updates: z.array(shiftUpdateSchema) })),
+});
+
+export type SendUpdatesResult = z.infer<typeof sendUpdatesResultSchema>;

@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useHasUnsentChanges } from '@/features/rota/rota-queries';
-import { useSendUpdates } from '@/features/rota/staff-link-email-mutations';
-import { StaffLinkEmailResults } from '@/features/rota/staff-link-email-results';
+import { useSendUpdates } from '@/features/rota/notify-staff-mutations';
+import { StaffToNotifyList } from '@/features/rota/staff-to-notify-list';
 
 interface SendUpdatesDialogProps {
   venueId: string;
@@ -47,18 +47,22 @@ export function SendUpdatesDialog({ venueId, weekStart }: SendUpdatesDialogProps
       <AlertDialogTrigger asChild>
         <Button size="sm">{t('rota.sendUpdates.button')}</Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="data-[size=default]:sm:max-w-md">
         {result ? (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t('rota.sendUpdates.sentTitle', { date })}</AlertDialogTitle>
+              <AlertDialogTitle>{t('rota.sendUpdates.resultTitle', { date })}</AlertDialogTitle>
               <AlertDialogDescription>
-                {result.emails.length === 0
-                  ? t('rota.sendUpdates.noEmails')
-                  : t('rota.sendUpdates.emailsSent')}
+                {result.staffMembers.length === 0
+                  ? t('rota.sendUpdates.nobodyToTell')
+                  : t('rota.sendUpdates.tellEach')}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <StaffLinkEmailResults emails={result.emails} />
+            <StaffToNotifyList
+              venueId={venueId}
+              weekStart={weekStart}
+              staffMembers={result.staffMembers}
+            />
             <AlertDialogFooter>
               <AlertDialogAction>{t('rota.sendUpdates.done')}</AlertDialogAction>
             </AlertDialogFooter>

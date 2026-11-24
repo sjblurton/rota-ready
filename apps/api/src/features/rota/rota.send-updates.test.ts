@@ -1,3 +1,4 @@
+import type { SendUpdatesResult } from '@rota-ready/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createActiveStaffMember,
@@ -38,12 +39,12 @@ function sendUpdatesPath(venue: { id: string }, weekStart = WEEK_START) {
   return `/api/venues/${venue.id}/rotas/${weekStart}/send-updates`;
 }
 
-function recipients(app: TestApp) {
-  return app.outbox.sent.map((email) => email.to).sort();
+function namesIn({ staffMembers }: SendUpdatesResult) {
+  return staffMembers.map(({ name }) => name);
 }
 
-function emailTo(app: TestApp, address: string) {
-  return app.outbox.sent.find((email) => email.to === address);
+function updatesFor({ staffMembers }: SendUpdatesResult, name: string) {
+  return staffMembers.find((each) => each.name === name)?.updates;
 }
 
 describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
@@ -62,17 +63,21 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
 
   async function publish(venue: { id: string }) {
     await app.request('POST', `${rotaPath(venue)}/publish`, { as: OWNER });
-    app.outbox.sent.length = 0;
   }
 
-  async function staffLinkUrlOf(staffMember: { id: string }) {
+  async function staffLinkTokenOf(staffMember: { id: string }) {
     const link = await app.request(
       'GET',
       `/api/venues/${ownVenue.id}/staff-members/${staffMember.id}/staff-link`,
       { as: OWNER },
     );
     const { token } = (await link.json()) as { token: string };
-    return `${app.webUrl}/s/${token}`;
+    return token;
+  }
+
+  async function sendUpdates(venue = ownVenue) {
+    response = await app.request('POST', sendUpdatesPath(venue), { as: OWNER });
+    return (await response.json()) as SendUpdatesResult;
   }
 
   beforeEach(async () => {
@@ -159,23 +164,21 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
         response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
       });
 
-      it('responds with 200 and no emails', async () => {
-        expect([response.status, await response.json()]).toEqual([200, { emails: [] }]);
-      });
-
-      it('sends no email', () => {
-        expect(app.outbox.sent).toEqual([]);
+      it('responds with 200 and no Staff Members to notify', async () => {
+        expect([response.status, await response.json()]).toEqual([200, { staffMembers: [] }]);
       });
     });
 
     describe('when only the notes on Sam\'s Monday Shift change', () => {
+      let result: SendUpdatesResult;
+
       beforeEach(async () => {
         await moveShift(samsMonday, { staffMemberId: sam.id, ...MONDAY_9_TO_5, notes: 'Lock up' });
-        response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        result = await sendUpdates();
       });
 
-      it('sends no email', () => {
-        expect(app.outbox.sent).toEqual([]);
+      it('lists no Staff Members to notify', () => {
+        expect(result.staffMembers).toEqual([]);
       });
     });
 
@@ -186,71 +189,58 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
       });
 
       describe('when the Owner sends updates', () => {
+        let result: SendUpdatesResult;
+
         beforeEach(async () => {
-          response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+          result = await sendUpdates();
         });
 
-        it('responds with 200 and Alex, Jo and Sam as sent, by name', async () => {
-          expect([response.status, await response.json()]).toEqual([
-            200,
-            {
-              emails: [
-                { staffMemberId: alex.id, name: 'Alex Smith', status: 'sent' },
-                { staffMemberId: jo.id, name: 'Jo Bloggs', status: 'sent' },
-                { staffMemberId: sam.id, name: 'Sam Jones', status: 'sent' },
-              ],
-            },
+        it('responds with 200', () => {
+          expect(response.status).toBe(200);
+        });
+
+        it('lists Alex, Jo and Sam to notify, by name', () => {
+          expect(result.staffMembers.map(({ staffMemberId, name }) => ({ staffMemberId, name }))).toEqual([
+            { staffMemberId: alex.id, name: 'Alex Smith' },
+            { staffMemberId: jo.id, name: 'Jo Bloggs' },
+            { staffMemberId: sam.id, name: 'Sam Jones' },
           ]);
         });
 
-        it('emails Alex, Jo and Sam once each', () => {
-          expect(recipients(app)).toEqual([
-            'alex@example.com',
-            'jo@example.com',
-            'sam@example.com',
-          ]);
+        it('does not list Kim, whose Shift is unchanged', () => {
+          expect(namesIn(result)).not.toContain('Kim Lee');
         });
 
-        it('does not email Kim, whose Shift is unchanged', () => {
-          expect(emailTo(app, 'kim@example.com')).toBeUndefined();
-        });
-
-        it('names the Venue and the Week in the subject', () => {
-          expect(emailTo(app, 'sam@example.com')?.subject).toBe(
-            'Changes to your Shifts at The Crown for the Week of Mon, 16 Nov 2026',
-          );
+        it('sends no email', () => {
+          expect(app.outbox.sent).toEqual([]);
         });
 
         describe("when Sam's Staff Link is looked up", () => {
-          let samsStaffLinkUrl: string;
+          let samsStaffLinkToken: string;
 
           beforeEach(async () => {
-            samsStaffLinkUrl = await staffLinkUrlOf(sam);
+            samsStaffLinkToken = await staffLinkTokenOf(sam);
           });
 
-          it('emails Sam that Staff Link', () => {
-            expect(emailTo(app, 'sam@example.com')?.text).toContain(samsStaffLinkUrl);
+          it("gives Sam's Staff Link token", () => {
+            expect(result.staffMembers.find(({ name }) => name === 'Sam Jones')?.staffLinkToken).toBe(
+              samsStaffLinkToken,
+            );
           });
         });
 
-        it("tells Sam the Monday Shift's new times and what it was", () => {
-          expect(emailTo(app, 'sam@example.com')?.text).toContain(
-            '- Mon 16 Nov, 10:00–17:00: was 09:00–17:00',
-          );
+        it("says Sam's Monday Shift changed, with its new times and what it was", () => {
+          expect(updatesFor(result, 'Sam Jones')).toEqual([
+            { kind: 'changed', ...MONDAY_10_TO_5, previous: MONDAY_9_TO_5 },
+          ]);
         });
 
-        it('tells Jo the Tuesday Shift was removed', () => {
-          expect(emailTo(app, 'jo@example.com')?.text).toContain(
-            "- Tue 17 Nov, 09:00–17:00: removed, so you don't need to work it",
-          );
+        it("says Jo's Tuesday Shift was removed", () => {
+          expect(updatesFor(result, 'Jo Bloggs')).toEqual([{ kind: 'removed', ...TUESDAY_9_TO_5 }]);
         });
 
-        it('tells Alex about the new Tuesday Shift only, not the unchanged Wednesday one', () => {
-          expect(
-            emailTo(app, 'alex@example.com')
-              ?.text.split('\n')
-              .filter((line) => line.startsWith('- ')),
-          ).toEqual(['- Tue 17 Nov, 09:00–17:00: new']);
+        it('says Alex has the new Tuesday Shift only, not the unchanged Wednesday one', () => {
+          expect(updatesFor(result, 'Alex Smith')).toEqual([{ kind: 'added', ...TUESDAY_9_TO_5 }]);
         });
 
         describe('when the Owner opens the Week', () => {
@@ -285,107 +275,76 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
 
         describe('when the Owner sends updates again with nothing new', () => {
           beforeEach(async () => {
-            app.outbox.sent.length = 0;
-            response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+            result = await sendUpdates();
           });
 
-          it('responds with 200 and no emails', async () => {
-            expect([response.status, await response.json()]).toEqual([200, { emails: [] }]);
-          });
-
-          it('sends no email', () => {
-            expect(app.outbox.sent).toEqual([]);
+          it('lists no Staff Members to notify', () => {
+            expect(result.staffMembers).toEqual([]);
           });
         });
       });
 
       describe('when Jo is archived before the Owner sends updates', () => {
+        let result: SendUpdatesResult;
+
         beforeEach(async () => {
           await app.request('POST', `/api/venues/${ownVenue.id}/staff-members/${jo.id}/archive`, {
             as: OWNER,
           });
-          response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+          result = await sendUpdates();
         });
 
-        it('lists Jo as having no email', async () => {
-          const { emails } = (await response.json()) as { emails: { name: string; status: string }[] };
-          expect(emails.find(({ name }) => name === 'Jo Bloggs')?.status).toBe('no_email');
-        });
-
-        it('emails Alex and Sam', () => {
-          expect(recipients(app)).toEqual(['alex@example.com', 'sam@example.com']);
-        });
-
-        it('does not email Jo', () => {
-          expect(emailTo(app, 'jo@example.com')).toBeUndefined();
-        });
-      });
-
-      describe('when the email to Jo fails', () => {
-        beforeEach(async () => {
-          app.outbox.failFor('jo@example.com');
-          response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
-        });
-
-        it('lists Jo as failed', async () => {
-          const { emails } = (await response.json()) as { emails: { name: string; status: string }[] };
-          expect(emails.find(({ name }) => name === 'Jo Bloggs')?.status).toBe('failed');
-        });
-
-        it('still emails Alex and Sam', () => {
-          expect(recipients(app)).toEqual(['alex@example.com', 'sam@example.com']);
+        it('lists only Alex and Sam to notify', () => {
+          expect(namesIn(result)).toEqual(['Alex Smith', 'Sam Jones']);
         });
       });
 
       describe('when the Owner sends updates from two tabs at once', () => {
+        let results: SendUpdatesResult[];
+
         beforeEach(async () => {
-          await Promise.all([
+          const responses = await Promise.all([
             app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER }),
             app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER }),
           ]);
+          results = (await Promise.all(responses.map((each) => each.json()))) as SendUpdatesResult[];
         });
 
-        it('emails each affected Staff Member once', () => {
-          expect(recipients(app)).toEqual([
-            'alex@example.com',
-            'jo@example.com',
-            'sam@example.com',
-          ]);
+        it('lists each affected Staff Member to notify once, across both tabs', () => {
+          expect(results.flatMap(namesIn).sort()).toEqual(['Alex Smith', 'Jo Bloggs', 'Sam Jones']);
         });
       });
     });
 
     describe("when the Owner moves Sam's Monday Shift to Tuesday", () => {
+      let result: SendUpdatesResult;
+
       beforeEach(async () => {
         await moveShift(samsMonday, { staffMemberId: sam.id, ...TUESDAY_9_TO_5 });
-        await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        result = await sendUpdates();
       });
 
-      it('tells Sam the day it was, as well as the times', () => {
-        expect(emailTo(app, 'sam@example.com')?.text).toContain(
-          '- Tue 17 Nov, 09:00–17:00: was Mon 16 Nov, 09:00–17:00',
-        );
+      it("says Sam's Shift changed from Monday to Tuesday", () => {
+        expect(updatesFor(result, 'Sam Jones')).toEqual([
+          { kind: 'changed', ...TUESDAY_9_TO_5, previous: MONDAY_9_TO_5 },
+        ]);
       });
     });
 
     describe("when the Owner deletes Kim's Thursday Shift and sends updates", () => {
+      let result: SendUpdatesResult;
+
       beforeEach(async () => {
         await app.request('DELETE', shiftPath(kimsThursday), { as: OWNER });
-        response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        result = await sendUpdates();
       });
 
-      it('emails Kim', () => {
-        expect(recipients(app)).toContain('kim@example.com');
+      it('lists only Kim to notify, not Sam, Jo or Alex, whose Shifts are unchanged', () => {
+        expect(namesIn(result)).toEqual(['Kim Lee']);
       });
 
-      it('does not email Sam, Jo or Alex, whose Shifts are unchanged', () => {
-        expect(recipients(app)).toEqual(['kim@example.com']);
-      });
-
-      it('tells Kim the Thursday Shift was removed', () => {
-        expect(emailTo(app, 'kim@example.com')?.text).toContain(
-          "- Thu 19 Nov, 09:00–17:00: removed, so you don't need to work it",
-        );
+      it("says Kim's Thursday Shift was removed", () => {
+        expect(updatesFor(result, 'Kim Lee')).toEqual([{ kind: 'removed', ...THURSDAY_9_TO_5 }]);
       });
 
       describe('when the Owner opens the Week', () => {
@@ -400,16 +359,18 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
     });
 
     describe('when the Owner adds a Shift for Kim and sends updates', () => {
+      let result: SendUpdatesResult;
+
       beforeEach(async () => {
         await app.request('POST', `${rotaPath(ownVenue)}/shifts`, {
           as: OWNER,
           body: { staffMemberId: kim.id, ...MONDAY_9_TO_5 },
         });
-        await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
+        result = await sendUpdates();
       });
 
-      it('tells Kim about the new Monday Shift', () => {
-        expect(emailTo(app, 'kim@example.com')?.text).toContain('- Mon 16 Nov, 09:00–17:00: new');
+      it('says Kim has a new Monday Shift', () => {
+        expect(updatesFor(result, 'Kim Lee')).toEqual([{ kind: 'added', ...MONDAY_9_TO_5 }]);
       });
     });
   });
@@ -424,7 +385,6 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
         where: { id: shift.id },
         data: { startsAt: new Date(MONDAY_10_TO_5.startsAt) },
       });
-      app.outbox.sent.length = 0;
       response = await app.request('POST', sendUpdatesPath(otherVenue), { as: OWNER });
     });
 

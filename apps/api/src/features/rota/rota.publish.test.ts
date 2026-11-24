@@ -1,3 +1,4 @@
+import type { PublishResult } from '@rota-ready/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createActiveStaffMember,
@@ -36,19 +37,16 @@ function publishPath(venue: { id: string }, weekStart: string) {
   return `${rotaPath(venue, weekStart)}/publish`;
 }
 
-async function staffLinkUrlOf(app: TestApp, venue: { id: string }, staffMember: { id: string }) {
+async function staffLinkTokenOf(app: TestApp, venue: { id: string }, staffMember: { id: string }) {
   const response = await app.request(
     'GET',
     `/api/venues/${venue.id}/staff-members/${staffMember.id}/staff-link`,
     { as: OWNER },
   );
   const { token } = (await response.json()) as { token: string };
-  return `${app.webUrl}/s/${token}`;
+  return token;
 }
 
-function recipients(app: TestApp) {
-  return app.outbox.sent.map((email) => email.to).sort();
-}
 
 describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
   let app: TestApp;
@@ -198,10 +196,6 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
         ]);
       });
 
-      it('sends no more emails', () => {
-        expect(app.outbox.sent).toHaveLength(1);
-      });
-
       it('keeps when it was first published', async () => {
         expect(
           await app.db.rota.findUniqueOrThrow({
@@ -218,8 +212,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
     });
 
-    it('responds with 200 and no emails', async () => {
-      expect([response.status, await response.json()]).toEqual([200, { emails: [] }]);
+    it('responds with 200 and no Staff Members to notify', async () => {
+      expect([response.status, await response.json()]).toEqual([200, { staffMembers: [] }]);
     });
 
     it('stores a Published Rota for that Week', async () => {
@@ -252,8 +246,11 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       expect(responses.map((each) => each.status).sort()).toEqual([200, 409]);
     });
 
-    it('emails Sam once', () => {
-      expect(recipients(app)).toEqual([SAM.email]);
+    it('lists Sam to notify once, in the accepted response', async () => {
+      const results = (await Promise.all(responses.map((each) => each.json()))) as Partial<PublishResult>[];
+      expect(results.flatMap(({ staffMembers = [] }) => staffMembers.map(({ name }) => name))).toEqual([
+        SAM.name,
+      ]);
     });
   });
 
@@ -275,77 +272,44 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     });
 
     describe('when the Owner publishes it', () => {
+      let result: PublishResult;
+
       beforeEach(async () => {
         response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
+        result = (await response.json()) as PublishResult;
       });
 
-      it('responds with 200 and Jo and Sam as sent, by name', async () => {
-        expect([response.status, await response.json()]).toEqual([
-          200,
-          {
-            emails: [
-              { staffMemberId: jo.id, name: JO.name, status: 'sent' },
-              { staffMemberId: sam.id, name: SAM.name, status: 'sent' },
-            ],
-          },
+      it('responds with 200', () => {
+        expect(response.status).toBe(200);
+      });
+
+      it('lists only Jo and Sam to notify, by name', () => {
+        expect(result.staffMembers.map(({ staffMemberId, name }) => ({ staffMemberId, name }))).toEqual([
+          { staffMemberId: jo.id, name: JO.name },
+          { staffMemberId: sam.id, name: SAM.name },
         ]);
       });
 
-      it('emails only Jo and Sam, once each', () => {
-        expect(recipients(app)).toEqual([JO.email, SAM.email]);
-      });
-
-      it('emails Sam their Staff Link', async () => {
-        const email = app.outbox.sent.find(({ to }) => to === SAM.email);
-        expect(email?.text).toContain(await staffLinkUrlOf(app, ownVenue, sam));
-      });
-
-      it('emails Jo their Staff Link', async () => {
-        const email = app.outbox.sent.find(({ to }) => to === JO.email);
-        expect(email?.text).toContain(await staffLinkUrlOf(app, ownVenue, jo));
-      });
-
-      it('names the Venue and the Week in the subject', () => {
-        expect(app.outbox.sent.find(({ to }) => to === SAM.email)?.subject).toBe(
-          'Your Shifts at The Crown for the Week of Mon, 16 Nov 2026',
+      it("gives Sam's Staff Link token", async () => {
+        expect(result.staffMembers.find(({ name }) => name === SAM.name)?.staffLinkToken).toBe(
+          await staffLinkTokenOf(app, ownVenue, sam),
         );
       });
-    });
 
-    describe('when the email to Jo fails', () => {
-      beforeEach(async () => {
-        app.outbox.failFor(JO.email);
-        response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
+      it("gives Jo's Staff Link token", async () => {
+        expect(result.staffMembers.find(({ name }) => name === JO.name)?.staffLinkToken).toBe(
+          await staffLinkTokenOf(app, ownVenue, jo),
+        );
       });
 
-      it('responds with 200, Jo as failed and Sam as sent', async () => {
-        expect([response.status, await response.json()]).toEqual([
-          200,
-          {
-            emails: [
-              { staffMemberId: jo.id, name: JO.name, status: 'failed' },
-              { staffMemberId: sam.id, name: SAM.name, status: 'sent' },
-            ],
-          },
-        ]);
+      it('sends no email', () => {
+        expect(app.outbox.sent).toEqual([]);
       });
 
-      it('still emails Sam', () => {
-        expect(recipients(app)).toEqual([SAM.email]);
-      });
-
-      it('keeps the Rota Published', async () => {
-        expect(await app.db.rota.findMany({ select: { status: true } })).toEqual([
-          { status: 'published' },
-        ]);
-      });
-
-      it('logs the failure', () => {
-        expect(app.logs()).toContain('Staff Link email failed');
-      });
-
-      it('keeps the Staff Link out of the log', () => {
-        expect(app.logs()).not.toContain(`${app.webUrl}/s/`);
+      it('keeps the Staff Link tokens out of the log', () => {
+        expect(
+          result.staffMembers.filter(({ staffLinkToken }) => app.logs().includes(staffLinkToken)),
+        ).toEqual([]);
       });
     });
   });
