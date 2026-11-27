@@ -8,6 +8,7 @@
 [![Future work](https://img.shields.io/badge/board-future_work-blueviolet)](https://github.com/users/sjblurton/projects/2)
 [![PRD](https://img.shields.io/badge/PRD-%231-informational)](https://github.com/sjblurton/rota-ready/issues/1)
 [![Pro PRD](https://img.shields.io/badge/Pro_PRD-%23152-informational)](https://github.com/sjblurton/rota-ready/issues/152)
+[![Ask PRD](https://img.shields.io/badge/Ask_PRD-%23159-informational)](https://github.com/sjblurton/rota-ready/issues/159)
 
 <p align="center">
   <img src="docs/images/landing-page.png" alt="The Rota Ready landing page: the pitch, How it works in three steps, and two plans, Free with a Start free button and Pro marked Coming soon" width="860">
@@ -39,7 +40,15 @@ Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
   <em>On Free, Send Updates lists who to tell and what changed, with a Copy link for each</em>
 </p>
 
-This is a proof of concept with no paid services, so nothing is for sale yet. [The Pro PRD](https://github.com/sjblurton/rota-ready/issues/152) plans the paid version: what Pro includes, pricing and texts, Stripe, Twilio and Resend, what has to be in place first, and the break-even point. It came out of a [map of eight decisions](https://github.com/sjblurton/rota-ready/issues/140), including research into SMS, payment providers and running costs.
+**Ask about this week.** On a Venue on the Preview Plan, the Owner can ask a question about the Week on screen, such as "Who's working Friday night?" or "How many hours are on this week?", and the answer streams in from Claude as it's written. It only reads the Rota, never changes it, and answers only from the Shifts shown. It's built as a worked example of a streaming AI interface: server-sent events over a POST, a model passed into the API so tests need no key, stopping and errors partway through, a screen-reader announcement instead of one per word, and cost limits ([ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md), [PRD #159](https://github.com/sjblurton/rota-ready/issues/159)).
+
+<p align="center">
+  <img src="docs/images/ask-about-this-week.gif" alt="The Ask about this week panel under the Rota grid: the Owner asks how many hours in total there are this week, and the answer streams in: each Shift runs 09:00 to 17:00, which is 8 hours, there are 13 Shifts, so the total is 104 hours" width="800">
+  <br>
+  <em>Ask about this week: the answer streams in from Claude, using only the Shifts on the Rota</em>
+</p>
+
+This is a proof of concept, so nothing is for sale yet. Its only paid service is the Claude API behind Ask about this week, capped by a monthly spend limit. [The Pro PRD](https://github.com/sjblurton/rota-ready/issues/152) plans the paid version: what Pro includes, pricing and texts, Stripe, Twilio and Resend, what has to be in place first, and the break-even point. It came out of a [map of eight decisions](https://github.com/sjblurton/rota-ready/issues/140), including research into SMS, payment providers and running costs.
 
 **Built AI-first, human-verified.** AI agents write the code from small, fully specified tickets. I check every change in the browser, review it, and only merge it when tests against a real database pass. [How it's built](#how-its-built) explains the workflow and what "verified" means here.
 
@@ -127,6 +136,7 @@ CODING_STANDARDS.md    The judgement calls a reviewer checks in every diff
 - [ADR-0009](docs/adr/0009-where-errors-show.md): errors show where the user can fix them, and never reveal which accounts exist.
 - [ADR-0010](docs/adr/0010-api-feature-folders-with-layers.md): `apps/api` uses the same feature folders, each split into router, controller, service and data layers, with lint enforcing the imports between them.
 - [ADR-0011](docs/adr/0011-no-code-comments.md): code carries no comments; names, structure and tests carry the meaning, and lint enforces it.
+- [ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md): Ask about this week streams its answer as server-sent events over a POST, from a model passed into `createApp`, and is on only with an API key and the Preview Plan.
 
 ### Testing approach
 
