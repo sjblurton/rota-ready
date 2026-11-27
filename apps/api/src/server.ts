@@ -1,6 +1,11 @@
 import { pino } from 'pino';
 import { createApp } from './app.js';
 import { parseStaffLinkKey } from '#src/features/staff-links/staff-link-token.js';
+import {
+  anthropicAnswerModel,
+  DEFAULT_ASK_MAX_TOKENS,
+  DEFAULT_ASK_MODEL,
+} from '#src/lib/answer-model.js';
 import { supabaseAuthConfig } from '#src/lib/auth.js';
 import { createDb } from '#src/lib/db.js';
 import { smtpEmailSender } from '#src/lib/email-sender.js';
@@ -23,6 +28,21 @@ if (!emailFrom) throw new Error('EMAIL_FROM is not set');
 const webUrl = process.env.WEB_URL;
 if (!webUrl) throw new Error('WEB_URL is not set');
 
+const askMaxTokens = Number(process.env.ASK_MAX_TOKENS ?? DEFAULT_ASK_MAX_TOKENS);
+if (!Number.isInteger(askMaxTokens) || askMaxTokens < 1) {
+  throw new Error('ASK_MAX_TOKENS must be a whole number above 0');
+}
+
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+const answerModel = anthropicApiKey
+  ? anthropicAnswerModel({
+      apiKey: anthropicApiKey,
+      model: process.env.ASK_MODEL ?? DEFAULT_ASK_MODEL,
+      maxTokens: askMaxTokens,
+      baseURL: process.env.ANTHROPIC_BASE_URL,
+    })
+  : null;
+
 const port = Number(process.env.PORT ?? 3000);
 const logger = pino({
   redact: ['req.headers.authorization', 'req.headers.cookie'],
@@ -37,6 +57,7 @@ createApp({
   staffLinkKey: parseStaffLinkKey(staffLinkKey),
   emailSender: smtpEmailSender({ url: smtpUrl, from: emailFrom }),
   webUrl,
+  answerModel,
 }).listen(port, () => {
   logger.info({ port }, 'API listening');
 });

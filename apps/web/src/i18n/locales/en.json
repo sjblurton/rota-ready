@@ -28,7 +28,9 @@
     "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them.",
     "rotaNotPublished": "Publish this Week's Rota before sending updates.",
     "rotaHasShifts": "This Week already has Shifts, so Copy Last Week can only fill an empty Week.",
-    "staffMemberLimitReached": "This Venue has reached its Staff Member limit. Archive someone who has left to add someone new."
+    "staffMemberLimitReached": "This Venue has reached its Staff Member limit. Archive someone who has left to add someone new.",
+    "askUnavailable": "Ask about this week isn't available right now. Please try again later.",
+    "askFailed": "The answer stopped because something went wrong. Please try asking again."
   },
   "validation": {
     "required": "This field is required.",
@@ -46,7 +48,8 @@
     "shiftQuarterHour": "Use a time on the hour, quarter past, half past or quarter to.",
     "shiftOverlaps": "This Staff Member already has a Shift at that time.",
     "declineReasonTooLong": "$t(validation.tooLong, {\"count\": {{declineReasonMaxLength}} })",
-    "shiftNotesTooLong": "$t(validation.tooLong, {\"count\": {{shiftNotesMaxLength}} })"
+    "shiftNotesTooLong": "$t(validation.tooLong, {\"count\": {{shiftNotesMaxLength}} })",
+    "questionTooLong": "$t(validation.tooLong, {\"count\": {{askQuestionMaxLength}} })"
   },
   "auth": {
     "email": "Email",
@@ -197,6 +200,14 @@
       "nothingToCopy": "Last Week has no Shifts to copy.",
       "skipped_one": "1 Shift from last Week wasn't copied, because it would overlap another Shift or run over 16 hours.",
       "skipped_other": "{{count}} Shifts from last Week weren't copied, because they would overlap other Shifts or run over 16 hours."
+    },
+    "ask": {
+      "title": "Ask about this week",
+      "description": "Ask a question about this Week's Rota. Answers come only from the Shifts on it, and can be wrong, so check the Rota before you act on one.",
+      "question": "Your question",
+      "submit": "Ask",
+      "answering": "Answering…",
+      "answer": "Answer"
     }
   },
   "staff": {

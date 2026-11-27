@@ -16,6 +16,8 @@ const statusByCode = {
   shift_started: 409,
   staff_member_has_upcoming_shifts: 409,
   staff_member_limit_reached: 409,
+  ask_failed: 502,
+  ask_unavailable: 503,
   internal_error: 500,
 } as const satisfies Record<ApiErrorCode, number>;
 

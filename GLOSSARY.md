@@ -73,6 +73,10 @@ _Avoid_: Send, release
 **Copy Last Week**:
 Filling an empty Draft Rota with the previous Week's Shifts, moved forward by seven days.
 
+**Ask about this week**:
+An Owner's question about the Week on screen, answered from that Week's Rota by an AI model as the answer is written. It only reads the Rota, never changes it, and each question stands alone. Only on Preview for now.
+_Avoid_: Chat, assistant, AI (as a noun)
+
 ## Staff responses
 
 **Staff Link**:
@@ -117,7 +121,7 @@ The paid Plan: Rota Ready emails Staff Members their Staff Link and changes, sen
 _Avoid_: Premium, paid tier
 
 **Preview**:
-Free's rules plus features that aren't released yet, for trying them out; the first is asking questions about the Week's Rota. Nobody can choose or buy it in the app; a Venue is put on it by editing the database.
+Free's rules plus features that aren't released yet, for trying them out; the first is Ask about this week. Nobody can choose or buy it in the app; a Venue is put on it by editing the database.
 _Avoid_: Beta, trial (Free is the trial), AI plan
 
 **Subscription**:

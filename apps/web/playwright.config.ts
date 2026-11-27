@@ -1,8 +1,13 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+const envFile = new URL('../../.env', import.meta.url);
+if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 const isolated = process.env.E2E_ISOLATED === 'true';
 const apiPort = isolated ? 3200 : 3000;
 const webPort = isolated ? 5273 : 5173;
+const anthropicStubPort = isolated ? 3201 : 3001;
 const reuseExistingServer = !process.env.CI && !isolated;
 
 export default defineConfig({
@@ -18,9 +23,20 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
+      command: 'node e2e/anthropic-stub.ts',
+      url: `http://localhost:${anthropicStubPort}/health`,
+      env: { ANTHROPIC_STUB_PORT: String(anthropicStubPort) },
+      reuseExistingServer,
+    },
+    {
       command: 'pnpm --filter @rota-ready/api dev',
       url: `http://localhost:${apiPort}/api/health`,
-      env: { PORT: String(apiPort), WEB_URL: `http://localhost:${webPort}` },
+      env: {
+        PORT: String(apiPort),
+        WEB_URL: `http://localhost:${webPort}`,
+        ANTHROPIC_API_KEY: 'stub-key',
+        ANTHROPIC_BASE_URL: `http://localhost:${anthropicStubPort}`,
+      },
       reuseExistingServer,
     },
     {

@@ -65,7 +65,7 @@ export function createShift(
   db: Db,
   rota: { id: string; venueId: string },
   staffMember: { id: string },
-  { startsAt, endsAt }: { startsAt: string; endsAt: string },
+  { startsAt, endsAt, role = null }: { startsAt: string; endsAt: string; role?: string | null },
 ) {
   return db.shift.create({
     data: {
@@ -74,6 +74,7 @@ export function createShift(
       staffMemberId: staffMember.id,
       startsAt: new Date(startsAt),
       endsAt: new Date(endsAt),
+      role,
     },
   });
 }

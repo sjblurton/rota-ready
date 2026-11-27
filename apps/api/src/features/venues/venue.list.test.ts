@@ -104,7 +104,7 @@ describe('/api/venues', () => {
 
       it('returns only the Venue the User is a member of', async () => {
         expect(await response.json()).toEqual([
-          { id: expect.any(String), name: 'The Crown', timeZone: 'Europe/London', plan: 'free' },
+          { id: expect.any(String), name: 'The Crown', timeZone: 'Europe/London', plan: 'free', canAskAboutThisWeek: false },
         ]);
       });
     });

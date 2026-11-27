@@ -114,6 +114,7 @@ describe('/api/venues', () => {
           name: 'The Crown',
           timeZone: 'Europe/Dublin',
           plan: 'free',
+          canAskAboutThisWeek: false,
         });
       });
 

@@ -15,6 +15,7 @@ export const validationMessage = {
   shiftOverlaps: 'validation.shiftOverlaps',
   declineReasonTooLong: 'validation.declineReasonTooLong',
   shiftNotesTooLong: 'validation.shiftNotesTooLong',
+  questionTooLong: 'validation.questionTooLong',
 } as const;
 
 export type ValidationMessageKey = (typeof validationMessage)[keyof typeof validationMessage];

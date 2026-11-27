@@ -33,16 +33,13 @@ async function endSessionAndReloadAtLogin(): Promise<never> {
   return untilThePageUnloads;
 }
 
-async function apiRequest<Schema extends z.ZodType>(
-  method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE',
-  path: string,
-  schema: Schema,
-  body?: unknown,
-): Promise<z.infer<Schema>> {
+type Method = 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE';
+
+async function apiFetch(method: Method, path: string, body?: unknown, signal?: AbortSignal) {
   const token = await accessToken();
   const headers: Record<string, string> = {};
   if (token) headers.authorization = `Bearer ${token}`;
-  const init: RequestInit = { method, headers };
+  const init: RequestInit = { method, headers, ...(signal && { signal }) };
   if (body !== undefined) {
     headers['content-type'] = 'application/json';
     init.body = JSON.stringify(body);
@@ -53,7 +50,23 @@ async function apiRequest<Schema extends z.ZodType>(
     if (code === apiErrorCode.unauthorized) return endSessionAndReloadAtLogin();
     throw new ApiError(response.status, code);
   }
+  return response;
+}
+
+async function apiRequest<Schema extends z.ZodType>(
+  method: Method,
+  path: string,
+  schema: Schema,
+  body?: unknown,
+): Promise<z.infer<Schema>> {
+  const response = await apiFetch(method, path, body);
   return schema.parse(response.status === 204 ? undefined : await response.json());
+}
+
+export async function apiPostStream(path: string, body: unknown, signal: AbortSignal) {
+  const response = await apiFetch('POST', path, body, signal);
+  if (!response.body) throw new ApiError(response.status, undefined);
+  return response.body.pipeThrough(new TextDecoderStream());
 }
 
 export function apiGet<Schema extends z.ZodType>(path: string, schema: Schema) {

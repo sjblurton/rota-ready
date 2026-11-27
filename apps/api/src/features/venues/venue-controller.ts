@@ -4,16 +4,25 @@ import {
   venueSchema,
 } from '@rota-ready/shared';
 import type { Request, Response } from 'express';
-import type { User, Venue } from '#src/generated/prisma/client.js';
+import type { Plan, User, Venue } from '#src/generated/prisma/client.js';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
 import type { VenueRequestHandler } from './require-venue-member.js';
 import type { VenueService } from './venue-service.js';
 
-function toVenue({ id, name, timeZone, plan }: Venue) {
-  return venueSchema.parse({ id, name, timeZone, plan });
-}
+export function venueController(
+  venues: VenueService,
+  canAskAboutThisWeek: (venue: { plan: Plan }) => boolean,
+) {
+  function toVenue({ id, name, timeZone, plan }: Venue) {
+    return venueSchema.parse({
+      id,
+      name,
+      timeZone,
+      plan,
+      canAskAboutThisWeek: canAskAboutThisWeek({ plan }),
+    });
+  }
 
-export function venueController(venues: VenueService) {
   async function createVenue(req: Request, res: Response, user: User) {
     const body = parseBody(createVenueRequestSchema, req.body, res);
     if (!body) return;

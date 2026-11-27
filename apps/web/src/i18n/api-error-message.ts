@@ -16,10 +16,15 @@ const messageKeys = {
   shift_started: 'errors.shiftStarted',
   staff_member_has_upcoming_shifts: 'errors.staffMemberHasUpcomingShifts',
   staff_member_limit_reached: 'errors.staffMemberLimitReached',
+  ask_unavailable: 'errors.askUnavailable',
+  ask_failed: 'errors.askFailed',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 
+export function apiErrorCodeMessage(t: TFunction, code: ApiErrorCode | undefined): string {
+  return code ? t(messageKeys[code]) : t('errors.generic');
+}
+
 export function apiErrorMessage(t: TFunction, error: unknown): string {
-  if (error instanceof ApiError && error.code) return t(messageKeys[error.code]);
-  return t('errors.generic');
+  return apiErrorCodeMessage(t, error instanceof ApiError ? error.code : undefined);
 }

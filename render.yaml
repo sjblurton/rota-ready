@@ -18,6 +18,8 @@ services:
         sync: false
       - key: STAFF_LINK_KEY
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
 
   - type: web
     name: rota-ready

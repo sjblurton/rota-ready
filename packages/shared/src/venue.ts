@@ -33,6 +33,7 @@ export const venueSchema = z.object({
   name: z.string(),
   timeZone: z.string(),
   plan: planSchema,
+  canAskAboutThisWeek: z.boolean(),
 });
 
 export type Venue = z.infer<typeof venueSchema>;
