@@ -1,10 +1,10 @@
 import {
   DECLINE_REASON_MAX_LENGTH,
-  FREE_PLAN_STAFF_MEMBER_LIMIT,
   MAX_SHIFT_HOURS,
   SHIFT_NOTES_MAX_LENGTH,
   STAFF_MEMBER_NAME_MAX_LENGTH,
   STAFF_MEMBER_ROLE_MAX_LENGTH,
+  planAllows,
   VENUE_NAME_MAX_LENGTH,
 } from '@rota-ready/shared';
 import i18n, { type Resource } from 'i18next';
@@ -36,7 +36,7 @@ await i18n.use(initReactI18next).init({
       staffMemberRoleMaxLength: STAFF_MEMBER_ROLE_MAX_LENGTH,
       declineReasonMaxLength: DECLINE_REASON_MAX_LENGTH,
       shiftNotesMaxLength: SHIFT_NOTES_MAX_LENGTH,
-      freePlanStaffMemberLimit: FREE_PLAN_STAFF_MEMBER_LIMIT,
+      freePlanStaffMemberLimit: planAllows.free.staffMemberLimit,
     },
   },
 });

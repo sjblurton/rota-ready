@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { planSchema } from './plan.js';
 import { validationMessage } from './validation.js';
 
 export const DEFAULT_TIME_ZONE = 'Europe/London';
@@ -26,12 +27,6 @@ export const venueNameSchema = z
   .trim()
   .min(1, validationMessage.required)
   .max(VENUE_NAME_MAX_LENGTH, validationMessage.venueNameTooLong);
-
-export const planSchema = z.enum(['free', 'pro']);
-
-export const plan = planSchema.enum;
-
-export type Plan = z.infer<typeof planSchema>;
 
 export const venueSchema = z.object({
   id: z.uuid(),

@@ -1,7 +1,7 @@
 import {
   byStaffMemberName,
   copyLastWeekResultSchema,
-  plan,
+  notifiedBy,
   publishResultSchema,
   rotaSchema,
   sendUpdatesResultSchema,
@@ -45,21 +45,21 @@ function toEmails(emails: StaffLinkEmailResult[]) {
 }
 
 function toPublishResult(result: NotifyResult<StaffMemberToNotify>) {
-  if (result.plan === plan.pro) {
-    return publishResultSchema.parse({ plan: result.plan, emails: toEmails(result.emails) });
+  if (result.notifiedBy === notifiedBy.rota_ready) {
+    return publishResultSchema.parse({ notifiedBy: result.notifiedBy, emails: toEmails(result.emails) });
   }
   return publishResultSchema.parse({
-    plan: result.plan,
+    notifiedBy: result.notifiedBy,
     staffMembers: result.staffMembers.map(toStaffMemberToNotify).sort(byStaffMemberName),
   });
 }
 
 function toSendUpdatesResult(result: NotifyResult<StaffMemberToUpdate>) {
-  if (result.plan === plan.pro) {
-    return sendUpdatesResultSchema.parse({ plan: result.plan, emails: toEmails(result.emails) });
+  if (result.notifiedBy === notifiedBy.rota_ready) {
+    return sendUpdatesResultSchema.parse({ notifiedBy: result.notifiedBy, emails: toEmails(result.emails) });
   }
   return sendUpdatesResultSchema.parse({
-    plan: result.plan,
+    notifiedBy: result.notifiedBy,
     staffMembers: result.staffMembers
       .map((each) => ({ ...toStaffMemberToNotify(each), updates: each.updates.map(toShiftUpdate) }))
       .sort(byStaffMemberName),

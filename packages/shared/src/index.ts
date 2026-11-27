@@ -3,6 +3,7 @@ export * from './date-time.js';
 export * from './health.js';
 export * from './user.js';
 export * from './validation.js';
+export * from './plan.js';
 export * from './venue.js';
 export * from './staff-member.js';
 export * from './week.js';

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { formatTime } from './date-time.js';
 import { STAFF_MEMBER_ROLE_MAX_LENGTH } from './staff-member.js';
-import { plan } from './venue.js';
+import { notifiedBy } from './plan.js';
 import { optionalText, validationMessage, type ValidationMessageKey } from './validation.js';
 import { addDays, isLocalDate, isWeekStart, localDateOf, zonedTimeToUtc } from './week.js';
 
@@ -249,27 +249,27 @@ const staffMemberToUpdateSchema = staffMemberToNotifySchema.extend({
 
 export type StaffMemberToUpdate = z.infer<typeof staffMemberToUpdateSchema>;
 
-const proNotifyResultSchema = z.object({
-  plan: z.literal(plan.pro),
+const rotaReadyNotifiedResultSchema = z.object({
+  notifiedBy: z.literal(notifiedBy.rota_ready),
   emails: z.array(staffLinkEmailSchema),
 });
 
-export const publishResultSchema = z.discriminatedUnion('plan', [
+export const publishResultSchema = z.discriminatedUnion('notifiedBy', [
   z.object({
-    plan: z.literal(plan.free),
+    notifiedBy: z.literal(notifiedBy.owner),
     staffMembers: z.array(staffMemberToNotifySchema),
   }),
-  proNotifyResultSchema,
+  rotaReadyNotifiedResultSchema,
 ]);
 
 export type PublishResult = z.infer<typeof publishResultSchema>;
 
-export const sendUpdatesResultSchema = z.discriminatedUnion('plan', [
+export const sendUpdatesResultSchema = z.discriminatedUnion('notifiedBy', [
   z.object({
-    plan: z.literal(plan.free),
+    notifiedBy: z.literal(notifiedBy.owner),
     staffMembers: z.array(staffMemberToUpdateSchema),
   }),
-  proNotifyResultSchema,
+  rotaReadyNotifiedResultSchema,
 ]);
 
 export type SendUpdatesResult = z.infer<typeof sendUpdatesResultSchema>;

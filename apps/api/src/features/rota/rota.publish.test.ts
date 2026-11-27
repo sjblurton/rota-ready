@@ -38,7 +38,7 @@ function publishPath(venue: { id: string }, weekStart: string) {
   return `${rotaPath(venue, weekStart)}/publish`;
 }
 
-type FreePublishResult = Extract<PublishResult, { plan: 'free' }>;
+type OwnerNotifiesPublishResult = Extract<PublishResult, { notifiedBy: 'owner' }>;
 
 async function staffLinkTokenOf(app: TestApp, venue: { id: string }, staffMember: { id: string }) {
   const response = await app.request(
@@ -226,10 +226,10 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
       response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
     });
 
-    it('responds with 200, the Free Plan and no Staff Members to notify', async () => {
+    it('responds with 200 and no Staff Members for the Owner to notify', async () => {
       expect([response.status, await response.json()]).toEqual([
         200,
-        { plan: 'free', staffMembers: [] },
+        { notifiedBy: 'owner', staffMembers: [] },
       ]);
     });
 
@@ -264,7 +264,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     });
 
     it('lists Sam to notify once, in the accepted response', async () => {
-      const results = (await Promise.all(responses.map((each) => each.json()))) as Partial<FreePublishResult>[];
+      const results = (await Promise.all(responses.map((each) => each.json()))) as Partial<OwnerNotifiesPublishResult>[];
       expect(results.flatMap(({ staffMembers = [] }) => staffMembers.map(({ name }) => name))).toEqual([
         SAM.name,
       ]);
@@ -289,15 +289,15 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     });
 
     describe('when the Owner publishes it', () => {
-      let result: FreePublishResult;
+      let result: OwnerNotifiesPublishResult;
 
       beforeEach(async () => {
         response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
-        result = (await response.json()) as FreePublishResult;
+        result = (await response.json()) as OwnerNotifiesPublishResult;
       });
 
-      it('responds with 200 and the Free Plan', () => {
-        expect([response.status, result.plan]).toEqual([200, 'free']);
+      it('responds with 200 and the Staff Members for the Owner to notify', () => {
+        expect([response.status, result.notifiedBy]).toEqual([200, 'owner']);
       });
 
       it('lists only Jo and Sam to notify, by name', () => {
@@ -341,8 +341,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
         response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
       });
 
-      it('responds with 200, the Pro Plan and no emails', async () => {
-        expect([response.status, await response.json()]).toEqual([200, { plan: 'pro', emails: [] }]);
+      it('responds with 200 and nobody emailed by Rota Ready', async () => {
+        expect([response.status, await response.json()]).toEqual([200, { notifiedBy: 'rota_ready', emails: [] }]);
       });
     });
 
@@ -408,11 +408,11 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
           response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
         });
 
-        it('responds with 200, the Pro Plan, and Jo and Sam as sent, by name', async () => {
+        it('responds with 200, the emails Rota Ready sent, with Jo and Sam as sent, by name', async () => {
           expect([response.status, await response.json()]).toEqual([
             200,
             {
-              plan: 'pro',
+              notifiedBy: 'rota_ready',
               emails: [
                 { staffMemberId: jo.id, name: JO.name, status: 'sent' },
                 { staffMemberId: sam.id, name: SAM.name, status: 'sent' },
@@ -452,7 +452,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
           expect([response.status, await response.json()]).toEqual([
             200,
             {
-              plan: 'pro',
+              notifiedBy: 'rota_ready',
               emails: [
                 { staffMemberId: jo.id, name: JO.name, status: 'failed' },
                 { staffMemberId: sam.id, name: SAM.name, status: 'sent' },

@@ -7,6 +7,8 @@ import {
   formatLocalDate,
   formatShiftTimes,
   addDays,
+  notifiedBy,
+  planAllows,
   shiftTimesIssue,
   shiftTimesOneWeekLater,
   shiftUpdateKind,
@@ -14,7 +16,6 @@ import {
 } from '@rota-ready/shared';
 import type { Logger } from 'pino';
 import {
-  Plan,
   RotaStatus,
   type Prisma,
   type Rota,
@@ -79,9 +80,9 @@ export interface StaffMemberToUpdate extends StaffMemberToNotify {
   updates: ShiftUpdate[];
 }
 
-export type NotifyResult<FreeStaffMember> =
-  | { plan: typeof Plan.free; staffMembers: FreeStaffMember[] }
-  | { plan: typeof Plan.pro; emails: StaffLinkEmailResult[] };
+export type NotifyResult<StaffMemberToTell> =
+  | { notifiedBy: typeof notifiedBy.owner; staffMembers: StaffMemberToTell[] }
+  | { notifiedBy: typeof notifiedBy.rota_ready; emails: StaffLinkEmailResult[] };
 
 export type ShiftUpdate =
   | { kind: typeof shiftUpdateKind.added | typeof shiftUpdateKind.removed; staffMemberId: string; times: ShiftTimes }
@@ -236,8 +237,8 @@ export function createRotaService({
       });
       if (!published) return refuse(apiErrorCode.rota_already_published);
       const onRota = await findActiveStaffMembersOnRota(db, rota.id);
-      if (venue.plan === Plan.free) {
-        return { ok: true, plan: Plan.free, staffMembers: await withStaffLinkTokens(onRota) };
+      if (planAllows[venue.plan].staffNotifiedBy === notifiedBy.owner) {
+        return { ok: true, notifiedBy: notifiedBy.owner, staffMembers: await withStaffLinkTokens(onRota) };
       }
       const emails = await Promise.all(
         onRota.map((staffMember) =>
@@ -250,7 +251,7 @@ export function createRotaService({
           }),
         ),
       );
-      return { ok: true, plan: Plan.pro, emails };
+      return { ok: true, notifiedBy: notifiedBy.rota_ready, emails };
     },
 
     async copyLastWeek(
@@ -296,11 +297,11 @@ export function createRotaService({
       const affected = await findStaffMembers(db, [
         ...new Set(updates.map(({ staffMemberId }) => staffMemberId)),
       ]);
-      if (venue.plan === Plan.free) {
+      if (planAllows[venue.plan].staffNotifiedBy === notifiedBy.owner) {
         const toNotify = await withStaffLinkTokens(affected.filter(({ archivedAt }) => !archivedAt));
         return {
           ok: true,
-          plan: Plan.free,
+          notifiedBy: notifiedBy.owner,
           staffMembers: toNotify.map((each) => ({
             ...each,
             updates: updatesFor(each.staffMember, updates),
@@ -321,7 +322,7 @@ export function createRotaService({
           }),
         ),
       );
-      return { ok: true, plan: Plan.pro, emails };
+      return { ok: true, notifiedBy: notifiedBy.rota_ready, emails };
     },
   };
 }
