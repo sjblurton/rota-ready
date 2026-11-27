@@ -987,7 +987,7 @@ test.describe.serial('MVP journey', () => {
     await expect(rotaCell('Sam Jones', lastWeek, lastWeek)).toHaveText('09:00–17:00No reply');
   });
 
-  test('explains the Free plan limit in place of the add form once the Venue has 15 Staff Members', async () => {
+  test('explains the Staff Member limit in place of the add form once the Venue has 15 Staff Members', async () => {
     await page.getByRole('tab', { name: 'Staff' }).click();
     await expect(staffRows()).toHaveText([/Jo Bloggs/, /Sam Jones/]);
     const addForm = staffForm('Add staff member');
@@ -1001,7 +1001,7 @@ test.describe.serial('MVP journey', () => {
     }
     await expect(staffRows()).toHaveCount(15);
     await expect(
-      page.getByRole('heading', { name: 'The Free plan allows up to 15 Staff Members' }),
+      page.getByRole('heading', { name: "This Venue's Plan allows up to 15 Staff Members" }),
     ).toBeVisible();
     await expect(
       page.getByText(
@@ -1017,7 +1017,7 @@ test.describe.serial('MVP journey', () => {
     await expect(staffRows()).toHaveCount(14);
     await expect(page.getByRole('button', { name: 'Add staff member' })).toBeVisible();
     await expect(
-      page.getByRole('heading', { name: 'The Free plan allows up to 15 Staff Members' }),
+      page.getByRole('heading', { name: "This Venue's Plan allows up to 15 Staff Members" }),
     ).toHaveCount(0);
   });
 

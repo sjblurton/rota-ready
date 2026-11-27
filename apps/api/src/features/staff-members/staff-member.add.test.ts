@@ -4,6 +4,7 @@ import {
   createArchivedStaffMember,
   createUser,
   createVenueFor,
+  moveVenueToAiPreview,
   moveVenueToPro,
 } from '#test/seed.js';
 import { startTestApp, type TestApp, type VenueLock } from '#test/test-app.js';
@@ -311,6 +312,23 @@ describe('/api/venues/:venueId/staff-members', () => {
       describe('when the Venue is on Pro and the Owner adds a 16th', () => {
         beforeEach(async () => {
           await moveVenueToPro(app.db, ownVenue);
+          response = await app.request('POST', staffMembersPath(ownVenue), {
+            as: OWNER,
+            body: ALEX,
+          });
+        });
+
+        it('refuses the Owner with 409 and the staff_member_limit_reached code, as on Free', async () => {
+          expect([response.status, await response.json()]).toEqual([
+            409,
+            { code: 'staff_member_limit_reached' },
+          ]);
+        });
+      });
+
+      describe('when the Venue is on AI Preview and the Owner adds a 16th', () => {
+        beforeEach(async () => {
+          await moveVenueToAiPreview(app.db, ownVenue);
           response = await app.request('POST', staffMembersPath(ownVenue), {
             as: OWNER,
             body: ALEX,

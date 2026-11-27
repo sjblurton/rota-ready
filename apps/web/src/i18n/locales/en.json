@@ -213,7 +213,7 @@
       "submit": "Add staff member"
     },
     "limit": {
-      "title": "The Free plan allows up to {{staffMemberLimit}} Staff Members",
+      "title": "This Venue's Plan allows up to {{staffMemberLimit}} Staff Members",
       "description": "You have {{staffMemberCount}} Staff Members. Archive someone who has left to add someone new. Pro, coming soon, removes the limit."
     },
     "edit": {
