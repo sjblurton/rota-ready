@@ -33,6 +33,7 @@ model Venue {
 enum Plan {
   free
   pro
+  preview
 
   @@map("plan")
 }

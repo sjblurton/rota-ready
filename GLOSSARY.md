@@ -105,7 +105,7 @@ _Avoid_: Republish, notify all
 ## Plans
 
 **Plan**:
-What a Venue can use in Rota Ready: one of a fixed set, Free and Pro today. More Plans may join the set later.
+What a Venue can use in Rota Ready: one of a fixed set, Free, Pro and Preview today. More Plans may join the set later.
 _Avoid_: Tier, package, Subscription (that's how a Plan is paid for)
 
 **Free**:
@@ -115,6 +115,10 @@ _Avoid_: Basic, trial
 **Pro**:
 The paid Plan: Rota Ready emails Staff Members their Staff Link and changes, sends Reminders, and allows unlimited Staff Members. Texts are optional, billed per part up to the Text Cap.
 _Avoid_: Premium, paid tier
+
+**Preview**:
+Free's rules plus features that aren't released yet, for trying them out; the first is asking questions about the Week's Rota. Nobody can choose or buy it in the app; a Venue is put on it by editing the database.
+_Avoid_: Beta, trial (Free is the trial), AI plan
 
 **Subscription**:
 The paid arrangement through which an Owner keeps one Venue on Pro. An Owner of several Pro Venues has one Subscription for each.

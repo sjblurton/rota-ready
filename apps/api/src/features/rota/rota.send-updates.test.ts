@@ -6,6 +6,7 @@ import {
   createShift,
   createUser,
   createVenueFor,
+  moveVenueToPreview,
   moveVenueToPro,
 } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
@@ -392,6 +393,29 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
       it('says Kim has a new Monday Shift', () => {
         expect(updatesFor(result, 'Kim Lee')).toEqual([{ kind: 'added', ...MONDAY_9_TO_5 }]);
       });
+    });
+  });
+
+  describe("when the Venue is on Preview and Sam's Published Monday Shift moves an hour later", () => {
+    let sam: { id: string };
+    let result: OwnerNotifiesSendUpdatesResult;
+
+    beforeEach(async () => {
+      await moveVenueToPreview(app.db, ownVenue);
+      sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      const samsMonday = await createShift(app.db, rota, sam, MONDAY_9_TO_5);
+      await publish(ownVenue);
+      await moveShift(samsMonday, { staffMemberId: sam.id, ...MONDAY_10_TO_5 });
+      result = await sendUpdates();
+    });
+
+    it('responds with 200 and Sam for the Owner to notify, as on Free', () => {
+      expect([response.status, result.notifiedBy, namesIn(result)]).toEqual([200, 'owner', [SAM.name]]);
+    });
+
+    it('sends no email', () => {
+      expect(app.outbox.sent).toEqual([]);
     });
   });
 

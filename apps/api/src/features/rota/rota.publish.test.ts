@@ -7,6 +7,7 @@ import {
   createShift,
   createUser,
   createVenueFor,
+  moveVenueToPreview,
   moveVenueToPro,
 } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
@@ -328,6 +329,36 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
           result.staffMembers.filter(({ staffLinkToken }) => app.logs().includes(staffLinkToken)),
         ).toEqual([]);
       });
+    });
+  });
+
+  describe('when the Venue is on Preview and the Owner publishes a Draft Rota with a Shift for Sam', () => {
+    let sam: { id: string };
+    let result: OwnerNotifiesPublishResult;
+
+    beforeEach(async () => {
+      await moveVenueToPreview(app.db, ownVenue);
+      const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
+      sam = await createActiveStaffMember(app.db, ownVenue, SAM);
+      await createShift(app.db, { id: rota.id, venueId: ownVenue.id }, sam, MONDAY_9_TO_5);
+      response = await app.request('POST', publishPath(ownVenue, WEEK_START), { as: OWNER });
+      result = (await response.json()) as OwnerNotifiesPublishResult;
+    });
+
+    it('responds with 200 and Sam for the Owner to notify, with his Staff Link token, as on Free', async () => {
+      expect([response.status, result]).toEqual([
+        200,
+        {
+          notifiedBy: 'owner',
+          staffMembers: [
+            { staffMemberId: sam.id, name: SAM.name, staffLinkToken: await staffLinkTokenOf(app, ownVenue, sam) },
+          ],
+        },
+      ]);
+    });
+
+    it('sends no email', () => {
+      expect(app.outbox.sent).toEqual([]);
     });
   });
 
