@@ -6,6 +6,7 @@ import { inject } from 'vitest';
 import { createApp } from '#src/app.js';
 import type { Prisma } from '#src/generated/prisma/client.js';
 import { createDb, type Db } from '#src/lib/db.js';
+import type { AnswerModel, AnswerRequest } from '#src/lib/answer-model.js';
 import type { Email, EmailSender } from '#src/lib/email-sender.js';
 
 const ISSUER = 'http://auth.test/auth/v1';
@@ -29,6 +30,7 @@ interface RequestOptions {
   as?: TokenSubject;
   token?: string;
   body?: string | object | undefined;
+  signal?: AbortSignal;
 }
 
 export type TestApp = Awaited<ReturnType<typeof startTestApp>>;
@@ -54,13 +56,54 @@ function createEmailOutbox() {
   };
 }
 
-export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {}) {
+function untilAborted(signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) return resolve();
+    signal.addEventListener('abort', () => resolve(), { once: true });
+  });
+}
+
+function createScriptedAnswerModel() {
+  const requests: AnswerRequest[] = [];
+  let chunks = ['Sam Jones is working.'];
+  let ending: 'done' | 'fail' | 'wait-for-abort' = 'done';
+  const model: AnswerModel = {
+    async *streamAnswer(request) {
+      requests.push(request);
+      for (const chunk of chunks) yield chunk;
+      if (ending === 'fail') throw new Error('The model stream broke');
+      if (ending === 'wait-for-abort') await untilAborted(request.signal);
+    },
+  };
+  return {
+    model,
+    requests,
+    answerWith(answerChunks: string[]) {
+      chunks = answerChunks;
+      ending = 'done';
+    },
+    failAfter(answerChunks: string[]) {
+      chunks = answerChunks;
+      ending = 'fail';
+    },
+    waitForAbortAfter(answerChunks: string[]) {
+      chunks = answerChunks;
+      ending = 'wait-for-abort';
+    },
+  };
+}
+
+export async function startTestApp({
+  databaseUrl = inject('databaseUrl'),
+  withAnswerModel = true,
+} = {}) {
   const { publicKey, privateKey } = await generateKeyPair('ES256');
   const publicJwk = { ...(await exportJWK(publicKey)), kid: KEY_ID, alg: 'ES256' };
   const db: Db = createDb(databaseUrl);
   const logLines: string[] = [];
   let now = new Date(DEFAULT_NOW);
   const outbox = createEmailOutbox();
+  const answerModel = createScriptedAnswerModel();
   const unfinishedLocks = new Set<() => Promise<void>>();
   const server = createApp({
     db,
@@ -69,6 +112,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
     staffLinkKey: randomBytes(32),
     emailSender: outbox.sender,
     webUrl: WEB_URL,
+    answerModel: withAnswerModel ? answerModel.model : null,
     authConfig: {
       keys: createLocalJWKSet({ keys: [publicJwk] }),
       issuer: ISSUER,
@@ -106,12 +150,12 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   async function request(
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
-    { as, token, body }: RequestOptions = {},
+    { as, token, body, signal }: RequestOptions = {},
   ) {
     const headers: Record<string, string> = {};
     const bearer = token ?? (as && (await signToken(as)));
     if (bearer) headers.authorization = `Bearer ${bearer}`;
-    const init: RequestInit = { method, headers };
+    const init: RequestInit = { method, headers, ...(signal && { signal }) };
     if (body !== undefined) {
       headers['content-type'] = 'application/json';
       init.body = typeof body === 'string' ? body : JSON.stringify(body);
@@ -197,6 +241,7 @@ export async function startTestApp({ databaseUrl = inject('databaseUrl') } = {})
   return {
     db,
     outbox,
+    answerModel,
     webUrl: WEB_URL,
     logs,
     setClock,

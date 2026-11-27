@@ -117,6 +117,7 @@ describe('/api/venues', () => {
             name: 'The Rose & Crown',
             timeZone: 'Europe/London',
             plan: 'free',
+            canAskAboutThisWeek: false,
           });
         });
 

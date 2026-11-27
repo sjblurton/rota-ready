@@ -121,6 +121,7 @@ describe('/api/venues', () => {
             name: 'The Crown',
             timeZone: 'Europe/London',
             plan: 'free',
+            canAskAboutThisWeek: false,
           });
         });
       });
@@ -133,6 +134,10 @@ describe('/api/venues', () => {
 
         it('returns the Venue with the Pro Plan', async () => {
           expect(await response.json()).toMatchObject({ id: ownVenueId, plan: 'pro' });
+        });
+
+        it('says the Owner cannot ask about this week on Pro', async () => {
+          expect(await response.json()).toMatchObject({ canAskAboutThisWeek: false });
         });
       });
 
@@ -147,6 +152,10 @@ describe('/api/venues', () => {
             200,
             expect.objectContaining({ id: ownVenueId, plan: 'preview' }),
           ]);
+        });
+
+        it('says the Owner can ask about this week', async () => {
+          expect(await response.json()).toMatchObject({ canAskAboutThisWeek: true });
         });
       });
 
@@ -188,5 +197,24 @@ describe('/api/venues', () => {
         });
       });
     });
+  });
+});
+
+describe('GET /api/venues/:venueId with no Anthropic API key', () => {
+  let app: TestApp;
+  let response: Response;
+
+  beforeEach(async () => {
+    app = await startTestApp({ withAnswerModel: false });
+    await createUser(app.db, OWNER);
+    const venue = await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' });
+    await moveVenueToPreview(app.db, venue);
+    response = await app.request('GET', `/api/venues/${venue.id}`, { as: OWNER });
+  });
+
+  afterEach(() => app.close());
+
+  it('says the Owner cannot ask about this week, even on Preview', async () => {
+    expect(await response.json()).toMatchObject({ plan: 'preview', canAskAboutThisWeek: false });
   });
 });

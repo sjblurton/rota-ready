@@ -200,6 +200,8 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready-api` | `SMTP_URL` | Resend's SMTP endpoint with the API key as the password: `smtps://resend:<api-key>@smtp.resend.com:2465`. Use port 2465, because Render's free plan blocks outbound 25, 465 and 587, so sends on those ports time out and show as Failed |
 | Render `rota-ready-api` | `EMAIL_FROM` | `Rota Ready <onboarding@resend.dev>`, Resend's test sender, until a domain is verified in Resend. It only delivers to the Resend account's own address, so emails to anyone else show as Failed |
 | Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
+| Render `rota-ready-api` | `ANTHROPIC_API_KEY` | Optional. A Claude Console API key for Ask about this week ([ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md)). Without it the feature is off for every Venue. Set a monthly spend limit in the Console |
+| Render `rota-ready-api` | `ASK_MODEL`, `ASK_MAX_TOKENS` | Optional. Default to `claude-haiku-5-5` and `400` |
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, and uses asymmetric (ES256) JWT signing keys. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 

@@ -1,4 +1,5 @@
 import {
+  ASK_QUESTION_MAX_LENGTH,
   DECLINE_REASON_MAX_LENGTH,
   MAX_SHIFT_HOURS,
   SHIFT_NOTES_MAX_LENGTH,
@@ -35,6 +36,7 @@ await i18n.use(initReactI18next).init({
       staffMemberRoleMaxLength: STAFF_MEMBER_ROLE_MAX_LENGTH,
       declineReasonMaxLength: DECLINE_REASON_MAX_LENGTH,
       shiftNotesMaxLength: SHIFT_NOTES_MAX_LENGTH,
+      askQuestionMaxLength: ASK_QUESTION_MAX_LENGTH,
     },
   },
 });

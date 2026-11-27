@@ -1,0 +1,90 @@
+import { askRequestSchema, type AskRequest } from '@rota-ready/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import type { TFunction } from 'i18next';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { useAskAboutThisWeek, type AskState } from '@/features/rota/ask-about-this-week';
+import { venueQuery } from '@/features/venues/venue-queries';
+import { apiErrorCodeMessage } from '@/i18n/api-error-message';
+
+interface AskAboutThisWeekPanelProps {
+  venueId: string;
+  weekStart: string;
+}
+
+
+function announcement(t: TFunction, state: AskState) {
+  switch (state.status) {
+    case 'idle':
+      return '';
+    case 'streaming':
+      return t('rota.ask.answering');
+    case 'answered':
+      return state.answer;
+    case 'failed':
+      return apiErrorCodeMessage(t, state.code);
+  }
+}
+
+export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPanelProps) {
+  const { t } = useTranslation();
+  const { data: venue } = useSuspenseQuery(venueQuery(venueId));
+  const { state, ask } = useAskAboutThisWeek(venueId, weekStart);
+  const form = useForm({ resolver: zodResolver(askRequestSchema), defaultValues: { question: '' } });
+  const error = form.formState.errors.question;
+  const streaming = state.status === 'streaming';
+
+  if (!venue.canAskAboutThisWeek) return null;
+
+  function onSubmit({ question }: AskRequest) {
+    ask(question);
+  }
+
+  return (
+    <Card role="region" aria-labelledby="ask-title">
+      <CardHeader>
+        <CardTitle>
+          <h3 id="ask-title">{t('rota.ask.title')}</h3>
+        </CardTitle>
+        <CardDescription>{t('rota.ask.description')}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <form noValidate className="flex flex-col gap-3 sm:flex-row sm:items-start" onSubmit={form.handleSubmit(onSubmit)}>
+          <Field data-invalid={!!error} className="flex-1">
+            <FieldLabel htmlFor="ask-question">{t('rota.ask.question')}</FieldLabel>
+            <Input
+              id="ask-question"
+              autoComplete="off"
+              aria-invalid={!!error}
+              aria-describedby="ask-question-error"
+              {...form.register('question')}
+            />
+            <FieldError id="ask-question-error" errors={[error]} />
+          </Field>
+          <Button type="submit" className="sm:mt-6" disabled={streaming}>
+            {t('rota.ask.submit')}
+          </Button>
+        </form>
+        {state.status !== 'idle' && (
+          <section aria-labelledby="ask-answer-heading" aria-busy={streaming} className="flex flex-col gap-1">
+            <h4 id="ask-answer-heading" className="text-sm font-medium">
+              {t('rota.ask.answer')}
+            </h4>
+            <p className="text-sm whitespace-pre-wrap">{state.answer}</p>
+            {state.status === 'failed' && (
+              <p className="text-sm text-destructive">{apiErrorCodeMessage(t, state.code)}</p>
+            )}
+          </section>
+        )}
+        <p role="status" className="sr-only">
+          {announcement(t, state)}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}

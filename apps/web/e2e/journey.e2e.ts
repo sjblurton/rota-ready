@@ -1,5 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
+import pg from 'pg';
+import { STUB_ANSWER_CHUNKS } from './anthropic-stub';
 
 const email = `e2e-${Date.now()}@example.com`;
 const password = 'correct-horse-battery-staple';
@@ -668,6 +670,33 @@ test.describe.serial('MVP journey', () => {
 
   test('shows each Shift in the Published Rota as Pending', async () => {
     await expect(rotaCell('Sam Jones', addDays(plannedWeek, 6))).toContainText('Pending');
+  });
+
+  test('shows no Ask about this week panel while the Venue is on Free', async () => {
+    await expect(page.getByRole('region', { name: 'Ask about this week' })).toHaveCount(0);
+  });
+
+  test('shows Ask about this week once the Venue is on Preview', async () => {
+    const [, venueId] = /\/venues\/([^/]+)\//.exec(page.url()) ?? [];
+    const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
+    await db.connect();
+    await db.query("UPDATE venues SET plan = 'preview' WHERE id = $1", [venueId]);
+    await db.end();
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Ask about this week' })).toBeVisible();
+  });
+
+  test('streams the answer to a question about the Week, announcing "Answering…" and then the answer', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    const answer = STUB_ANSWER_CHUNKS.join('');
+    await panel.getByLabel('Your question').fill('Who has the most hours this week?');
+    await panel.getByLabel('Your question').press('Enter');
+    await expect(panel.getByRole('status')).toHaveText('Answering…');
+    await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'true');
+    await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+    await expect(panel.getByRole('status')).toHaveText(answer);
+    await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'false');
+    await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(answer);
   });
 
   test('keeps the next Week a Draft with a Publish button', async () => {

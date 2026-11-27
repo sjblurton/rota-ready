@@ -7,6 +7,7 @@ import { RotaLoadError } from '@/features/rota/rota-load-error';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddShiftForm } from '@/features/rota/add-shift-form';
+import { AskAboutThisWeekPanel } from '@/features/rota/ask-about-this-week-panel';
 import { CopyLastWeekButton } from '@/features/rota/copy-last-week-button';
 import { PublishRotaDialog } from '@/features/rota/publish-rota-dialog';
 import { SendUpdatesDialog } from '@/features/rota/send-updates-dialog';
@@ -64,6 +65,7 @@ function RotaPage() {
           )}
         </CardContent>
       </Card>
+      <AskAboutThisWeekPanel key={weekStart} venueId={venueId} weekStart={weekStart} />
       {staffMembers.length > 0 && (
         <Card>
           <CardHeader>
