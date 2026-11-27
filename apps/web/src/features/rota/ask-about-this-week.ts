@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '@rota-ready/shared';
+import type { ApiErrorCode, AskEvent } from '@rota-ready/shared';
 import { useEffect, useReducer, useRef } from 'react';
 import { askEventsFrom } from '@/features/rota/ask-events';
 import { ApiError, apiPostStream } from '@/lib/api';
@@ -33,6 +33,17 @@ function askReducer(state: AskState, action: AskAction): AskState {
   }
 }
 
+function actionFor(askEvent: AskEvent): AskAction {
+  switch (askEvent.event) {
+    case 'delta':
+      return { type: 'received', text: askEvent.data.text };
+    case 'done':
+      return { type: 'finished' };
+    case 'error':
+      return { type: 'failed', code: askEvent.data.code };
+  }
+}
+
 function askPath(venueId: string, weekStart: string) {
   return `/api/venues/${venueId}/rotas/${weekStart}/ask`;
 }
@@ -47,9 +58,9 @@ async function streamAnswer(
   const parser = createEventStreamParser();
   for await (const chunk of stream) {
     for (const askEvent of askEventsFrom(parser.push(chunk))) {
-      if (askEvent.event === 'delta') dispatch({ type: 'received', text: askEvent.data.text });
-      if (askEvent.event === 'error') return dispatch({ type: 'failed', code: askEvent.data.code });
-      if (askEvent.event === 'done') return dispatch({ type: 'finished' });
+      const action = actionFor(askEvent);
+      dispatch(action);
+      if (action.type !== 'received') return;
     }
   }
   dispatch({ type: 'failed', code: undefined });

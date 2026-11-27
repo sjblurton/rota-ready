@@ -18,7 +18,7 @@ interface AskAboutThisWeekPanelProps {
 }
 
 
-function announcement(t: TFunction, state: AskState) {
+function announcement(t: TFunction, state: AskState): string {
   switch (state.status) {
     case 'idle':
       return '';
