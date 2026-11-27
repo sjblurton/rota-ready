@@ -7,7 +7,7 @@ import {
   createShift,
   createUser,
   createVenueFor,
-  moveVenueToAiPreview,
+  moveVenueToPreview,
   moveVenueToPro,
 } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
@@ -332,12 +332,12 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/publish', () => {
     });
   });
 
-  describe('when the Venue is on AI Preview and the Owner publishes a Draft Rota with a Shift for Sam', () => {
+  describe('when the Venue is on Preview and the Owner publishes a Draft Rota with a Shift for Sam', () => {
     let sam: { id: string };
     let result: OwnerNotifiesPublishResult;
 
     beforeEach(async () => {
-      await moveVenueToAiPreview(app.db, ownVenue);
+      await moveVenueToPreview(app.db, ownVenue);
       const rota = await createRotaFor(app.db, ownVenue, WEEK_START);
       sam = await createActiveStaffMember(app.db, ownVenue, SAM);
       await createShift(app.db, { id: rota.id, venueId: ownVenue.id }, sam, MONDAY_9_TO_5);

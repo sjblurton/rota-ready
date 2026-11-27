@@ -4,7 +4,7 @@ import {
   createArchivedStaffMember,
   createUser,
   createVenueFor,
-  moveVenueToAiPreview,
+  moveVenueToPreview,
   moveVenueToPro,
 } from '#test/seed.js';
 import { startTestApp, type TestApp, type VenueLock } from '#test/test-app.js';
@@ -326,9 +326,9 @@ describe('/api/venues/:venueId/staff-members', () => {
         });
       });
 
-      describe('when the Venue is on AI Preview and the Owner adds a 16th', () => {
+      describe('when the Venue is on Preview and the Owner adds a 16th', () => {
         beforeEach(async () => {
-          await moveVenueToAiPreview(app.db, ownVenue);
+          await moveVenueToPreview(app.db, ownVenue);
           response = await app.request('POST', staffMembersPath(ownVenue), {
             as: OWNER,
             body: ALEX,

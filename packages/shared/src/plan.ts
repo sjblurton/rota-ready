@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const planSchema = z.enum(['free', 'pro', 'ai_preview']);
+export const planSchema = z.enum(['free', 'pro', 'preview']);
 
 export const plan = planSchema.enum;
 
@@ -12,14 +12,24 @@ export const notifiedBy = notifiedBySchema.enum;
 
 type NotifiedBy = z.infer<typeof notifiedBySchema>;
 
+const featureSchema = z.enum(['ask_about_this_week']);
+
+export const feature = featureSchema.enum;
+
+type Feature = z.infer<typeof featureSchema>;
+
 interface PlanAllowance {
   staffNotifiedBy: NotifiedBy;
   staffMemberLimit: number;
-  askAboutThisWeek: boolean;
+  features: readonly Feature[];
 }
 
-export const planAllows = {
-  free: { staffNotifiedBy: notifiedBy.owner, staffMemberLimit: 15, askAboutThisWeek: false },
-  pro: { staffNotifiedBy: notifiedBy.rota_ready, staffMemberLimit: 15, askAboutThisWeek: false },
-  ai_preview: { staffNotifiedBy: notifiedBy.owner, staffMemberLimit: 15, askAboutThisWeek: true },
-} as const satisfies Record<Plan, PlanAllowance>;
+export const planAllows: Record<Plan, PlanAllowance> = {
+  free: { staffNotifiedBy: notifiedBy.owner, staffMemberLimit: 15, features: [] },
+  pro: { staffNotifiedBy: notifiedBy.rota_ready, staffMemberLimit: 15, features: [] },
+  preview: {
+    staffNotifiedBy: notifiedBy.owner,
+    staffMemberLimit: 15,
+    features: [feature.ask_about_this_week],
+  },
+};

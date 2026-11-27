@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { plan } from '@rota-ready/shared';
-import { createUser, createVenueFor, moveVenueToAiPreview, moveVenueToPro } from '#test/seed.js';
+import { createUser, createVenueFor, moveVenueToPreview, moveVenueToPro } from '#test/seed.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
@@ -136,16 +136,16 @@ describe('/api/venues', () => {
         });
       });
 
-      describe('when the Owner requests their Venue on AI Preview', () => {
+      describe('when the Owner requests their Venue on Preview', () => {
         beforeEach(async () => {
-          await moveVenueToAiPreview(app.db, { id: ownVenueId });
+          await moveVenueToPreview(app.db, { id: ownVenueId });
           response = await app.request('GET', `/api/venues/${ownVenueId}`, { as: OWNER });
         });
 
-        it('returns the Venue with the AI Preview Plan', async () => {
+        it('returns the Venue with the Preview Plan', async () => {
           expect([response.status, await response.json()]).toEqual([
             200,
-            expect.objectContaining({ id: ownVenueId, plan: 'ai_preview' }),
+            expect.objectContaining({ id: ownVenueId, plan: 'preview' }),
           ]);
         });
       });

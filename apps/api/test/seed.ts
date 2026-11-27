@@ -33,8 +33,8 @@ export function moveVenueToPro(db: Db, venue: { id: string }) {
   return db.venue.update({ where: { id: venue.id }, data: { plan: Plan.pro } });
 }
 
-export function moveVenueToAiPreview(db: Db, venue: { id: string }) {
-  return db.venue.update({ where: { id: venue.id }, data: { plan: Plan.ai_preview } });
+export function moveVenueToPreview(db: Db, venue: { id: string }) {
+  return db.venue.update({ where: { id: venue.id }, data: { plan: Plan.preview } });
 }
 
 export function createActiveStaffMember(
