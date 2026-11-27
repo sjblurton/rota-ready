@@ -40,13 +40,13 @@ function sendUpdatesPath(venue: { id: string }, weekStart = WEEK_START) {
   return `/api/venues/${venue.id}/rotas/${weekStart}/send-updates`;
 }
 
-type FreeSendUpdatesResult = Extract<SendUpdatesResult, { plan: 'free' }>;
+type OwnerNotifiesSendUpdatesResult = Extract<SendUpdatesResult, { notifiedBy: 'owner' }>;
 
-function namesIn({ staffMembers }: FreeSendUpdatesResult) {
+function namesIn({ staffMembers }: OwnerNotifiesSendUpdatesResult) {
   return staffMembers.map(({ name }) => name);
 }
 
-function updatesFor({ staffMembers }: FreeSendUpdatesResult, name: string) {
+function updatesFor({ staffMembers }: OwnerNotifiesSendUpdatesResult, name: string) {
   return staffMembers.find((each) => each.name === name)?.updates;
 }
 
@@ -93,7 +93,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
 
   async function sendUpdates(venue = ownVenue) {
     response = await app.request('POST', sendUpdatesPath(venue), { as: OWNER });
-    return (await response.json()) as FreeSendUpdatesResult;
+    return (await response.json()) as OwnerNotifiesSendUpdatesResult;
   }
 
   beforeEach(async () => {
@@ -181,16 +181,16 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
         response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
       });
 
-      it('responds with 200, the Free Plan and no Staff Members to notify', async () => {
+      it('responds with 200 and no Staff Members for the Owner to notify', async () => {
         expect([response.status, await response.json()]).toEqual([
           200,
-          { plan: 'free', staffMembers: [] },
+          { notifiedBy: 'owner', staffMembers: [] },
         ]);
       });
     });
 
     describe('when only the notes on Sam\'s Monday Shift change', () => {
-      let result: FreeSendUpdatesResult;
+      let result: OwnerNotifiesSendUpdatesResult;
 
       beforeEach(async () => {
         await moveShift(samsMonday, { staffMemberId: sam.id, ...MONDAY_9_TO_5, notes: 'Lock up' });
@@ -209,14 +209,14 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
       });
 
       describe('when the Owner sends updates', () => {
-        let result: FreeSendUpdatesResult;
+        let result: OwnerNotifiesSendUpdatesResult;
 
         beforeEach(async () => {
           result = await sendUpdates();
         });
 
-        it('responds with 200 and the Free Plan', () => {
-          expect([response.status, result.plan]).toEqual([200, 'free']);
+        it('responds with 200 and the Staff Members for the Owner to notify', () => {
+          expect([response.status, result.notifiedBy]).toEqual([200, 'owner']);
         });
 
         it('lists Alex, Jo and Sam to notify, by name', () => {
@@ -305,7 +305,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
       });
 
       describe('when Jo is archived before the Owner sends updates', () => {
-        let result: FreeSendUpdatesResult;
+        let result: OwnerNotifiesSendUpdatesResult;
 
         beforeEach(async () => {
           await app.request('POST', `/api/venues/${ownVenue.id}/staff-members/${jo.id}/archive`, {
@@ -320,14 +320,14 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
       });
 
       describe('when the Owner sends updates from two tabs at once', () => {
-        let results: FreeSendUpdatesResult[];
+        let results: OwnerNotifiesSendUpdatesResult[];
 
         beforeEach(async () => {
           const responses = await Promise.all([
             app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER }),
             app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER }),
           ]);
-          results = (await Promise.all(responses.map((each) => each.json()))) as FreeSendUpdatesResult[];
+          results = (await Promise.all(responses.map((each) => each.json()))) as OwnerNotifiesSendUpdatesResult[];
         });
 
         it('lists each affected Staff Member to notify once, across both tabs', () => {
@@ -337,7 +337,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
     });
 
     describe("when the Owner moves Sam's Monday Shift to Tuesday", () => {
-      let result: FreeSendUpdatesResult;
+      let result: OwnerNotifiesSendUpdatesResult;
 
       beforeEach(async () => {
         await moveShift(samsMonday, { staffMemberId: sam.id, ...TUESDAY_9_TO_5 });
@@ -352,7 +352,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
     });
 
     describe("when the Owner deletes Kim's Thursday Shift and sends updates", () => {
-      let result: FreeSendUpdatesResult;
+      let result: OwnerNotifiesSendUpdatesResult;
 
       beforeEach(async () => {
         await app.request('DELETE', shiftPath(kimsThursday), { as: OWNER });
@@ -379,7 +379,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
     });
 
     describe('when the Owner adds a Shift for Kim and sends updates', () => {
-      let result: FreeSendUpdatesResult;
+      let result: OwnerNotifiesSendUpdatesResult;
 
       beforeEach(async () => {
         await app.request('POST', `${rotaPath(ownVenue)}/shifts`, {
@@ -423,8 +423,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
         response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
       });
 
-      it('responds with 200, the Pro Plan and no emails', async () => {
-        expect([response.status, await response.json()]).toEqual([200, { plan: 'pro', emails: [] }]);
+      it('responds with 200 and nobody emailed by Rota Ready', async () => {
+        expect([response.status, await response.json()]).toEqual([200, { notifiedBy: 'rota_ready', emails: [] }]);
       });
 
       it('sends no email', () => {
@@ -454,11 +454,11 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
           response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
         });
 
-        it('responds with 200, the Pro Plan, and Alex, Jo and Sam as sent, by name', async () => {
+        it('responds with 200, the emails Rota Ready sent, with Alex, Jo and Sam as sent, by name', async () => {
           expect([response.status, await response.json()]).toEqual([
             200,
             {
-              plan: 'pro',
+              notifiedBy: 'rota_ready',
               emails: [
                 { staffMemberId: alex.id, name: 'Alex Smith', status: 'sent' },
                 { staffMemberId: jo.id, name: 'Jo Bloggs', status: 'sent' },
@@ -541,10 +541,10 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/send-updates', () => {
             response = await app.request('POST', sendUpdatesPath(ownVenue), { as: OWNER });
           });
 
-          it('responds with 200, the Pro Plan and no emails', async () => {
+          it('responds with 200 and nobody emailed by Rota Ready', async () => {
             expect([response.status, await response.json()]).toEqual([
               200,
-              { plan: 'pro', emails: [] },
+              { notifiedBy: 'rota_ready', emails: [] },
             ]);
           });
 

@@ -1,4 +1,4 @@
-import { FREE_PLAN_STAFF_MEMBER_LIMIT } from '@rota-ready/shared';
+import { planAllows } from '@rota-ready/shared';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
+import { venueQuery } from '@/features/venues/venue-queries';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/staff')({
   loader: ({ context, params }) =>
@@ -33,6 +34,7 @@ function StaffPage() {
   const { t } = useTranslation();
   const { venueId } = Route.useParams();
   const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
+  const { data: venue } = useSuspenseQuery(venueQuery(venueId));
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
@@ -104,7 +106,7 @@ function StaffPage() {
           )}
         </CardContent>
       </Card>
-      {staffMembers.length >= FREE_PLAN_STAFF_MEMBER_LIMIT ? (
+      {staffMembers.length >= planAllows[venue.plan].staffMemberLimit ? (
         <StaffMemberLimitCard venueId={venueId} />
       ) : (
         <Card>

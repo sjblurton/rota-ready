@@ -1,4 +1,4 @@
-import { rotaSchema, type Shift } from '@rota-ready/shared';
+import { planAllows, rotaSchema, type Shift } from '@rota-ready/shared';
 import { queryOptions, useSuspenseQuery, type QueryClient } from '@tanstack/react-query';
 import { staffMembersQuery } from '@/features/staff-members/staff-member-queries';
 import { venueQuery } from '@/features/venues/venue-queries';
@@ -26,7 +26,7 @@ export function useRotaWeek(venueId: string, weekStart: string) {
     removedShifts: rota.removedShifts,
     staffMembers,
     timeZone: venue.timeZone,
-    plan: venue.plan,
+    staffNotifiedBy: planAllows[venue.plan].staffNotifiedBy,
   };
 }
 

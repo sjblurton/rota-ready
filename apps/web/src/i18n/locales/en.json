@@ -28,7 +28,7 @@
     "staffMemberHasUpcomingShifts": "They still have upcoming Shifts. Delete those Shifts from the Rota first, then archive them.",
     "rotaNotPublished": "Publish this Week's Rota before sending updates.",
     "rotaHasShifts": "This Week already has Shifts, so Copy Last Week can only fill an empty Week.",
-    "staffMemberLimitReached": "The Free plan allows up to {{freePlanStaffMemberLimit}} Staff Members. Archive someone who has left to add someone new."
+    "staffMemberLimitReached": "This Venue has reached its Staff Member limit. Archive someone who has left to add someone new."
   },
   "validation": {
     "required": "This field is required.",
@@ -142,12 +142,12 @@
       "cancel": "Cancel",
       "publishedTitle": "Published the Week of {{date}}",
       "notified": {
-        "free": "Send each Staff Member with Shifts this Week their Staff Link, so they can see and confirm their Shifts.",
-        "pro": "Each Staff Member with Shifts this Week was emailed their Staff Link."
+        "owner": "Send each Staff Member with Shifts this Week their Staff Link, so they can see and confirm their Shifts.",
+        "rota_ready": "Each Staff Member with Shifts this Week was emailed their Staff Link."
       },
       "nobodyToNotify": {
-        "free": "Nobody has Shifts this Week, so there's no one to notify.",
-        "pro": "Nobody has Shifts this Week, so no one was emailed."
+        "owner": "Nobody has Shifts this Week, so there's no one to notify.",
+        "rota_ready": "Nobody has Shifts this Week, so no one was emailed."
       },
       "done": "Done"
     },
@@ -155,22 +155,22 @@
       "button": "Send Updates",
       "title": "Send updates for the Week of {{date}}?",
       "description": {
-        "free": "Everyone affected by a Changed or Removed Shift is marked as notified. Next you'll see who they are, what changed for each, and their Staff Link to send them.",
-        "pro": "Each Staff Member affected by a Changed or Removed Shift gets one email with their Staff Link and what changed."
+        "owner": "Everyone affected by a Changed or Removed Shift is marked as notified. Next you'll see who they are, what changed for each, and their Staff Link to send them.",
+        "rota_ready": "Each Staff Member affected by a Changed or Removed Shift gets one email with their Staff Link and what changed."
       },
       "confirm": "Send Updates",
       "cancel": "Cancel",
       "resultTitle": {
-        "free": "Updates for the Week of {{date}}",
-        "pro": "Sent updates for the Week of {{date}}"
+        "owner": "Updates for the Week of {{date}}",
+        "rota_ready": "Sent updates for the Week of {{date}}"
       },
       "notified": {
-        "free": "Tell each Staff Member what changed and send them their Staff Link.",
-        "pro": "Each affected Staff Member was emailed their Staff Link and what changed."
+        "owner": "Tell each Staff Member what changed and send them their Staff Link.",
+        "rota_ready": "Each affected Staff Member was emailed their Staff Link and what changed."
       },
       "nobodyToNotify": {
-        "free": "Nothing had changed since the last update, so there's no one to notify.",
-        "pro": "Nothing had changed since the last update, so no one was emailed."
+        "owner": "Nothing had changed since the last update, so there's no one to notify.",
+        "rota_ready": "Nothing had changed since the last update, so no one was emailed."
       },
       "done": "Done"
     },
@@ -213,7 +213,7 @@
       "submit": "Add staff member"
     },
     "limit": {
-      "title": "The Free plan allows up to {{freePlanStaffMemberLimit}} Staff Members",
+      "title": "The Free plan allows up to {{staffMemberLimit}} Staff Members",
       "description": "You have {{staffMemberCount}} Staff Members. Archive someone who has left to add someone new. Pro, coming soon, removes the limit."
     },
     "edit": {

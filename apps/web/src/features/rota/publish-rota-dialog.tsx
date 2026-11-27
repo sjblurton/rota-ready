@@ -1,4 +1,4 @@
-import { formatLocalDate, plan } from '@rota-ready/shared';
+import { formatLocalDate, notifiedBy } from '@rota-ready/shared';
 import { useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -29,7 +29,7 @@ export function PublishRotaDialog({ venueId, weekStart }: PublishRotaDialogProps
   const date = formatLocalDate(weekStart, { withYear: true });
   const publish = usePublishRota(venueId, weekStart, { onAlreadyPublished: () => setOpen(false) });
   const result = publish.data;
-  const notified = result && (result.plan === plan.pro ? result.emails : result.staffMembers);
+  const notified = result && (result.notifiedBy === notifiedBy.rota_ready ? result.emails : result.staffMembers);
 
   function confirm(event: MouseEvent) {
     event.preventDefault();
@@ -52,8 +52,8 @@ export function PublishRotaDialog({ venueId, weekStart }: PublishRotaDialogProps
               <AlertDialogTitle>{t('rota.publish.publishedTitle', { date })}</AlertDialogTitle>
               <AlertDialogDescription>
                 {notified.length === 0
-                  ? t(`rota.publish.nobodyToNotify.${result.plan}`)
-                  : t(`rota.publish.notified.${result.plan}`)}
+                  ? t(`rota.publish.nobodyToNotify.${result.notifiedBy}`)
+                  : t(`rota.publish.notified.${result.notifiedBy}`)}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <NotifyResultList venueId={venueId} weekStart={weekStart} result={result} />

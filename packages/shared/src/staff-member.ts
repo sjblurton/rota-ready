@@ -5,7 +5,6 @@ export const STAFF_MEMBER_NAME_MAX_LENGTH = 100;
 export const STAFF_MEMBER_ROLE_MAX_LENGTH = 50;
 export const STAFF_MEMBER_EMAIL_MAX_LENGTH = 254;
 export const STAFF_MEMBER_PHONE_MAX_LENGTH = 30;
-export const FREE_PLAN_STAFF_MEMBER_LIMIT = 15;
 
 const PHONE_NUMBER = /^\+?[\d\s()-]*\d[\d\s()-]*$/;
 

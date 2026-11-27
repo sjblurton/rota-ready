@@ -1,10 +1,10 @@
 import {
   apiErrorCode,
-  FREE_PLAN_STAFF_MEMBER_LIMIT,
+  planAllows,
   type ApiErrorCode,
   type StaffMemberDetails,
 } from '@rota-ready/shared';
-import type { Prisma, StaffMember } from '#src/generated/prisma/client.js';
+import type { Prisma, StaffMember, Venue } from '#src/generated/prisma/client.js';
 import type { Clock } from '#src/lib/clock.js';
 import { isPrismaError, type Db } from '#src/lib/db.js';
 import { refuse, type Refused } from '#src/lib/service-result.js';
@@ -80,19 +80,19 @@ export function createStaffMemberService({ db, clock, staffLinkKey }: StaffMembe
     },
 
     async add(
-      venueId: string,
+      venue: Pick<Venue, 'id' | 'plan'>,
       details: StaffMemberDetails,
     ): Promise<StaffMemberResult<'staff_member_email_taken' | 'staff_member_limit_reached'>> {
       try {
         return await db.$transaction(async (tx) => {
-          await lockVenueUntilCommit(tx, venueId);
-          if ((await countActiveStaffMembers(tx, venueId)) >= FREE_PLAN_STAFF_MEMBER_LIMIT) {
+          await lockVenueUntilCommit(tx, venue.id);
+          if ((await countActiveStaffMembers(tx, venue.id)) >= planAllows[venue.plan].staffMemberLimit) {
             return refuse(apiErrorCode.staff_member_limit_reached);
           }
           const staffMember = await createStaffMember(tx, {
             ...details,
             ...newStaffLinkColumns().columns,
-            venueId,
+            venueId: venue.id,
           });
           return { ok: true, staffMember };
         });

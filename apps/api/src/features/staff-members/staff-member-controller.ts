@@ -42,7 +42,7 @@ export function staffMemberController(staffMembers: StaffMemberService) {
   const addStaffMember: VenueRequestHandler<object> = async (req, res) => {
     const details = parseBody(staffMemberDetailsSchema, req.body, res);
     if (!details) return;
-    const result = await staffMembers.add(res.locals.venue.id, details);
+    const result = await staffMembers.add(res.locals.venue, details);
     if (!result.ok) return sendError(res, result.code);
     res.status(201).json(toStaffMember(result.staffMember));
   };
