@@ -694,6 +694,7 @@ test.describe.serial('MVP journey', () => {
     await expect(panel.getByRole('status')).toHaveText('Answering…');
     await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'true');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+    await expect(panel.getByRole('region', { name: 'Answer' })).not.toContainText(STUB_ANSWER_CHUNKS.at(-1) ?? '');
     await expect(panel.getByRole('status')).toHaveText(answer);
     await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'false');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(answer);

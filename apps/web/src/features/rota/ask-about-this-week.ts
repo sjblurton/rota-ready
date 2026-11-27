@@ -4,6 +4,20 @@ import { askEventsFrom } from '@/features/rota/ask-events';
 import { ApiError, apiPostStream } from '@/lib/api';
 import { createEventStreamParser } from '@/lib/event-stream';
 
+export const askStatus = {
+  idle: 'idle',
+  streaming: 'streaming',
+  answered: 'answered',
+  failed: 'failed',
+} as const;
+
+const askAction = {
+  asked: 'asked',
+  received: 'received',
+  finished: 'finished',
+  failed: 'failed',
+} as const;
+
 export type AskState =
   | { status: 'idle' }
   | { status: 'streaming'; answer: string }
@@ -16,31 +30,31 @@ type AskAction =
   | { type: 'finished' }
   | { type: 'failed'; code: ApiErrorCode | undefined };
 
-function answerOf(state: AskState) {
-  return state.status === 'idle' ? '' : state.answer;
+export function answerOf(state: AskState) {
+  return state.status === askStatus.idle ? '' : state.answer;
 }
 
 function askReducer(state: AskState, action: AskAction): AskState {
   switch (action.type) {
-    case 'asked':
-      return { status: 'streaming', answer: '' };
-    case 'received':
-      return { status: 'streaming', answer: answerOf(state) + action.text };
-    case 'finished':
-      return { status: 'answered', answer: answerOf(state) };
-    case 'failed':
-      return { status: 'failed', answer: answerOf(state), code: action.code };
+    case askAction.asked:
+      return { status: askStatus.streaming, answer: '' };
+    case askAction.received:
+      return { status: askStatus.streaming, answer: answerOf(state) + action.text };
+    case askAction.finished:
+      return { status: askStatus.answered, answer: answerOf(state) };
+    case askAction.failed:
+      return { status: askStatus.failed, answer: answerOf(state), code: action.code };
   }
 }
 
 function actionFor(askEvent: AskEvent): AskAction {
   switch (askEvent.event) {
     case 'delta':
-      return { type: 'received', text: askEvent.data.text };
+      return { type: askAction.received, text: askEvent.data.text };
     case 'done':
-      return { type: 'finished' };
+      return { type: askAction.finished };
     case 'error':
-      return { type: 'failed', code: askEvent.data.code };
+      return { type: askAction.failed, code: askEvent.data.code };
   }
 }
 
@@ -60,14 +74,14 @@ async function streamAnswer(
     for (const askEvent of askEventsFrom(parser.push(chunk))) {
       const action = actionFor(askEvent);
       dispatch(action);
-      if (action.type !== 'received') return;
+      if (action.type !== askAction.received) return;
     }
   }
-  dispatch({ type: 'failed', code: undefined });
+  dispatch({ type: askAction.failed, code: undefined });
 }
 
 export function useAskAboutThisWeek(venueId: string, weekStart: string) {
-  const [state, dispatch] = useReducer(askReducer, { status: 'idle' });
+  const [state, dispatch] = useReducer(askReducer, { status: askStatus.idle });
   const inFlight = useRef<AbortController | null>(null);
 
   useEffect(() => () => inFlight.current?.abort(), []);
@@ -76,11 +90,11 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
     inFlight.current?.abort();
     const controller = new AbortController();
     inFlight.current = controller;
-    dispatch({ type: 'asked' });
+    dispatch({ type: askAction.asked });
     streamAnswer(askPath(venueId, weekStart), question, controller.signal, dispatch).catch(
       (error: unknown) => {
         if (controller.signal.aborted) return;
-        dispatch({ type: 'failed', code: error instanceof ApiError ? error.code : undefined });
+        dispatch({ type: askAction.failed, code: error instanceof ApiError ? error.code : undefined });
       },
     );
   }

@@ -2,7 +2,7 @@ import { createServer, type ServerResponse } from 'node:http';
 
 export const STUB_ANSWER_CHUNKS = ['Sam Jones ', 'works the most hours ', 'this Week.'];
 
-const CHUNK_DELAY_MS = 150;
+const CHUNK_DELAY_MS = 400;
 const port = Number(process.env.ANTHROPIC_STUB_PORT ?? 3001);
 
 function send(res: ServerResponse, event: string, data: object) {

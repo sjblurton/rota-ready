@@ -8,6 +8,7 @@ import {
   moveVenueToPreview,
   moveVenueToPro,
 } from '#test/seed.js';
+import { Plan } from '#src/generated/prisma/client.js';
 import { startTestApp, type TestApp } from '#test/test-app.js';
 
 const OWNER = { id: '2f1b6f0e-6a3c-4d39-9a4e-0c8f3b1d2e5a', email: 'owner@example.com' };
@@ -151,7 +152,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask', () => {
   });
 
   describe.each([
-    ['Free', (venue: { id: string }) => app.db.venue.update({ where: { id: venue.id }, data: { plan: 'free' } })],
+    ['Free', (venue: { id: string }) => app.db.venue.update({ where: { id: venue.id }, data: { plan: Plan.free } })],
     ['Pro', (venue: { id: string }) => moveVenueToPro(app.db, venue)],
   ])('when the Venue is on %s', (_plan, moveVenue) => {
     beforeEach(async () => {
