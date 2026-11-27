@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { answerOf, askStatus, useAskAboutThisWeek, type AskState } from '@/features/rota/ask-about-this-week';
+import { askStatus, useAskAboutThisWeek, type AskState } from '@/features/rota/ask-about-this-week';
 import { venueQuery } from '@/features/venues/venue-queries';
 import { apiErrorCodeMessage } from '@/i18n/api-error-message';
 
@@ -37,8 +37,7 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
   const form = useForm({ resolver: zodResolver(askRequestSchema), defaultValues: { question: '' } });
   const error = form.formState.errors.question;
   const streaming = state.status === askStatus.streaming;
-  const answer = answerOf(state);
-
+  
   if (!venue.canAskAboutThisWeek) return null;
 
   function onSubmit({ question }: AskRequest) {
@@ -70,12 +69,12 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
             {t('rota.ask.submit')}
           </Button>
         </form>
-        {(streaming || answer !== '') && (
+        {(streaming || state.answer !== '') && (
           <section aria-labelledby="ask-answer-heading" aria-busy={streaming} className="flex flex-col gap-1">
             <h4 id="ask-answer-heading" className="text-sm font-medium">
               {t('rota.ask.answer')}
             </h4>
-            <p className="text-sm whitespace-pre-wrap">{answer}</p>
+            <p className="text-sm whitespace-pre-wrap">{state.answer}</p>
           </section>
         )}
         {state.status === askStatus.failed && (

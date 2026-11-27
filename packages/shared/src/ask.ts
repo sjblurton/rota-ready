@@ -14,10 +14,14 @@ export const askRequestSchema = z.object({
 
 export type AskRequest = z.output<typeof askRequestSchema>;
 
+export const askEventNameSchema = z.enum(['delta', 'done', 'error']);
+
+export const askEventName = askEventNameSchema.enum;
+
 export const askEventSchema = z.discriminatedUnion('event', [
-  z.object({ event: z.literal('delta'), data: z.object({ text: z.string() }) }),
-  z.object({ event: z.literal('done'), data: z.object({}) }),
-  z.object({ event: z.literal('error'), data: z.object({ code: apiErrorCodeSchema }) }),
+  z.object({ event: z.literal(askEventName.delta), data: z.object({ text: z.string() }) }),
+  z.object({ event: z.literal(askEventName.done), data: z.object({}) }),
+  z.object({ event: z.literal(askEventName.error), data: z.object({ code: apiErrorCodeSchema }) }),
 ]);
 
 export type AskEvent = z.infer<typeof askEventSchema>;

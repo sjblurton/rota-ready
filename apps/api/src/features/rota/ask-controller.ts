@@ -1,4 +1,4 @@
-import { apiErrorCode, askEventSchema, askRequestSchema, type AskEvent } from '@rota-ready/shared';
+import { apiErrorCode, askEventName, askEventSchema, askRequestSchema, type AskEvent } from '@rota-ready/shared';
 import type { Response } from 'express';
 import { parseBody, sendError } from '#src/lib/http-errors.js';
 import type { AskService } from './ask-service.js';
@@ -29,12 +29,12 @@ export function askController(asks: AskService) {
     res.writeHead(200, EVENT_STREAM_HEADERS);
     res.flushHeaders();
     try {
-      for await (const text of result.answer) writeEvent(res, { event: 'delta', data: { text } });
-      writeEvent(res, { event: 'done', data: {} });
+      for await (const text of result.answer) writeEvent(res, { event: askEventName.delta, data: { text } });
+      writeEvent(res, { event: askEventName.done, data: {} });
     } catch (error) {
       if (upstream.signal.aborted) return;
       res.err = error instanceof Error ? error : new Error(String(error));
-      writeEvent(res, { event: 'error', data: { code: apiErrorCode.ask_failed } });
+      writeEvent(res, { event: askEventName.error, data: { code: apiErrorCode.ask_failed } });
     }
     res.end();
   };
