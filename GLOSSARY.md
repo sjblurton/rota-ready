@@ -30,15 +30,20 @@ _Avoid_: Employee, worker, user, team member
 
 **Archive**:
 What the Owner does when a Staff Member stops working at the Venue. The Owner can archive someone only once none of their Shifts is still to come, so no Shift is left with a person who has gone. An archived Staff Member drops off the staff list and future Rotas, and their email address is removed, so the same person can be added again later.
+The Owner also archives a Role the Venue no longer uses. It can be archived only once it's nobody's usual Role. An archived Role can't be picked for new Shifts or cover needs, comes off the Roles Staff Members can work, and stays on the Shifts that already have it.
 _Avoid_: Delete, remove, deactivate
 
 **Role**:
-The job a Staff Member does, e.g. Bar, Floor, Kitchen. Not to be confused with Member Role.
+A job at a Venue, from the Venue's own list, e.g. Bar, Floor, Pastry, Sous Chef. A Shift is for one Role. A Staff Member can work one or more Roles, one of which is their usual Role. Not to be confused with Member Role.
 _Avoid_: Position, job title, Member Role
 
 **Member Role**:
 What a Venue Member is allowed to do at a Venue. Not to be confused with Role.
 _Avoid_: Role (on its own), permission, access level
+
+**Unavailable**:
+When a Staff Member can't work. Either every week (a weekday, all day or between times, e.g. every Tuesday, or weekdays before 17:00) or on dates (whole days, e.g. 4–10 August). Everyone is available unless the Owner says otherwise, and the AI never places a Shift when someone is Unavailable.
+_Avoid_: Time off, holiday, leave, absence, availability
 
 ## Scheduling
 
@@ -58,6 +63,30 @@ _Avoid_: Slot, booking, session
 A Shift that ends on a later calendar day than it starts, e.g. 20:00–02:00 (+1).
 _Avoid_: Late shift, split shift
 
+**Until Close**:
+A Shift that ends when the Venue closes instead of at a set time, shown as "18:00–close". Close is the end of the opening period the Shift runs into, plus the Venue's Close-down Time. When the Venue's hours change, an Until Close Shift that hasn't started moves with them.
+_Avoid_: Open-ended shift, finish
+
+**Close-down Time**:
+How long after closing the staff on an Until Close Shift are counted as working, set by the Owner (60 minutes unless changed). It's a planning estimate that keeps hours and rest between Shifts from being undercounted, not a record of when anyone finished.
+_Avoid_: Clean-down, overrun
+
+**Opening Hours**:
+When a Venue serves customers, set for each weekday as one or more opening periods, such as lunch and dinner. A period that runs past midnight belongs to the day it starts. A weekday with no periods is closed. Staff often work outside Opening Hours, for prep and close-down.
+_Avoid_: Trading hours, staffed hours
+
+**Special Day**:
+One date whose hours differ from the Venue's Opening Hours: either closed, like Christmas Day, or open with its own periods, like a late private party. It wins over the Opening Hours for that date. A Special Day can repeat every year: on the same Bank Holiday if it was made from one (so Easter Monday follows Easter), otherwise on the same date.
+_Avoid_: Exception, closure, holiday
+
+**Bank Holiday**:
+A UK public holiday in the Venue's part of the UK: England and Wales, Scotland, or Northern Ireland. It's shown on the Rota to help plan a busier day, and changes the Venue's hours only if the Owner adds a Special Day.
+_Avoid_: Public holiday
+
+**Shift Need**:
+One Shift a Venue wants filled each week: a weekday, a Role, its times (or Until Close) and how many people, e.g. "Friday, Bar, 18:00–close, 2". A Shift on the Rota counts towards a Shift Need when it's the same Role on the same day at about the same times. Without Shift Needs, the pattern of recent Weeks says what's wanted.
+_Avoid_: Cover requirement, slot, template
+
 **Draft**:
 A Rota that staff cannot see yet.
 _Avoid_: Unpublished, pending (Pending is a Shift Response)
@@ -69,6 +98,10 @@ _Avoid_: Live, sent, final
 **Publish**:
 Making a Draft Rota Published and notifying each Staff Member with Shifts that Week of their Staff Link: on Free the Owner tells them, on Pro Rota Ready does.
 _Avoid_: Send, release
+
+**Suggested Shift**:
+A Shift the AI added to a Draft that the Owner hasn't yet edited or Published. Editing it, or Publishing the Rota, makes it an ordinary Shift. The Owner can remove all of a Week's Suggested Shifts at once.
+_Avoid_: AI Shift, draft Shift, proposed Shift
 
 **Copy Last Week**:
 Filling an empty Draft Rota with the previous Week's Shifts, moved forward by seven days.
