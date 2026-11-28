@@ -30,6 +30,7 @@ _Avoid_: Employee, worker, user, team member
 
 **Archive**:
 What the Owner does when a Staff Member stops working at the Venue. The Owner can archive someone only once none of their Shifts is still to come, so no Shift is left with a person who has gone. An archived Staff Member drops off the staff list and future Rotas, and their email address is removed, so the same person can be added again later.
+The Owner also archives a Role the Venue no longer uses. It can be archived only once it's nobody's usual Role. An archived Role can't be picked for new Shifts or cover needs, comes off the Roles Staff Members can work, and stays on the Shifts that already have it.
 _Avoid_: Delete, remove, deactivate
 
 **Role**:
