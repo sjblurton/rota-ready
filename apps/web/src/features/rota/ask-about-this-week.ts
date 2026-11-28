@@ -13,14 +13,16 @@ export const askStatus = {
 } as const;
 
 export type AskState =
-  | { status: 'idle' | 'streaming' | 'answered' | 'stopped'; answer: string }
-  | { status: 'failed'; answer: string; code: ApiErrorCode | undefined };
+  | { status: 'idle' | 'streaming' | 'answered' | 'stopped'; question: string; answer: string }
+  | { status: 'failed'; question: string; answer: string; code: ApiErrorCode | undefined };
 
-const asked = { event: 'asked' } as const;
+const askActionName = { asked: 'asked', stopped: 'stopped' } as const;
 
-const stopped = { event: 'stopped' } as const;
-
-type AskAction = AskEvent | typeof asked | typeof stopped | { event: 'error'; data: { code: ApiErrorCode | undefined } };
+type AskAction =
+  | AskEvent
+  | { event: typeof askActionName.asked; question: string }
+  | { event: typeof askActionName.stopped }
+  | { event: 'error'; data: { code: ApiErrorCode | undefined } };
 
 function failedWith(code: ApiErrorCode | undefined): AskAction {
   return { event: askEventName.error, data: { code } };
@@ -28,16 +30,18 @@ function failedWith(code: ApiErrorCode | undefined): AskAction {
 
 function askReducer(state: AskState, action: AskAction): AskState {
   switch (action.event) {
-    case asked.event:
-      return { status: askStatus.streaming, answer: '' };
-    case stopped.event:
-      return state.status === askStatus.streaming ? { status: askStatus.stopped, answer: state.answer } : state;
+    case askActionName.asked:
+      return { status: askStatus.streaming, question: action.question, answer: '' };
+    case askActionName.stopped:
+      return state.status === askStatus.streaming
+        ? { status: askStatus.stopped, question: state.question, answer: state.answer }
+        : state;
     case askEventName.delta:
-      return { status: askStatus.streaming, answer: state.answer + action.data.text };
+      return { status: askStatus.streaming, question: state.question, answer: state.answer + action.data.text };
     case askEventName.done:
-      return { status: askStatus.answered, answer: state.answer };
+      return { status: askStatus.answered, question: state.question, answer: state.answer };
     case askEventName.error:
-      return { status: askStatus.failed, answer: state.answer, code: action.data.code };
+      return { status: askStatus.failed, question: state.question, answer: state.answer, code: action.data.code };
   }
 }
 
@@ -63,7 +67,7 @@ async function streamAnswer(
 }
 
 export function useAskAboutThisWeek(venueId: string, weekStart: string) {
-  const [state, dispatch] = useReducer(askReducer, { status: askStatus.idle, answer: '' });
+  const [state, dispatch] = useReducer(askReducer, { status: askStatus.idle, question: '', answer: '' });
   const inFlight = useRef<AbortController | null>(null);
 
   useEffect(() => () => inFlight.current?.abort(), []);
@@ -72,7 +76,7 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
     inFlight.current?.abort();
     const controller = new AbortController();
     inFlight.current = controller;
-    dispatch(asked);
+    dispatch({ event: askActionName.asked, question });
     streamAnswer(askPath(venueId, weekStart), question, controller.signal, dispatch).catch(
       (error: unknown) => {
         if (controller.signal.aborted) return;
@@ -85,8 +89,12 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
     if (!inFlight.current) return;
     inFlight.current.abort();
     inFlight.current = null;
-    dispatch(stopped);
+    dispatch({ event: askActionName.stopped });
   }
 
-  return { state, ask, stop };
+  function retry() {
+    ask(state.question);
+  }
+
+  return { state, ask, stop, retry };
 }

@@ -1,4 +1,4 @@
-import { askRequestSchema, type AskRequest } from '@rota-ready/shared';
+import { apiErrorCode, askRequestSchema, type ApiErrorCode, type AskRequest } from '@rota-ready/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
@@ -11,6 +11,10 @@ import { Input } from '@/components/ui/input';
 import { askStatus, useAskAboutThisWeek, type AskState } from '@/features/rota/ask-about-this-week';
 import { venueQuery } from '@/features/venues/venue-queries';
 import { apiErrorCodeMessage } from '@/i18n/api-error-message';
+
+function retryCanFix(code: ApiErrorCode | undefined) {
+  return code === undefined || code === apiErrorCode.ask_failed || code === apiErrorCode.internal_error;
+}
 
 interface AskAboutThisWeekPanelProps {
   venueId: string;
@@ -35,7 +39,7 @@ function announcement(t: TFunction, state: AskState): string {
 export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPanelProps) {
   const { t } = useTranslation();
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
-  const { state, ask, stop } = useAskAboutThisWeek(venueId, weekStart);
+  const { state, ask, stop, retry } = useAskAboutThisWeek(venueId, weekStart);
   const form = useForm({ resolver: zodResolver(askRequestSchema), defaultValues: { question: '' } });
   const error = form.formState.errors.question;
   const streaming = state.status === askStatus.streaming;
@@ -49,6 +53,11 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
 
   function onStop() {
     stop();
+    form.setFocus('question');
+  }
+
+  function onRetry() {
+    retry();
     form.setFocus('question');
   }
 
@@ -94,7 +103,14 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
           </section>
         )}
         {state.status === askStatus.failed && (
-          <p className="text-sm text-destructive">{apiErrorCodeMessage(t, state.code)}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-destructive">{apiErrorCodeMessage(t, state.code)}</p>
+            {retryCanFix(state.code) && (
+              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                {t('rota.ask.retry')}
+              </Button>
+            )}
+          </div>
         )}
         <p role="status" className="sr-only">
           {announcement(t, state)}
