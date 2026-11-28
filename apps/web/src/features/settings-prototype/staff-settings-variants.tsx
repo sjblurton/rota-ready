@@ -406,8 +406,82 @@ export function StaffSettingsC({ staffMembers }: Props) {
   );
 }
 
+function UnavailableCell({ settings }: { settings: StaffSettings }) {
+  const parts = [...settings.weekly.map(formatWeekly), ...settings.dated.map(formatDated)];
+  if (parts.length === 0) return <span className="text-muted-foreground">Any time</span>;
+  return (
+    <span tabIndex={0} title={parts.join('\n')} className="block max-w-56 truncate text-sm text-muted-foreground">
+      {parts.join(' · ')}
+    </span>
+  );
+}
+
+export function StaffSettingsD({ staffMembers }: Props) {
+  const [editing, setEditing] = useState<string | null>(null);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle><h2>Staff</h2></CardTitle>
+        <CardDescription>Variant D: B’s table, A’s editing in the row. Hover the Unavailable column for the full list.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Roles</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Unavailable</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {staffMembers.map((sm, i) => {
+              const settings = settingsFor(i);
+              return editing === sm.id ? (
+                <TableRow key={sm.id}>
+                  <TableCell colSpan={5} className="whitespace-normal">
+                    <div className="flex flex-col gap-4 py-2">
+                      <div className="flex flex-wrap gap-3">
+                        <Input defaultValue={sm.name} className="w-48" />
+                        <Input defaultValue={sm.email} className="w-64" />
+                        <Input defaultValue={sm.phone ?? ''} placeholder="Phone" className="w-40" />
+                      </div>
+                      <Section title="Roles"><RolesPicker settings={settings} /></Section>
+                      <Section title="Unavailable"><UnavailableEditor settings={settings} name={sm.name} /></Section>
+                      <Section title="Hours"><HoursFields settings={settings} /></Section>
+                      <Section title="Note"><NoteField settings={settings} /></Section>
+                      <div className="flex gap-2 border-t pt-4">
+                        <Button onClick={() => setEditing(null)}>Save</Button>
+                        <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow key={sm.id}>
+                  <TableCell className="font-medium">{sm.name}<div className="text-xs font-normal text-muted-foreground">{sm.email}</div></TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {settings.roles.map((r) => <Badge key={r} variant={r === settings.usualRole ? 'default' : 'secondary'}>{r}</Badge>)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{settings.targetHours ?? '–'} target · {settings.maximumHours ?? '–'} max</TableCell>
+                  <TableCell><UnavailableCell settings={settings} /></TableCell>
+                  <TableCell className="text-right"><Button size="sm" variant="outline" onClick={() => setEditing(sm.id)}>Edit</Button></TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const staffSettingsVariants = [
   { key: 'A', name: 'Edit in the row' },
   { key: 'B', name: 'A page per Staff Member' },
   { key: 'C', name: 'Team grid' },
+  { key: 'D', name: 'B’s table, A’s editing' },
 ];

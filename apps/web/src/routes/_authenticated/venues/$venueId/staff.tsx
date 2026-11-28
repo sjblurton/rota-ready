@@ -9,7 +9,7 @@ import { ArchiveStaffMemberDialog } from '@/features/staff-members/archive-staff
 import { EditStaffMemberForm } from '@/features/staff-members/edit-staff-member-form';
 import { StaffLinkDialog } from '@/features/staff-links/staff-link-dialog';
 import { PrototypeSwitcher, usePrototypeVariant } from '@/components/prototype-switcher';
-import { StaffSettingsA, StaffSettingsB, StaffSettingsC, staffSettingsVariants } from '@/features/settings-prototype/staff-settings-variants';
+import { StaffSettingsA, StaffSettingsB, StaffSettingsC, StaffSettingsD, staffSettingsVariants } from '@/features/settings-prototype/staff-settings-variants';
 import { PageLoadError } from '@/components/page-load-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ function StaffPage() {
       {variant.key === 'A' && <StaffSettingsA staffMembers={staffMembers} />}
       {variant.key === 'B' && <StaffSettingsB staffMembers={staffMembers} />}
       {variant.key === 'C' && <StaffSettingsC staffMembers={staffMembers} />}
+      {variant.key === 'D' && <StaffSettingsD staffMembers={staffMembers} />}
       <PrototypeSwitcher variants={staffSettingsVariants} />
       <Card hidden>
         <CardHeader>
