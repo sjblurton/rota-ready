@@ -1,6 +1,8 @@
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { addDays, ASK_QUESTION_MAX_LENGTH, daysBetween, formatLocalDate } from '@rota-ready/shared';
 import pg from 'pg';
+import en from '../src/i18n/locales/en.json' with { type: 'json' };
+import { pseudoLocalise } from '../src/i18n/pseudo';
 import { STUB_ANSWER_CHUNKS } from './anthropic-stub';
 
 const email = `e2e-${Date.now()}@example.com`;
@@ -14,9 +16,13 @@ const staffMembers = [
   { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
 ];
 
-async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+function spokenBy(askPanel: Locator) {
+  return askPanel.locator('[aria-live="polite"]');
+}
+
+async function textLeftInPlainEnglish(root: Locator): Promise<string[]> {
+  return root.evaluate((element) => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const texts: string[] = [];
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const text = node.textContent?.trim();
@@ -25,6 +31,8 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
     return texts.filter((text) => !/^\[.*\]$/s.test(text));
   });
 }
+
+const pseudo = pseudoLocalise(en);
 
 test.describe.serial('MVP journey', () => {
   let page: Page;
@@ -691,11 +699,11 @@ test.describe.serial('MVP journey', () => {
     const answer = STUB_ANSWER_CHUNKS.join('');
     await panel.getByLabel('Your question').fill('Who has the most hours this week?');
     await panel.getByLabel('Your question').press('Enter');
-    await expect(panel.getByRole('status')).toHaveText('Answering…');
+    await expect(spokenBy(panel)).toHaveText('Answering…');
     await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'true');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
     await expect(panel.getByRole('region', { name: 'Answer' })).not.toContainText(STUB_ANSWER_CHUNKS.at(-1) ?? '');
-    await expect(panel.getByRole('status')).toHaveText(answer);
+    await expect(spokenBy(panel)).toHaveText(answer);
     await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'false');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(answer);
   });
@@ -709,7 +717,7 @@ test.describe.serial('MVP journey', () => {
     await expect(answer).toContainText(firstChunk);
     await expect(panel.getByRole('button', { name: 'Ask' })).toBeDisabled();
     await panel.getByRole('button', { name: 'Stop' }).click();
-    await expect(panel.getByRole('status')).toHaveText('Stopped');
+    await expect(spokenBy(panel)).toHaveText('Stopped');
     await expect(answer).toHaveAttribute('aria-busy', 'false');
     await expect(answer).toContainText(`${firstChunk}Stopped`);
     await expect(answer).not.toContainText(secondChunk);
@@ -742,7 +750,7 @@ test.describe.serial('MVP journey', () => {
     );
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
-    await expect(panel.getByRole('status')).toHaveText(
+    await expect(spokenBy(panel)).toHaveText(
       "Ask about this week isn't available right now. Please try again later.",
     );
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
@@ -757,7 +765,7 @@ test.describe.serial('MVP journey', () => {
     );
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
-    await expect(panel.getByRole('status')).toHaveText(waitMessage);
+    await expect(spokenBy(panel)).toHaveText(waitMessage);
     await expect(panel.getByRole('paragraph').filter({ hasText: waitMessage })).toBeVisible();
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await page.unroute('**/ask');
@@ -775,7 +783,7 @@ test.describe.serial('MVP journey', () => {
     );
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
-    await expect(panel.getByRole('status')).toHaveText(
+    await expect(spokenBy(panel)).toHaveText(
       'The answer stopped because something went wrong. Please try asking again.',
     );
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(firstChunk);
@@ -788,8 +796,159 @@ test.describe.serial('MVP journey', () => {
     await panel.getByLabel('Your question').fill('Something else');
     await panel.getByRole('button', { name: 'Retry' }).click();
     expect((await askRequest).postDataJSON()).toEqual({ question: 'Who works on Saturday?' });
-    await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+    await expect(spokenBy(panel)).toHaveText(STUB_ANSWER_CHUNKS.join(''));
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+  });
+
+  test.describe('by keyboard alone', () => {
+    function panel() {
+      return page.getByRole('region', { name: 'Ask about this week' });
+    }
+
+    test('keeps focus in the question box after sending with the Ask button', async () => {
+      await panel().getByLabel('Your question').focus();
+      await page.keyboard.press('ControlOrMeta+A');
+      await page.keyboard.type('Who works on Saturday?');
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Ask' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(spokenBy(panel())).toHaveText('Answering…');
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+
+    test('reaches Stop with Tab and stops the answer with Enter, back in the question box', async () => {
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(spokenBy(panel())).toHaveText('Stopped');
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+
+    test('reaches Retry with Tab after an error and asks again, back in the question box', async () => {
+      await page.route('**/ask', (route) =>
+        route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'event: error\ndata: {"code":"ask_failed"}\n\n' }),
+      );
+      await page.keyboard.press('Enter');
+      await expect(panel().getByRole('button', { name: 'Retry' })).toBeVisible();
+      await page.unroute('**/ask');
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Retry' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(spokenBy(panel())).toHaveText('Answering…');
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+
+    test('moves focus from Stop to the question box when the answer finishes', async () => {
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
+      await expect(panel().getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS.slice(0, 2).join(''));
+      await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
+      await expect(spokenBy(panel())).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+  });
+
+  test('runs no animation in the panel while an answer streams, with reduced motion on', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await panel.getByLabel('Your question').fill('Who works on Saturday?');
+    await panel.getByLabel('Your question').press('Enter');
+    await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+    try {
+      const keyframeAnimations = await panel.evaluate(
+        (element) => element.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
+      );
+      await expect(spokenBy(panel)).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      expect(keyframeAnimations).toBe(0);
+    } finally {
+      await page.emulateMedia({ reducedMotion: null });
+    }
+  });
+
+  test.describe('with ?lng=pseudo', () => {
+    function panel() {
+      return page.getByRole('region', { name: pseudo.rota.ask.title });
+    }
+
+    async function panelTextInPlainEnglishBesidesTheAnswer() {
+      const answer = STUB_ANSWER_CHUNKS.join('');
+      return (await textLeftInPlainEnglish(panel())).filter((text) => !answer.includes(text));
+    }
+
+    async function askWithTheApiRefusing(code: string) {
+      await page.route('**/ask', (route) =>
+        code === 'ask_failed'
+          ? route.fulfill({ status: 200, contentType: 'text/event-stream', body: `event: error\ndata: {"code":"${code}"}\n\n` })
+          : route.fulfill({ status: code === 'ask_rate_limited' ? 429 : 503, json: { code } }),
+      );
+      await page.keyboard.press('Enter');
+    }
+
+    test.afterEach(async () => {
+      await page.unroute('**/ask');
+    });
+
+    test('shows the idle panel as pseudo-text', async () => {
+      const pseudoUrl = new URL(page.url());
+      pseudoUrl.searchParams.set('lng', 'pseudo');
+      await page.goto(pseudoUrl.toString());
+      await expect(panel()).toBeVisible();
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows the streaming panel as pseudo-text, apart from the answer', async () => {
+      await panel().getByLabel(pseudo.rota.ask.question).fill('Who works on Saturday?');
+      await panel().getByLabel(pseudo.rota.ask.question).press('Enter');
+      await expect(spokenBy(panel())).toHaveText(pseudo.rota.ask.answering);
+      await expect(panel().getByRole('button', { name: pseudo.rota.ask.stop })).toBeVisible();
+      await expect(panel().getByRole('region', { name: pseudo.rota.ask.answer })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows the stopped panel as pseudo-text, apart from the answer', async () => {
+      await panel().getByRole('button', { name: pseudo.rota.ask.stop }).press('Enter');
+      await expect(spokenBy(panel())).toHaveText(pseudo.rota.ask.stopped);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows the finished panel as pseudo-text, apart from the answer', async () => {
+      await page.keyboard.press('Enter');
+      await expect(spokenBy(panel())).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows an error partway through, with Retry, as pseudo-text', async () => {
+      await askWithTheApiRefusing('ask_failed');
+      await expect(spokenBy(panel())).toHaveText(pseudo.errors.askFailed);
+      await expect(panel().getByRole('button', { name: pseudo.rota.ask.retry })).toBeVisible();
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows the rate-limited panel as pseudo-text', async () => {
+      await askWithTheApiRefusing('ask_rate_limited');
+      await expect(spokenBy(panel())).toHaveText(pseudo.errors.askRateLimited);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows the unavailable panel as pseudo-text', async () => {
+      await askWithTheApiRefusing('ask_unavailable');
+      await expect(spokenBy(panel())).toHaveText(pseudo.errors.askUnavailable);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test('shows a question form error as pseudo-text', async () => {
+      await panel().getByLabel(pseudo.rota.ask.question).fill('');
+      await page.keyboard.press('Enter');
+      await expect(panel().getByText(pseudo.validation.required)).toBeVisible();
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test.afterAll(async () => {
+      const englishUrl = new URL(page.url());
+      englishUrl.searchParams.delete('lng');
+      await page.goto(englishUrl.toString());
+    });
   });
 
   test('keeps the next Week a Draft with a Publish button', async () => {
@@ -1239,13 +1398,13 @@ test.describe.serial('MVP journey', () => {
     await page.goto('/?lng=pseudo');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
     await expect(page.getByRole('status')).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([email, renamedVenue]);
   });
 
   test('shows the Pro dialog as pseudo-text with ?lng=pseudo', async () => {
     await page.getByRole('banner').getByRole('button').first().click();
     await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([email, renamedVenue]);
   });
 
   test('closes the pseudo-text Pro dialog with Escape', async () => {
@@ -1264,12 +1423,12 @@ test.describe.serial('MVP journey', () => {
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
     await page.getByRole('banner').getByRole('button').last().click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([]);
   });
 
   test('shows the landing page as pseudo-text with ?lng=pseudo', async () => {
     await page.goto('/?lng=pseudo');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([]);
   });
 });

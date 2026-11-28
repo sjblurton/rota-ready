@@ -40,7 +40,7 @@ Built by an ex-chef who has been on the wrong end of a WhatsApp rota.
   <em>On Free, Send Updates lists who to tell and what changed, with a Copy link for each</em>
 </p>
 
-**Ask about this week.** On a Venue on the Preview Plan, the Owner can ask a question about the Week on screen, such as "Who's working Friday night?" or "How many hours are on this week?", and the answer streams in from Claude as it's written. It only reads the Rota, never changes it, and answers only from the Shifts shown. It's built as a worked example of a streaming AI interface: server-sent events over a POST, a model passed into the API so tests need no key, the model call cut off when the browser leaves, errors partway through, a screen-reader announcement instead of one per word, and cost limits ([ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md), [PRD #159](https://github.com/sjblurton/rota-ready/issues/159)).
+**Ask about this week.** On a Venue on the Preview Plan, the Owner can ask a question about the Week on screen, such as "Who's working Friday night?" or "How many hours are on this week?", and the answer streams in from Claude as it's written. It only reads the Rota, never changes it, and answers only from the Shifts shown. The Owner can stop an answer partway and keep what's arrived, or ask again with Retry after an error. It's built as a worked example of a streaming AI interface: server-sent events over a POST, a model passed into the API so tests need no key, the model call cut off when the Owner stops or leaves, errors partway through with Retry, one screen-reader announcement per outcome instead of one per word, keyboard use with focus that always lands in the question box, and cost limits, including a per-User rate limit ([ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md), [PRD #159](https://github.com/sjblurton/rota-ready/issues/159)).
 
 <p align="center">
   <img src="docs/images/ask-about-this-week.gif" alt="The Ask about this week panel under the Rota grid: the Owner asks how many hours in total there are this week, and the answer streams in: each Shift runs 09:00 to 17:00, which is 8 hours, there are 13 Shifts, so the total is 104 hours" width="800">
@@ -213,6 +213,14 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready-api` | `ANTHROPIC_API_KEY` | Optional. A Claude Console API key for Ask about this week ([ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md)). Without it the feature is off for every Venue. Set a monthly spend limit in the Console |
 | Render `rota-ready-api` | `ASK_MODEL`, `ASK_MAX_TOKENS` | Optional. Default to `claude-haiku-5-5` and `400` |
 | Render `rota-ready-api` | `ASK_QUESTIONS_PER_10_MINUTES`, `ASK_QUESTIONS_PER_DAY` | Optional. Each User's limit on questions, in a rolling 10 minutes and 24 hours. Default to `10` and `50`. Held in memory, so they reset on each deploy |
+
+To turn on Ask about this week for a Venue, set `ANTHROPIC_API_KEY` and put the Venue on the Preview Plan. Nobody can choose Preview in the app, so it's set in the Supabase SQL editor (or with `psql` against the local database):
+
+```sql
+UPDATE venues SET plan = 'preview' WHERE id = '<venue-id>';
+```
+
+The Venue's id is in the app's URL, after `/venues/`. Setting `plan` back to `'free'` turns the feature off again.
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, and uses asymmetric (ES256) JWT signing keys. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 

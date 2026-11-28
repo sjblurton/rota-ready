@@ -16,6 +16,15 @@ function retryCanFix(code: ApiErrorCode | undefined) {
   return code === undefined || code === apiErrorCode.ask_failed || code === apiErrorCode.internal_error;
 }
 
+function keepFocusWhenStopGoes(stopButton: HTMLButtonElement) {
+  const form = stopButton.form;
+  return () => {
+    if (document.activeElement !== stopButton) return;
+    const question = form?.elements.namedItem('question');
+    if (question instanceof HTMLInputElement) question.focus();
+  };
+}
+
 interface AskAboutThisWeekPanelProps {
   venueId: string;
   weekStart: string;
@@ -49,7 +58,9 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
 
   function onSubmit({ question }: AskRequest) {
     ask(question);
+    form.setFocus('question');
   }
+
 
   function onStop() {
     stop();
@@ -86,7 +97,7 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
             {t('rota.ask.submit')}
           </Button>
           {streaming && (
-            <Button type="button" variant="outline" className="sm:mt-6" onClick={onStop}>
+            <Button ref={keepFocusWhenStopGoes} type="button" variant="outline" className="sm:mt-6" onClick={onStop}>
               {t('rota.ask.stop')}
             </Button>
           )}
@@ -112,9 +123,9 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
             )}
           </div>
         )}
-        <p role="status" className="sr-only">
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement(t, state)}
-        </p>
+        </div>
       </CardContent>
     </Card>
   );
