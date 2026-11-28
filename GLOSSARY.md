@@ -99,6 +99,10 @@ _Avoid_: Live, sent, final
 Making a Draft Rota Published and notifying each Staff Member with Shifts that Week of their Staff Link: on Free the Owner tells them, on Pro Rota Ready does.
 _Avoid_: Send, release
 
+**Suggested Shift**:
+A Shift the AI added to a Draft that the Owner hasn't yet edited or Published. Editing it, or Publishing the Rota, makes it an ordinary Shift. The Owner can remove all of a Week's Suggested Shifts at once.
+_Avoid_: AI Shift, draft Shift, proposed Shift
+
 **Copy Last Week**:
 Filling an empty Draft Rota with the previous Week's Shifts, moved forward by seven days.
 
