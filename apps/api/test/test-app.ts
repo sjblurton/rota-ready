@@ -4,6 +4,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type CryptoKey 
 import { pino } from 'pino';
 import { inject } from 'vitest';
 import { createApp } from '#src/app.js';
+import { defaultAskSettings } from '#src/features/rota/ask-settings.js';
 import type { Prisma } from '#src/generated/prisma/client.js';
 import { createDb, type Db } from '#src/lib/db.js';
 import type { AnswerModel, AnswerRequest } from '#src/lib/answer-model.js';
@@ -114,7 +115,7 @@ export async function startTestApp({
     emailSender: outbox.sender,
     webUrl: WEB_URL,
     answerModel: withAnswerModel ? answerModel.model : null,
-    askSettings: { pingIntervalMs: ASK_PING_INTERVAL_MS },
+    askSettings: { ...defaultAskSettings, pingIntervalMs: ASK_PING_INTERVAL_MS },
     authConfig: {
       keys: createLocalJWKSet({ keys: [publicJwk] }),
       issuer: ISSUER,

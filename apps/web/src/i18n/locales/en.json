@@ -30,7 +30,8 @@
     "rotaHasShifts": "This Week already has Shifts, so Copy Last Week can only fill an empty Week.",
     "staffMemberLimitReached": "This Venue has reached its Staff Member limit. Archive someone who has left to add someone new.",
     "askUnavailable": "Ask about this week isn't available right now. Please try again later.",
-    "askFailed": "The answer stopped because something went wrong. Please try asking again."
+    "askFailed": "The answer stopped because something went wrong. Please try asking again.",
+    "askRateLimited": "You've asked a lot of questions recently. Please wait a while, then ask again."
   },
   "validation": {
     "required": "This field is required.",

@@ -304,6 +304,116 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask', () => {
   });
 });
 
+describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () => {
+  let app: TestApp;
+  let response: Response;
+  let ownVenue: { id: string };
+  let otherVenue: { id: string };
+
+  async function askAt(instant: string, times: number, as = OWNER, venue = ownVenue) {
+    app.setClock(instant);
+    for (let asked = 0; asked < times; asked += 1) {
+      response = await app.request('POST', askPath(venue), { as, body: { question: QUESTION } });
+      await response.text();
+    }
+  }
+
+  beforeEach(async () => {
+    app = await startTestApp();
+    await createUser(app.db, OWNER);
+    await createUser(app.db, OTHER_OWNER);
+    ownVenue = await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' });
+    otherVenue = await createVenueFor(app.db, OTHER_OWNER, {
+      name: 'The Anchor',
+      timeZone: 'Europe/London',
+    });
+    await moveVenueToPreview(app.db, ownVenue);
+    await moveVenueToPreview(app.db, otherVenue);
+  });
+
+  afterEach(() => app.close());
+
+  describe('when the Owner has asked 10 questions in the last 10 minutes', () => {
+    beforeEach(async () => {
+      await askAt('2026-01-05T12:00:00.000Z', 10);
+    });
+
+    it('answers the 10th', () => {
+      expect(response.status).toBe(200);
+    });
+
+    describe('when they ask an 11th, 9 minutes 59 seconds after the first', () => {
+      beforeEach(async () => {
+        app.setClock('2026-01-05T12:09:59.000Z');
+        response = await app.request('POST', askPath(ownVenue), { as: OWNER, body: { question: QUESTION } });
+      });
+
+      it('responds with 429 and the ask_rate_limited code', async () => {
+        expect([response.status, await response.json()]).toEqual([429, { code: 'ask_rate_limited' }]);
+      });
+
+      it('asks the model nothing more', () => {
+        expect(app.answerModel.requests).toHaveLength(10);
+      });
+    });
+
+    describe('when they ask an 11th, just over 10 minutes after the first', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-05T12:10:01.000Z', 1);
+      });
+
+      it('answers it', () => {
+        expect(response.status).toBe(200);
+      });
+    });
+
+    describe('when another Owner asks at the same moment', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-05T12:05:00.000Z', 1, OTHER_OWNER, otherVenue);
+      });
+
+      it("answers them, because the first Owner's limit isn't theirs", () => {
+        expect(response.status).toBe(200);
+      });
+    });
+  });
+
+  describe('when the Owner has asked 50 questions today, 10 at a time', () => {
+    beforeEach(async () => {
+      for (const instant of [
+        '2026-01-05T12:00:00.000Z',
+        '2026-01-05T12:11:00.000Z',
+        '2026-01-05T12:22:00.000Z',
+        '2026-01-05T12:33:00.000Z',
+        '2026-01-05T12:44:00.000Z',
+      ]) {
+        await askAt(instant, 10);
+      }
+    });
+
+    describe('when they ask a 51st, 11 minutes after the last 10', () => {
+      beforeEach(async () => {
+        app.setClock('2026-01-05T12:55:00.000Z');
+        response = await app.request('POST', askPath(ownVenue), { as: OWNER, body: { question: QUESTION } });
+      });
+
+      it('responds with 429 and the ask_rate_limited code', async () => {
+        expect([response.status, await response.json()]).toEqual([429, { code: 'ask_rate_limited' }]);
+      });
+    });
+
+    describe('when they ask a 51st, just over a day after the first', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-06T12:00:01.000Z', 1);
+      });
+
+      it('answers it', () => {
+        expect(response.status).toBe(200);
+      });
+    });
+  });
+});
+
 describe('POST /api/venues/:venueId/rotas/:weekStart/ask with no Anthropic API key', () => {
   let app: TestApp;
   let response: Response;

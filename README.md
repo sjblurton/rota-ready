@@ -212,6 +212,7 @@ Secrets live in the hosts' secret stores, never in the repo:
 | Render `rota-ready-api` | `WEB_URL` | `https://rota-ready.onrender.com`, the base of the Staff Links in emails |
 | Render `rota-ready-api` | `ANTHROPIC_API_KEY` | Optional. A Claude Console API key for Ask about this week ([ADR-0012](docs/adr/0012-ask-about-this-week-streams-over-sse-from-an-injected-model.md)). Without it the feature is off for every Venue. Set a monthly spend limit in the Console |
 | Render `rota-ready-api` | `ASK_MODEL`, `ASK_MAX_TOKENS` | Optional. Default to `claude-haiku-5-5` and `400` |
+| Render `rota-ready-api` | `ASK_QUESTIONS_PER_10_MINUTES`, `ASK_QUESTIONS_PER_DAY` | Optional. Each User's limit on questions, in a rolling 10 minutes and 24 hours. Default to `10` and `50`. Held in memory, so they reset on each deploy |
 
 The Supabase project has the Data API and "Automatically expose new tables" turned off, and uses asymmetric (ES256) JWT signing keys. Supabase has no setting that turns RLS on for tables created by migrations, so the security baseline migration's event trigger does it. Both Render services track `main`.
 

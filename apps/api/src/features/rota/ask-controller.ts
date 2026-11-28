@@ -25,7 +25,7 @@ export function askController(asks: AskService, { pingIntervalMs }: AskSettings)
     res.on('close', () => {
       if (!res.writableFinished) upstream.abort();
     });
-    const result = await asks.ask(res.locals.venue, req.params.weekStart, body.question, upstream.signal);
+    const result = await asks.ask(res.locals.venue, res.locals.userId, req.params.weekStart, body.question, upstream.signal);
     if (!result.ok) return sendError(res, result.code);
     res.writeHead(200, EVENT_STREAM_HEADERS);
     res.flushHeaders();

@@ -1,6 +1,6 @@
 import { pino } from 'pino';
 import { createApp } from './app.js';
-import { DEFAULT_ASK_PING_INTERVAL_MS } from '#src/features/rota/ask-settings.js';
+import { defaultAskSettings } from '#src/features/rota/ask-settings.js';
 import { parseStaffLinkKey } from '#src/features/staff-links/staff-link-token.js';
 import {
   anthropicAnswerModel,
@@ -29,10 +29,13 @@ if (!emailFrom) throw new Error('EMAIL_FROM is not set');
 const webUrl = process.env.WEB_URL;
 if (!webUrl) throw new Error('WEB_URL is not set');
 
-const askMaxTokens = Number(process.env.ASK_MAX_TOKENS ?? DEFAULT_ASK_MAX_TOKENS);
-if (!Number.isInteger(askMaxTokens) || askMaxTokens < 1) {
-  throw new Error('ASK_MAX_TOKENS must be a whole number above 0');
+function wholeNumberAboveZero(name: string, fallback: number) {
+  const value = Number(process.env[name] ?? fallback);
+  if (!Number.isInteger(value) || value < 1) throw new Error(`${name} must be a whole number above 0`);
+  return value;
 }
+
+const askMaxTokens = wholeNumberAboveZero('ASK_MAX_TOKENS', DEFAULT_ASK_MAX_TOKENS);
 
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const answerModel = anthropicApiKey
@@ -59,7 +62,14 @@ createApp({
   emailSender: smtpEmailSender({ url: smtpUrl, from: emailFrom }),
   webUrl,
   answerModel,
-  askSettings: { pingIntervalMs: DEFAULT_ASK_PING_INTERVAL_MS },
+  askSettings: {
+    pingIntervalMs: defaultAskSettings.pingIntervalMs,
+    questionsPerTenMinutes: wholeNumberAboveZero(
+      'ASK_QUESTIONS_PER_10_MINUTES',
+      defaultAskSettings.questionsPerTenMinutes,
+    ),
+    questionsPerDay: wholeNumberAboveZero('ASK_QUESTIONS_PER_DAY', defaultAskSettings.questionsPerDay),
+  },
 }).listen(port, () => {
   logger.info({ port }, 'API listening');
 });
