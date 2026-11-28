@@ -79,6 +79,10 @@ _Avoid_: Exception, closure, holiday
 A UK public holiday in the Venue's part of the UK: England and Wales, Scotland, or Northern Ireland. It's shown on the Rota to help plan a busier day, and changes the Venue's hours only if the Owner adds a Special Day.
 _Avoid_: Public holiday
 
+**Shift Need**:
+One Shift a Venue wants filled each week: a weekday, a Role, its times (or Until Close) and how many people, e.g. "Friday, Bar, 18:00–close, 2". A Shift on the Rota counts towards a Shift Need when it's the same Role on the same day at about the same times. Without Shift Needs, the pattern of recent Weeks says what's wanted.
+_Avoid_: Cover requirement, slot, template
+
 **Draft**:
 A Rota that staff cannot see yet.
 _Avoid_: Unpublished, pending (Pending is a Shift Response)
