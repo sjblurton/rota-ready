@@ -1,6 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { PrototypeSwitcher, usePrototypeVariant } from '@/components/prototype-switcher';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  VenueSettingsA,
+  VenueSettingsB,
+  VenueSettingsC,
+  venueSettingsVariants,
+} from '@/features/settings-prototype/venue-settings-variants';
 import { RenameVenueForm } from '@/features/venues/rename-venue-form';
 
 export const Route = createFileRoute('/_authenticated/venues/$venueId/')({
@@ -10,8 +17,9 @@ export const Route = createFileRoute('/_authenticated/venues/$venueId/')({
 function VenueSettingsPage() {
   const { t } = useTranslation();
   const { venueId } = Route.useParams();
+  const variant = usePrototypeVariant(venueSettingsVariants);
 
-  return (
+  const renameCard = (
     <Card className="max-w-xl">
       <CardHeader>
         <CardTitle>
@@ -22,5 +30,14 @@ function VenueSettingsPage() {
         <RenameVenueForm venueId={venueId} />
       </CardContent>
     </Card>
+  );
+
+  return (
+    <>
+      {variant.key === 'A' && <VenueSettingsA renameCard={renameCard} />}
+      {variant.key === 'B' && <VenueSettingsB renameCard={renameCard} />}
+      {variant.key === 'C' && <VenueSettingsC renameCard={renameCard} />}
+      <PrototypeSwitcher variants={venueSettingsVariants} />
+    </>
   );
 }

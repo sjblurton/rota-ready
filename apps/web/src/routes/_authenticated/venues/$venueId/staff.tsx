@@ -8,6 +8,8 @@ import { StaffMemberLimitCard } from '@/features/staff-members/staff-member-limi
 import { ArchiveStaffMemberDialog } from '@/features/staff-members/archive-staff-member-dialog';
 import { EditStaffMemberForm } from '@/features/staff-members/edit-staff-member-form';
 import { StaffLinkDialog } from '@/features/staff-links/staff-link-dialog';
+import { PrototypeSwitcher, usePrototypeVariant } from '@/components/prototype-switcher';
+import { StaffSettingsA, StaffSettingsB, StaffSettingsC, staffSettingsVariants } from '@/features/settings-prototype/staff-settings-variants';
 import { PageLoadError } from '@/components/page-load-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,10 +38,15 @@ function StaffPage() {
   const { data: staffMembers } = useSuspenseQuery(staffMembersQuery(venueId));
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
   const [editingId, setEditingId] = useState<string | null>(null);
+  const variant = usePrototypeVariant(staffSettingsVariants);
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      {variant.key === 'A' && <StaffSettingsA staffMembers={staffMembers} />}
+      {variant.key === 'B' && <StaffSettingsB staffMembers={staffMembers} />}
+      {variant.key === 'C' && <StaffSettingsC staffMembers={staffMembers} />}
+      <PrototypeSwitcher variants={staffSettingsVariants} />
+      <Card hidden>
         <CardHeader>
           <CardTitle>
             <h2>{t('staff.title')}</h2>
