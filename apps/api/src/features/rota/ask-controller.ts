@@ -30,6 +30,7 @@ export function askController(asks: AskService, { pingIntervalMs }: AskSettings)
     res.writeHead(200, EVENT_STREAM_HEADERS);
     res.flushHeaders();
     const ping = setInterval(() => res.write(': ping\n\n'), pingIntervalMs);
+    res.once('close', () => clearInterval(ping));
     try {
       for await (const text of result.answer) writeEvent(res, { event: askEventName.delta, data: { text } });
       writeEvent(res, { event: askEventName.done, data: {} });

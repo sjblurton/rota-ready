@@ -279,8 +279,8 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask', () => {
       disconnect.abort();
     });
 
-    it('sends a ping comment to keep the connection open', () => {
-      expect(received).toContain('\n\n: ping\n\n');
+    it('sends a ping comment after the delta to keep the quiet connection open', () => {
+      expect(received).toMatch(/^event: delta\ndata: \{"text":"Sam Jones "\}\n\n: ping\n\n/);
     });
   });
 

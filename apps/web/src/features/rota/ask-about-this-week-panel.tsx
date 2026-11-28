@@ -39,6 +39,7 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
   const form = useForm({ resolver: zodResolver(askRequestSchema), defaultValues: { question: '' } });
   const error = form.formState.errors.question;
   const streaming = state.status === askStatus.streaming;
+  const stopped = state.status === askStatus.stopped;
 
   if (!venue.canAskAboutThisWeek) return null;
 
@@ -81,13 +82,13 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
             </Button>
           )}
         </form>
-        {(streaming || state.answer !== '') && (
+        {(streaming || stopped || state.answer !== '') && (
           <section aria-labelledby="ask-answer-heading" aria-busy={streaming} className="flex flex-col gap-1">
             <h4 id="ask-answer-heading" className="text-sm font-medium">
               {t('rota.ask.answer')}
             </h4>
             <p className="text-sm whitespace-pre-wrap">{state.answer}</p>
-            {state.status === askStatus.stopped && (
+            {stopped && (
               <p className="text-sm text-muted-foreground">{t('rota.ask.stopped')}</p>
             )}
           </section>

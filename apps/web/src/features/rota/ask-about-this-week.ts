@@ -31,7 +31,7 @@ function askReducer(state: AskState, action: AskAction): AskState {
     case asked.event:
       return { status: askStatus.streaming, answer: '' };
     case stopped.event:
-      return { status: askStatus.stopped, answer: state.answer };
+      return state.status === askStatus.streaming ? { status: askStatus.stopped, answer: state.answer } : state;
     case askEventName.delta:
       return { status: askStatus.streaming, answer: state.answer + action.data.text };
     case askEventName.done:
@@ -82,7 +82,8 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
   }
 
   function stop() {
-    inFlight.current?.abort();
+    if (!inFlight.current) return;
+    inFlight.current.abort();
     inFlight.current = null;
     dispatch(stopped);
   }
