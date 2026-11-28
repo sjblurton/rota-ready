@@ -16,6 +16,7 @@ const OTHER_OWNER = {
   id: '7c0d9a54-1e2b-4f3a-8b6c-5d4e3f2a1b0c',
   email: 'other@example.com',
 };
+const CO_OWNER = { id: '4b8e2c1a-9d3f-4e5a-b6c7-1d2e3f4a5b6c', email: 'co-owner@example.com' };
 const WEEK_START = '2026-11-16';
 const SAM = { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: '07700 900123' };
 const FRIDAY_NIGHT = {
@@ -308,27 +309,22 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () 
   let app: TestApp;
   let response: Response;
   let ownVenue: { id: string };
-  let otherVenue: { id: string };
 
-  async function askAt(instant: string, times: number, as = OWNER, venue = ownVenue) {
+  async function askAt(instant: string, times: number, as = OWNER) {
     app.setClock(instant);
     for (let asked = 0; asked < times; asked += 1) {
-      response = await app.request('POST', askPath(venue), { as, body: { question: QUESTION } });
-      await response.text();
+      response = await app.request('POST', askPath(ownVenue), { as, body: { question: QUESTION } });
+      if (response.ok) await response.text();
     }
   }
 
   beforeEach(async () => {
-    app = await startTestApp();
+    app = await startTestApp({ askLimits: { questionsPerTenMinutes: 10, questionsPerDay: 50 } });
     await createUser(app.db, OWNER);
-    await createUser(app.db, OTHER_OWNER);
+    await createUser(app.db, CO_OWNER);
     ownVenue = await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' });
-    otherVenue = await createVenueFor(app.db, OTHER_OWNER, {
-      name: 'The Anchor',
-      timeZone: 'Europe/London',
-    });
+    await app.db.venueMember.create({ data: { venueId: ownVenue.id, userId: CO_OWNER.id, role: 'owner' } });
     await moveVenueToPreview(app.db, ownVenue);
-    await moveVenueToPreview(app.db, otherVenue);
   });
 
   afterEach(() => app.close());
@@ -344,8 +340,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () 
 
     describe('when they ask an 11th, 9 minutes 59 seconds after the first', () => {
       beforeEach(async () => {
-        app.setClock('2026-01-05T12:09:59.000Z');
-        response = await app.request('POST', askPath(ownVenue), { as: OWNER, body: { question: QUESTION } });
+        await askAt('2026-01-05T12:09:59.000Z', 1);
       });
 
       it('responds with 429 and the ask_rate_limited code', async () => {
@@ -357,9 +352,9 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () 
       });
     });
 
-    describe('when they ask an 11th, just over 10 minutes after the first', () => {
+    describe('when they ask an 11th, exactly 10 minutes after the first', () => {
       beforeEach(async () => {
-        await askAt('2026-01-05T12:10:01.000Z', 1);
+        await askAt('2026-01-05T12:10:00.000Z', 1);
       });
 
       it('answers it', () => {
@@ -367,9 +362,9 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () 
       });
     });
 
-    describe('when another Owner asks at the same moment', () => {
+    describe('when another Owner of the same Venue asks at the same moment', () => {
       beforeEach(async () => {
-        await askAt('2026-01-05T12:05:00.000Z', 1, OTHER_OWNER, otherVenue);
+        await askAt('2026-01-05T12:05:00.000Z', 1, CO_OWNER);
       });
 
       it("answers them, because the first Owner's limit isn't theirs", () => {
@@ -393,8 +388,7 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () 
 
     describe('when they ask a 51st, 11 minutes after the last 10', () => {
       beforeEach(async () => {
-        app.setClock('2026-01-05T12:55:00.000Z');
-        response = await app.request('POST', askPath(ownVenue), { as: OWNER, body: { question: QUESTION } });
+        await askAt('2026-01-05T12:55:00.000Z', 1);
       });
 
       it('responds with 429 and the ask_rate_limited code', async () => {
@@ -402,9 +396,9 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () 
       });
     });
 
-    describe('when they ask a 51st, just over a day after the first', () => {
+    describe('when they ask a 51st, exactly a day after the first', () => {
       beforeEach(async () => {
-        await askAt('2026-01-06T12:00:01.000Z', 1);
+        await askAt('2026-01-06T12:00:00.000Z', 1);
       });
 
       it('answers it', () => {

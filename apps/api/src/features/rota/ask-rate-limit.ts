@@ -1,4 +1,5 @@
 import type { Clock } from '#src/lib/clock.js';
+import type { AskSettings } from './ask-settings.js';
 
 interface QuestionLimit {
   questions: number;
@@ -8,9 +9,9 @@ interface QuestionLimit {
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function createQuestionLimiter(
+export function createAskRateLimit(
   clock: Clock,
-  { questionsPerTenMinutes, questionsPerDay }: { questionsPerTenMinutes: number; questionsPerDay: number },
+  { questionsPerTenMinutes, questionsPerDay }: Pick<AskSettings, 'questionsPerTenMinutes' | 'questionsPerDay'>,
 ) {
   const limits: QuestionLimit[] = [
     { questions: questionsPerTenMinutes, withinMs: TEN_MINUTES_MS },

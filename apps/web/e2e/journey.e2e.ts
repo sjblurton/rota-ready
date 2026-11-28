@@ -758,7 +758,7 @@ test.describe.serial('MVP journey', () => {
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
     await expect(panel.getByRole('status')).toHaveText(waitMessage);
-    await expect(panel.getByText(waitMessage)).toHaveCount(2);
+    await expect(panel.getByRole('paragraph').filter({ hasText: waitMessage })).toBeVisible();
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await page.unroute('**/ask');
   });

@@ -7,7 +7,7 @@ import { refuse, type Refused } from '#src/lib/service-result.js';
 import { findRotaToAskAbout } from './ask-data.js';
 import { askPrompt } from './ask-prompt.js';
 import type { AskSettings } from './ask-settings.js';
-import { createQuestionLimiter } from './question-limiter.js';
+import { createAskRateLimit } from './ask-rate-limit.js';
 
 export interface AskServiceDependencies {
   db: Db;
@@ -17,7 +17,7 @@ export interface AskServiceDependencies {
 }
 
 export function createAskService({ db, answerModel, clock, askSettings }: AskServiceDependencies) {
-  const questionLimiter = createQuestionLimiter(clock, askSettings);
+  const rateLimit = createAskRateLimit(clock, askSettings);
 
   function isAvailableFor(venue: Pick<Venue, 'plan'>) {
     return answerModel !== null && planAllows[venue.plan].features.includes(feature.ask_about_this_week);
@@ -34,7 +34,7 @@ export function createAskService({ db, answerModel, clock, askSettings }: AskSer
       signal: AbortSignal,
     ): Promise<{ ok: true; answer: AsyncIterable<string> } | Refused<'ask_unavailable' | 'ask_rate_limited'>> {
       if (!answerModel || !isAvailableFor(venue)) return refuse(apiErrorCode.ask_unavailable);
-      if (!questionLimiter.tryToAsk(userId)) return refuse(apiErrorCode.ask_rate_limited);
+      if (!rateLimit.tryToAsk(userId)) return refuse(apiErrorCode.ask_rate_limited);
       const rota = await findRotaToAskAbout(db, venue.id, weekStart);
       const week = {
         venue,
