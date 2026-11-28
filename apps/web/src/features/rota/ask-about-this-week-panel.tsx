@@ -12,7 +12,9 @@ import { askStatus, useAskAboutThisWeek, type AskState } from '@/features/rota/a
 import { venueQuery } from '@/features/venues/venue-queries';
 import { apiErrorCodeMessage } from '@/i18n/api-error-message';
 
-const failuresARetryWontFix = new Set<ApiErrorCode | undefined>([apiErrorCode.ask_unavailable]);
+function retryCanFix(code: ApiErrorCode | undefined) {
+  return code === undefined || code === apiErrorCode.ask_failed || code === apiErrorCode.internal_error;
+}
 
 interface AskAboutThisWeekPanelProps {
   venueId: string;
@@ -103,7 +105,7 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
         {state.status === askStatus.failed && (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm text-destructive">{apiErrorCodeMessage(t, state.code)}</p>
-            {!failuresARetryWontFix.has(state.code) && (
+            {retryCanFix(state.code) && (
               <Button type="button" variant="outline" size="sm" onClick={onRetry}>
                 {t('rota.ask.retry')}
               </Button>

@@ -16,16 +16,13 @@ export type AskState =
   | { status: 'idle' | 'streaming' | 'answered' | 'stopped'; question: string; answer: string }
   | { status: 'failed'; question: string; answer: string; code: ApiErrorCode | undefined };
 
-const askedEvent = 'asked';
+const askActionName = { asked: 'asked', stopped: 'stopped' } as const;
 
-interface Asked {
-  event: typeof askedEvent;
-  question: string;
-}
-
-const stopped = { event: 'stopped' } as const;
-
-type AskAction = AskEvent | Asked | typeof stopped | { event: 'error'; data: { code: ApiErrorCode | undefined } };
+type AskAction =
+  | AskEvent
+  | { event: typeof askActionName.asked; question: string }
+  | { event: typeof askActionName.stopped }
+  | { event: 'error'; data: { code: ApiErrorCode | undefined } };
 
 function failedWith(code: ApiErrorCode | undefined): AskAction {
   return { event: askEventName.error, data: { code } };
@@ -33,9 +30,9 @@ function failedWith(code: ApiErrorCode | undefined): AskAction {
 
 function askReducer(state: AskState, action: AskAction): AskState {
   switch (action.event) {
-    case askedEvent:
+    case askActionName.asked:
       return { status: askStatus.streaming, question: action.question, answer: '' };
-    case stopped.event:
+    case askActionName.stopped:
       return state.status === askStatus.streaming
         ? { status: askStatus.stopped, question: state.question, answer: state.answer }
         : state;
@@ -79,7 +76,7 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
     inFlight.current?.abort();
     const controller = new AbortController();
     inFlight.current = controller;
-    dispatch({ event: askedEvent, question });
+    dispatch({ event: askActionName.asked, question });
     streamAnswer(askPath(venueId, weekStart), question, controller.signal, dispatch).catch(
       (error: unknown) => {
         if (controller.signal.aborted) return;
@@ -92,7 +89,7 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
     if (!inFlight.current) return;
     inFlight.current.abort();
     inFlight.current = null;
-    dispatch(stopped);
+    dispatch({ event: askActionName.stopped });
   }
 
   function retry() {

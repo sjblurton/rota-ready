@@ -759,6 +759,7 @@ test.describe.serial('MVP journey', () => {
         body: `event: delta\ndata: ${JSON.stringify({ text: firstChunk })}\n\nevent: error\ndata: {"code":"ask_failed"}\n\n`,
       }),
     );
+    await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
     await expect(panel.getByRole('status')).toHaveText(
       'The answer stopped because something went wrong. Please try asking again.',

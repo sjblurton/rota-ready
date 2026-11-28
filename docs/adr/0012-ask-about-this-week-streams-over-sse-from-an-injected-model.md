@@ -20,7 +20,7 @@ The model is a dependency of `createApp`, like the email sender: `streamAnswer({
 
 **Stopping:** a Stop button shows while the answer streams. It aborts the `fetch`, which closes the connection, so the API aborts the model call as above. The text so far stays, marked "Stopped", the status region announces "Stopped", and focus goes back to the question box. Changing Week or leaving the page unmounts the panel, which aborts the same way.
 
-**Errors show in the panel, not as a toast.** ADR-0009 sends errors nothing in a form can fix to a toast, but an answer that fails partway through keeps its partial text, and the error belongs next to it. Beside the error, Retry asks the question that failed again, even if the question box has changed since. It isn't offered for `ask_unavailable`, which asking again won't fix.
+**Errors show in the panel, not as a toast.** ADR-0009 sends errors nothing in a form can fix to a toast, but an answer that fails partway through keeps its partial text, and the error belongs next to it. Beside the error, Retry asks the question that failed again, even if the question box has changed since. It's offered only when asking again can help: `ask_failed`, `internal_error`, or a failure with no code such as a dropped connection. It isn't offered for `ask_unavailable` or any other code that asking again won't fix.
 
 ## Considered Options
 
