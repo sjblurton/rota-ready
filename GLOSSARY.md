@@ -59,6 +59,26 @@ _Avoid_: Slot, booking, session
 A Shift that ends on a later calendar day than it starts, e.g. 20:00–02:00 (+1).
 _Avoid_: Late shift, split shift
 
+**Until Close**:
+A Shift that ends when the Venue closes instead of at a set time, shown as "18:00–close". Close is the end of the opening period the Shift runs into, plus the Venue's Close-down Time. When the Venue's hours change, an Until Close Shift that hasn't started moves with them.
+_Avoid_: Open-ended shift, finish
+
+**Close-down Time**:
+How long after closing the staff on an Until Close Shift are counted as working, set by the Owner (60 minutes unless changed). It's a planning estimate that keeps hours and rest between Shifts from being undercounted, not a record of when anyone finished.
+_Avoid_: Clean-down, overrun
+
+**Opening Hours**:
+When a Venue serves customers, set for each weekday as one or more opening periods, such as lunch and dinner. A period that runs past midnight belongs to the day it starts. A weekday with no periods is closed. Staff often work outside Opening Hours, for prep and close-down.
+_Avoid_: Trading hours, staffed hours
+
+**Special Day**:
+One date whose hours differ from the Venue's Opening Hours: either closed, like Christmas Day, or open with its own periods, like a late private party. It wins over the Opening Hours for that date.
+_Avoid_: Exception, closure, holiday
+
+**Bank Holiday**:
+A UK public holiday in the Venue's part of the UK: England and Wales, Scotland, or Northern Ireland. It's shown on the Rota to help plan a busier day, and changes the Venue's hours only if the Owner adds a Special Day.
+_Avoid_: Public holiday
+
 **Draft**:
 A Rota that staff cannot see yet.
 _Avoid_: Unpublished, pending (Pending is a Shift Response)
