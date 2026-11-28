@@ -41,6 +41,10 @@ _Avoid_: Position, job title, Member Role
 What a Venue Member is allowed to do at a Venue. Not to be confused with Role.
 _Avoid_: Role (on its own), permission, access level
 
+**Unavailable**:
+When a Staff Member can't work. Either every week (a weekday, all day or between times, e.g. every Tuesday, or weekdays before 17:00) or on dates (whole days, e.g. 4–10 August). Everyone is available unless the Owner says otherwise, and the AI never places a Shift when someone is Unavailable.
+_Avoid_: Time off, holiday, leave, absence, availability
+
 ## Scheduling
 
 **Week**:
