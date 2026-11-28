@@ -8,16 +8,19 @@ export const askStatus = {
   idle: 'idle',
   streaming: 'streaming',
   answered: 'answered',
+  stopped: 'stopped',
   failed: 'failed',
 } as const;
 
 export type AskState =
-  | { status: 'idle' | 'streaming' | 'answered'; answer: string }
+  | { status: 'idle' | 'streaming' | 'answered' | 'stopped'; answer: string }
   | { status: 'failed'; answer: string; code: ApiErrorCode | undefined };
 
 const asked = { event: 'asked' } as const;
 
-type AskAction = AskEvent | typeof asked | { event: 'error'; data: { code: ApiErrorCode | undefined } };
+const stopped = { event: 'stopped' } as const;
+
+type AskAction = AskEvent | typeof asked | typeof stopped | { event: 'error'; data: { code: ApiErrorCode | undefined } };
 
 function failedWith(code: ApiErrorCode | undefined): AskAction {
   return { event: askEventName.error, data: { code } };
@@ -27,6 +30,8 @@ function askReducer(state: AskState, action: AskAction): AskState {
   switch (action.event) {
     case asked.event:
       return { status: askStatus.streaming, answer: '' };
+    case stopped.event:
+      return state.status === askStatus.streaming ? { status: askStatus.stopped, answer: state.answer } : state;
     case askEventName.delta:
       return { status: askStatus.streaming, answer: state.answer + action.data.text };
     case askEventName.done:
@@ -76,5 +81,12 @@ export function useAskAboutThisWeek(venueId: string, weekStart: string) {
     );
   }
 
-  return { state, ask };
+  function stop() {
+    if (!inFlight.current) return;
+    inFlight.current.abort();
+    inFlight.current = null;
+    dispatch(stopped);
+  }
+
+  return { state, ask, stop };
 }

@@ -264,6 +264,26 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask', () => {
     });
   });
 
+  describe('when the model goes quiet after the first chunk', () => {
+    let received: string;
+
+    beforeEach(async () => {
+      app.answerModel.waitForAbortAfter(['Sam Jones ']);
+      const disconnect = new AbortController();
+      response = await app.request('POST', askPath(ownVenue), {
+        as: OWNER,
+        body: { question: QUESTION },
+        signal: disconnect.signal,
+      });
+      received = await readUntil(response, ': ping\n\n');
+      disconnect.abort();
+    });
+
+    it('sends a ping comment after the delta to keep the quiet connection open', () => {
+      expect(received).toMatch(/^event: delta\ndata: \{"text":"Sam Jones "\}\n\n: ping\n\n/);
+    });
+  });
+
   describe('when the Owner disconnects after the first chunk', () => {
     beforeEach(async () => {
       app.answerModel.waitForAbortAfter(['Sam Jones ']);

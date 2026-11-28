@@ -1,5 +1,6 @@
 import { pino } from 'pino';
 import { createApp } from './app.js';
+import { DEFAULT_ASK_PING_INTERVAL_MS } from '#src/features/rota/ask-settings.js';
 import { parseStaffLinkKey } from '#src/features/staff-links/staff-link-token.js';
 import {
   anthropicAnswerModel,
@@ -58,6 +59,7 @@ createApp({
   emailSender: smtpEmailSender({ url: smtpUrl, from: emailFrom }),
   webUrl,
   answerModel,
+  askSettings: { pingIntervalMs: DEFAULT_ASK_PING_INTERVAL_MS },
 }).listen(port, () => {
   logger.info({ port }, 'API listening');
 });

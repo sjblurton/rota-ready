@@ -25,6 +25,8 @@ function announcement(t: TFunction, state: AskState): string {
       return t('rota.ask.answering');
     case askStatus.answered:
       return state.answer;
+    case askStatus.stopped:
+      return t('rota.ask.stopped');
     case askStatus.failed:
       return apiErrorCodeMessage(t, state.code);
   }
@@ -33,15 +35,21 @@ function announcement(t: TFunction, state: AskState): string {
 export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPanelProps) {
   const { t } = useTranslation();
   const { data: venue } = useSuspenseQuery(venueQuery(venueId));
-  const { state, ask } = useAskAboutThisWeek(venueId, weekStart);
+  const { state, ask, stop } = useAskAboutThisWeek(venueId, weekStart);
   const form = useForm({ resolver: zodResolver(askRequestSchema), defaultValues: { question: '' } });
   const error = form.formState.errors.question;
   const streaming = state.status === askStatus.streaming;
-  
+  const stopped = state.status === askStatus.stopped;
+
   if (!venue.canAskAboutThisWeek) return null;
 
   function onSubmit({ question }: AskRequest) {
     ask(question);
+  }
+
+  function onStop() {
+    stop();
+    form.setFocus('question');
   }
 
   return (
@@ -68,13 +76,21 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
           <Button type="submit" className="sm:mt-6" disabled={streaming}>
             {t('rota.ask.submit')}
           </Button>
+          {streaming && (
+            <Button type="button" variant="outline" className="sm:mt-6" onClick={onStop}>
+              {t('rota.ask.stop')}
+            </Button>
+          )}
         </form>
-        {(streaming || state.answer !== '') && (
+        {(streaming || stopped || state.answer !== '') && (
           <section aria-labelledby="ask-answer-heading" aria-busy={streaming} className="flex flex-col gap-1">
             <h4 id="ask-answer-heading" className="text-sm font-medium">
               {t('rota.ask.answer')}
             </h4>
             <p className="text-sm whitespace-pre-wrap">{state.answer}</p>
+            {stopped && (
+              <p className="text-sm text-muted-foreground">{t('rota.ask.stopped')}</p>
+            )}
           </section>
         )}
         {state.status === askStatus.failed && (

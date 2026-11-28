@@ -5,6 +5,7 @@ import type { AnswerModel } from '#src/lib/answer-model.js';
 import type { Clock } from '#src/lib/clock.js';
 import type { Db } from '#src/lib/db.js';
 import type { EmailSender } from '#src/lib/email-sender.js';
+import type { AskSettings } from '#src/features/rota/ask-settings.js';
 import { createAskService } from '#src/features/rota/ask-service.js';
 import { rotaRouter } from '#src/features/rota/rota-router.js';
 import { staffMemberRouter } from '#src/features/staff-members/staff-member-router.js';
@@ -22,6 +23,7 @@ interface VenueRouterDependencies {
   webUrl: string;
   logger: Logger;
   answerModel: AnswerModel | null;
+  askSettings: AskSettings;
 }
 
 export function venueRouter(dependencies: VenueRouterDependencies): Router {

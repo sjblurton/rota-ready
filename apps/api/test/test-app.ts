@@ -14,6 +14,7 @@ const KEY_ID = 'test-key';
 const WEB_URL = 'http://web.test';
 const DEFAULT_NOW = '2026-01-05T12:00:00.000Z';
 const BLOCKED_REQUEST_TIMEOUT_MS = 2_000;
+const ASK_PING_INTERVAL_MS = 50;
 
 interface TokenSubject {
   id: string;
@@ -113,6 +114,7 @@ export async function startTestApp({
     emailSender: outbox.sender,
     webUrl: WEB_URL,
     answerModel: withAnswerModel ? answerModel.model : null,
+    askSettings: { pingIntervalMs: ASK_PING_INTERVAL_MS },
     authConfig: {
       keys: createLocalJWKSet({ keys: [publicJwk] }),
       issuer: ISSUER,
