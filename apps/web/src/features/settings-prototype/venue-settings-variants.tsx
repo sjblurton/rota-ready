@@ -330,8 +330,97 @@ export function VenueSettingsC({ renameCard }: { renameCard: React.ReactNode }) 
   );
 }
 
+function CloseDownField() {
+  return (
+    <div className="flex flex-col gap-1 rounded-md border bg-muted/30 p-3 text-sm">
+      <label className="flex flex-wrap items-center gap-2">
+        <span className="font-medium">Close-down Time</span>
+        <Input type="number" defaultValue={closeDownMinutes} className="w-20" /> minutes after closing
+      </label>
+      <p className="text-muted-foreground">
+        Until Close Shifts end this long after the Venue closes, to allow for cashing up and cleaning. It starts at 60
+        minutes to stay on the safe side: staff are entitled to 11 hours’ rest between working days, so the AI plans
+        a closer’s next Shift from when they really finish, not from closing time. Change it if closing usually takes
+        more or less time.
+      </p>
+    </div>
+  );
+}
+
+function SpecialDaysWithBankHolidays() {
+  return (
+    <div className="flex flex-col gap-4">
+      <SpecialDaysList />
+      <div className="flex flex-col gap-2 border-t pt-4 text-sm">
+        <label className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">Bank Holidays for</span>
+          <NativeSelect defaultValue={bankHolidayRegion} className="w-56">
+            <NativeSelectOption>England and Wales</NativeSelectOption>
+            <NativeSelectOption>Scotland</NativeSelectOption>
+            <NativeSelectOption>Northern Ireland</NativeSelectOption>
+          </NativeSelect>
+        </label>
+        <ul className="flex flex-col gap-1">
+          {upcomingBankHolidays.map((b) => (
+            <li key={b.date} className="flex items-center gap-2">
+              <span className="w-28 font-medium">{b.date}</span>
+              <span>{b.name}</span>
+              <Badge variant="outline">Bank Holiday</Badge>
+              <Button size="sm" variant="ghost">Make it a Special Day</Button>
+            </li>
+          ))}
+        </ul>
+        <p className="text-muted-foreground">Bank Holidays are highlighted on the Rota and the AI expects them to be busier. They don’t change your hours: add a Special Day if they do.</p>
+      </div>
+    </div>
+  );
+}
+
+export function VenueSettingsD({ renameCard }: { renameCard: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">{renameCard}</div>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle><h2>Roles</h2></CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {roles.filter((r) => !r.archived).map((r) => (
+              <Badge key={r.name} variant="secondary" className="gap-1 text-sm">{r.name}</Badge>
+            ))}
+            <Button size="sm" variant="outline">Manage Roles</Button>
+          </CardContent>
+        </Card>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle><h2>A usual week</h2></CardTitle>
+          <CardDescription>
+            Green bars are Opening Hours (06:00 to 03:00). Blue cards are Shift Needs: the Shifts you want filled every week.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {weekdays.map((_, i) => <DayColumn key={i} day={i} />)}
+          </div>
+          <CloseDownField />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle><h2>Special Days and Bank Holidays</h2></CardTitle>
+          <CardDescription>Dates when the Venue is closed or has different hours.</CardDescription>
+        </CardHeader>
+        <CardContent><SpecialDaysWithBankHolidays /></CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const venueSettingsVariants = [
   { key: 'A', name: 'One long page' },
   { key: 'B', name: 'Section list' },
   { key: 'C', name: 'A usual week' },
+  { key: 'D', name: 'C + A’s Special Days' },
 ];

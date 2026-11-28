@@ -6,6 +6,7 @@ import {
   VenueSettingsA,
   VenueSettingsB,
   VenueSettingsC,
+  VenueSettingsD,
   venueSettingsVariants,
 } from '@/features/settings-prototype/venue-settings-variants';
 import { RenameVenueForm } from '@/features/venues/rename-venue-form';
@@ -37,6 +38,7 @@ function VenueSettingsPage() {
       {variant.key === 'A' && <VenueSettingsA renameCard={renameCard} />}
       {variant.key === 'B' && <VenueSettingsB renameCard={renameCard} />}
       {variant.key === 'C' && <VenueSettingsC renameCard={renameCard} />}
+      {variant.key === 'D' && <VenueSettingsD renameCard={renameCard} />}
       <PrototypeSwitcher variants={venueSettingsVariants} />
     </>
   );
