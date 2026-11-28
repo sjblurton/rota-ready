@@ -1,6 +1,8 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { addDays, ASK_QUESTION_MAX_LENGTH, daysBetween, formatLocalDate } from '@rota-ready/shared';
 import pg from 'pg';
+import en from '../src/i18n/locales/en.json' with { type: 'json' };
+import { pseudoLocalise } from '../src/i18n/pseudo';
 import { STUB_ANSWER_CHUNKS } from './anthropic-stub';
 
 const email = `e2e-${Date.now()}@example.com`;
@@ -25,6 +27,8 @@ async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
     return texts.filter((text) => !/^\[.*\]$/s.test(text));
   });
 }
+
+const pseudo = pseudoLocalise(en);
 
 test.describe.serial('MVP journey', () => {
   let page: Page;
@@ -790,6 +794,152 @@ test.describe.serial('MVP journey', () => {
     expect((await askRequest).postDataJSON()).toEqual({ question: 'Who works on Saturday?' });
     await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+  });
+
+  test.describe('by keyboard alone', () => {
+    function panel() {
+      return page.getByRole('region', { name: 'Ask about this week' });
+    }
+
+    test('keeps focus in the question box after sending with the Ask button', async () => {
+      await panel().getByLabel('Your question').focus();
+      await page.keyboard.press('ControlOrMeta+A');
+      await page.keyboard.type('Who works on Saturday?');
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Ask' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(panel().getByRole('status')).toHaveText('Answering…');
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+
+    test('reaches Stop with Tab and stops the answer with Enter, back in the question box', async () => {
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(panel().getByRole('status')).toHaveText('Stopped');
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+
+    test('reaches Retry with Tab after an error and asks again, back in the question box', async () => {
+      await page.route('**/ask', (route) =>
+        route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'event: error\ndata: {"code":"ask_failed"}\n\n' }),
+      );
+      await page.keyboard.press('Enter');
+      await expect(panel().getByRole('button', { name: 'Retry' })).toBeVisible();
+      await page.unroute('**/ask');
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Retry' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(panel().getByRole('status')).toHaveText('Answering…');
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+
+    test('moves focus from Stop to the question box when the answer finishes', async () => {
+      await page.keyboard.press('Tab');
+      await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
+      await expect(panel().getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      await expect(panel().getByLabel('Your question')).toBeFocused();
+    });
+  });
+
+  test('runs no animation in the panel while an answer streams, with reduced motion on', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await panel.getByLabel('Your question').fill('Who works on Saturday?');
+    await panel.getByLabel('Your question').press('Enter');
+    await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+    const keyframeAnimations = await panel.evaluate(
+      (element) => element.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
+    );
+    await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+    await page.emulateMedia({ reducedMotion: null });
+    expect(keyframeAnimations).toBe(0);
+  });
+
+  test.describe('with ?lng=pseudo', () => {
+    function panel() {
+      return page.getByRole('region', { name: pseudo.rota.ask.title });
+    }
+
+    function plainEnglishIn(locator: ReturnType<Page['getByRole']>) {
+      return locator.evaluate((element) => {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        const texts: string[] = [];
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent?.trim();
+          if (text) texts.push(text);
+        }
+        return texts.filter((text) => !/^\[.*\]$/s.test(text));
+      });
+    }
+
+    async function askAnswerFailingWith(code: string) {
+      await page.route('**/ask', (route) =>
+        code === 'ask_failed'
+          ? route.fulfill({ status: 200, contentType: 'text/event-stream', body: `event: error\ndata: {"code":"${code}"}\n\n` })
+          : route.fulfill({ status: code === 'ask_rate_limited' ? 429 : 503, json: { code } }),
+      );
+      await page.keyboard.press('Enter');
+    }
+
+    test.afterEach(async () => {
+      await page.unroute('**/ask');
+    });
+
+    test('shows the idle panel as pseudo-text', async () => {
+      await page.goto(`${page.url()}?lng=pseudo`);
+      await expect(panel()).toBeVisible();
+      expect(await plainEnglishIn(panel())).toEqual([]);
+    });
+
+    test('shows the streaming panel as pseudo-text, apart from the answer', async () => {
+      await panel().getByLabel(pseudo.rota.ask.question).fill('Who works on Saturday?');
+      await panel().getByLabel(pseudo.rota.ask.question).press('Enter');
+      await expect(panel().getByRole('status')).toHaveText(pseudo.rota.ask.answering);
+      await expect(panel().getByRole('button', { name: pseudo.rota.ask.stop })).toBeVisible();
+      await expect(panel().getByRole('region', { name: pseudo.rota.ask.answer })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+      expect(await plainEnglishIn(panel())).toEqual([STUB_ANSWER_CHUNKS[0]?.trim()]);
+    });
+
+    test('shows the stopped panel as pseudo-text, apart from the answer', async () => {
+      await panel().getByRole('button', { name: pseudo.rota.ask.stop }).press('Enter');
+      await expect(panel().getByRole('status')).toHaveText(pseudo.rota.ask.stopped);
+      expect(await plainEnglishIn(panel())).toEqual([STUB_ANSWER_CHUNKS[0]?.trim()]);
+    });
+
+    test('shows the finished panel as pseudo-text, apart from the answer', async () => {
+      await page.keyboard.press('Enter');
+      await expect(panel().getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      expect(await plainEnglishIn(panel())).toEqual([STUB_ANSWER_CHUNKS.join('').trim(), STUB_ANSWER_CHUNKS.join('')]);
+    });
+
+    test('shows an error partway through, with Retry, as pseudo-text', async () => {
+      await askAnswerFailingWith('ask_failed');
+      await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askFailed);
+      await expect(panel().getByRole('button', { name: pseudo.rota.ask.retry })).toBeVisible();
+      expect(await plainEnglishIn(panel())).toEqual([]);
+    });
+
+    test('shows the rate-limited panel as pseudo-text', async () => {
+      await askAnswerFailingWith('ask_rate_limited');
+      await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askRateLimited);
+      expect(await plainEnglishIn(panel())).toEqual([]);
+    });
+
+    test('shows the unavailable panel as pseudo-text', async () => {
+      await askAnswerFailingWith('ask_unavailable');
+      await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askUnavailable);
+      expect(await plainEnglishIn(panel())).toEqual([]);
+    });
+
+    test('shows a question form error as pseudo-text', async () => {
+      await panel().getByLabel(pseudo.rota.ask.question).fill('');
+      await page.keyboard.press('Enter');
+      await expect(panel().getByText(pseudo.validation.required)).toBeVisible();
+      expect(await plainEnglishIn(panel())).toEqual([]);
+      await page.goto(page.url().replace('?lng=pseudo', ''));
+    });
   });
 
   test('keeps the next Week a Draft with a Publish button', async () => {

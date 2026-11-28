@@ -49,6 +49,13 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
 
   function onSubmit({ question }: AskRequest) {
     ask(question);
+    form.setFocus('question');
+  }
+
+  function keepFocusWhenStopGoes(stopButton: HTMLButtonElement) {
+    return () => {
+      if (document.activeElement === stopButton) form.setFocus('question');
+    };
   }
 
   function onStop() {
@@ -86,7 +93,7 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
             {t('rota.ask.submit')}
           </Button>
           {streaming && (
-            <Button type="button" variant="outline" className="sm:mt-6" onClick={onStop}>
+            <Button ref={keepFocusWhenStopGoes} type="button" variant="outline" className="sm:mt-6" onClick={onStop}>
               {t('rota.ask.stop')}
             </Button>
           )}
