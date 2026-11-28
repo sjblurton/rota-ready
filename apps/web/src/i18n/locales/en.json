@@ -207,7 +207,9 @@
       "question": "Your question",
       "submit": "Ask",
       "answering": "Answering…",
-      "answer": "Answer"
+      "answer": "Answer",
+      "stop": "Stop",
+      "stopped": "Stopped"
     }
   },
   "staff": {

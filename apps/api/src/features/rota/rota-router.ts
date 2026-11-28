@@ -4,18 +4,19 @@ import type { RotaServiceDependencies } from './rota-service.js';
 import { sendError } from '#src/lib/http-errors.js';
 import { askController } from './ask-controller.js';
 import type { AskService } from './ask-service.js';
+import type { AskSettings } from './ask-settings.js';
 import { rotaController } from './rota-controller.js';
 import { createRotaService } from './rota-service.js';
 import { shiftController } from './shift-controller.js';
 import { createShiftService } from './shift-service.js';
 
 export function rotaRouter(
-  dependencies: RotaServiceDependencies & { asks: AskService },
+  dependencies: RotaServiceDependencies & { asks: AskService; askSettings: AskSettings },
 ): Router {
   const { db, clock } = dependencies;
   const rotas = rotaController(createRotaService(dependencies), clock);
   const shifts = shiftController(createShiftService({ db, clock }), clock);
-  const asks = askController(dependencies.asks);
+  const asks = askController(dependencies.asks, dependencies.askSettings);
   const router = Router();
   router.param('weekStart', (_req, res, next, weekStart: string) => {
     if (!isWeekStart(weekStart)) return sendError(res, apiErrorCode.not_found);

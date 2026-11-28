@@ -6,6 +6,7 @@ import { staffLinkRouter } from '#src/features/staff-links/staff-link-router.js'
 import { withoutStaffLinkToken } from '#src/features/staff-links/staff-link-token.js';
 import { userRouter } from '#src/features/users/user-router.js';
 import { venueRouter } from '#src/features/venues/venue-router.js';
+import type { AskSettings } from '#src/features/rota/ask-settings.js';
 import type { AnswerModel } from '#src/lib/answer-model.js';
 import type { AuthConfig } from '#src/lib/auth.js';
 import type { Clock } from '#src/lib/clock.js';
@@ -22,6 +23,7 @@ export interface AppDependencies {
   emailSender: EmailSender;
   webUrl: string;
   answerModel: AnswerModel | null;
+  askSettings: AskSettings;
 }
 
 const DB_HEALTH_TIMEOUT_MS = 1_000;

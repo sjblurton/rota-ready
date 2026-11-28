@@ -700,6 +700,23 @@ test.describe.serial('MVP journey', () => {
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(answer);
   });
 
+  test('stops an answer partway through, keeping the partial text and announcing "Stopped"', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    const answer = panel.getByRole('region', { name: 'Answer' });
+    await panel.getByLabel('Your question').fill('Who works on Saturday?');
+    await panel.getByLabel('Your question').press('Enter');
+    await expect(answer).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
+    await expect(panel.getByRole('button', { name: 'Ask' })).toBeDisabled();
+    await panel.getByRole('button', { name: 'Stop' }).click();
+    await expect(panel.getByRole('status')).toHaveText('Stopped');
+    await expect(answer).toHaveAttribute('aria-busy', 'false');
+    await expect(answer).toContainText(`${STUB_ANSWER_CHUNKS[0] ?? ''}Stopped`);
+    await expect(answer).not.toContainText(STUB_ANSWER_CHUNKS[1] ?? '');
+    await expect(panel.getByLabel('Your question')).toBeFocused();
+    await expect(panel.getByRole('button', { name: 'Ask' })).toBeEnabled();
+    await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0);
+  });
+
   test('keeps the next Week a Draft with a Publish button', async () => {
     await page.getByRole('link', { name: 'Next Week' }).click();
     await expect(weekHeading(nextWeek)).toBeVisible();
