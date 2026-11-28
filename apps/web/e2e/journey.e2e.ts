@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { addDays, ASK_QUESTION_MAX_LENGTH, daysBetween, formatLocalDate } from '@rota-ready/shared';
 import pg from 'pg';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
@@ -16,9 +16,9 @@ const staffMembers = [
   { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
 ];
 
-async function textLeftInPlainEnglish(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+async function textLeftInPlainEnglish(root: Locator): Promise<string[]> {
+  return root.evaluate((element) => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const texts: string[] = [];
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const text = node.textContent?.trim();
@@ -838,6 +838,8 @@ test.describe.serial('MVP journey', () => {
     test('moves focus from Stop to the question box when the answer finishes', async () => {
       await page.keyboard.press('Tab');
       await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
+      await expect(panel().getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS.slice(0, 2).join(''));
+      await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
       await expect(panel().getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
       await expect(panel().getByLabel('Your question')).toBeFocused();
     });
@@ -849,12 +851,15 @@ test.describe.serial('MVP journey', () => {
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByLabel('Your question').press('Enter');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
-    const keyframeAnimations = await panel.evaluate(
-      (element) => element.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
-    );
-    await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
-    await page.emulateMedia({ reducedMotion: null });
-    expect(keyframeAnimations).toBe(0);
+    try {
+      const keyframeAnimations = await panel.evaluate(
+        (element) => element.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
+      );
+      await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      expect(keyframeAnimations).toBe(0);
+    } finally {
+      await page.emulateMedia({ reducedMotion: null });
+    }
   });
 
   test.describe('with ?lng=pseudo', () => {
@@ -862,19 +867,12 @@ test.describe.serial('MVP journey', () => {
       return page.getByRole('region', { name: pseudo.rota.ask.title });
     }
 
-    function plainEnglishIn(locator: ReturnType<Page['getByRole']>) {
-      return locator.evaluate((element) => {
-        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-        const texts: string[] = [];
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-          const text = node.textContent?.trim();
-          if (text) texts.push(text);
-        }
-        return texts.filter((text) => !/^\[.*\]$/s.test(text));
-      });
+    async function panelTextInPlainEnglishBesidesTheAnswer() {
+      const answer = STUB_ANSWER_CHUNKS.join('');
+      return (await textLeftInPlainEnglish(panel())).filter((text) => !answer.includes(text));
     }
 
-    async function askAnswerFailingWith(code: string) {
+    async function askWithTheApiRefusing(code: string) {
       await page.route('**/ask', (route) =>
         code === 'ask_failed'
           ? route.fulfill({ status: 200, contentType: 'text/event-stream', body: `event: error\ndata: {"code":"${code}"}\n\n` })
@@ -888,9 +886,11 @@ test.describe.serial('MVP journey', () => {
     });
 
     test('shows the idle panel as pseudo-text', async () => {
-      await page.goto(`${page.url()}?lng=pseudo`);
+      const pseudoUrl = new URL(page.url());
+      pseudoUrl.searchParams.set('lng', 'pseudo');
+      await page.goto(pseudoUrl.toString());
       await expect(panel()).toBeVisible();
-      expect(await plainEnglishIn(panel())).toEqual([]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the streaming panel as pseudo-text, apart from the answer', async () => {
@@ -899,46 +899,51 @@ test.describe.serial('MVP journey', () => {
       await expect(panel().getByRole('status')).toHaveText(pseudo.rota.ask.answering);
       await expect(panel().getByRole('button', { name: pseudo.rota.ask.stop })).toBeVisible();
       await expect(panel().getByRole('region', { name: pseudo.rota.ask.answer })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
-      expect(await plainEnglishIn(panel())).toEqual([STUB_ANSWER_CHUNKS[0]?.trim()]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the stopped panel as pseudo-text, apart from the answer', async () => {
       await panel().getByRole('button', { name: pseudo.rota.ask.stop }).press('Enter');
       await expect(panel().getByRole('status')).toHaveText(pseudo.rota.ask.stopped);
-      expect(await plainEnglishIn(panel())).toEqual([STUB_ANSWER_CHUNKS[0]?.trim()]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the finished panel as pseudo-text, apart from the answer', async () => {
       await page.keyboard.press('Enter');
       await expect(panel().getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
-      expect(await plainEnglishIn(panel())).toEqual([STUB_ANSWER_CHUNKS.join('').trim(), STUB_ANSWER_CHUNKS.join('')]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows an error partway through, with Retry, as pseudo-text', async () => {
-      await askAnswerFailingWith('ask_failed');
+      await askWithTheApiRefusing('ask_failed');
       await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askFailed);
       await expect(panel().getByRole('button', { name: pseudo.rota.ask.retry })).toBeVisible();
-      expect(await plainEnglishIn(panel())).toEqual([]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the rate-limited panel as pseudo-text', async () => {
-      await askAnswerFailingWith('ask_rate_limited');
+      await askWithTheApiRefusing('ask_rate_limited');
       await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askRateLimited);
-      expect(await plainEnglishIn(panel())).toEqual([]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the unavailable panel as pseudo-text', async () => {
-      await askAnswerFailingWith('ask_unavailable');
+      await askWithTheApiRefusing('ask_unavailable');
       await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askUnavailable);
-      expect(await plainEnglishIn(panel())).toEqual([]);
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows a question form error as pseudo-text', async () => {
       await panel().getByLabel(pseudo.rota.ask.question).fill('');
       await page.keyboard.press('Enter');
       await expect(panel().getByText(pseudo.validation.required)).toBeVisible();
-      expect(await plainEnglishIn(panel())).toEqual([]);
-      await page.goto(page.url().replace('?lng=pseudo', ''));
+      expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
+    });
+
+    test.afterAll(async () => {
+      const englishUrl = new URL(page.url());
+      englishUrl.searchParams.delete('lng');
+      await page.goto(englishUrl.toString());
     });
   });
 
@@ -1389,13 +1394,13 @@ test.describe.serial('MVP journey', () => {
     await page.goto('/?lng=pseudo');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(renamedVenue);
     await expect(page.getByRole('status')).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([email, renamedVenue]);
   });
 
   test('shows the Pro dialog as pseudo-text with ?lng=pseudo', async () => {
     await page.getByRole('banner').getByRole('button').first().click();
     await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([email, renamedVenue]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([email, renamedVenue]);
   });
 
   test('closes the pseudo-text Pro dialog with Escape', async () => {
@@ -1414,12 +1419,12 @@ test.describe.serial('MVP journey', () => {
   test('shows the login page as pseudo-text after logging out with ?lng=pseudo', async () => {
     await page.getByRole('banner').getByRole('button').last().click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([]);
   });
 
   test('shows the landing page as pseudo-text with ?lng=pseudo', async () => {
     await page.goto('/?lng=pseudo');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\[.*\]$/);
-    expect(await textLeftInPlainEnglish(page)).toEqual([]);
+    expect(await textLeftInPlainEnglish(page.locator('body'))).toEqual([]);
   });
 });

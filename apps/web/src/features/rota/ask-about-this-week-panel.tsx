@@ -16,6 +16,15 @@ function retryCanFix(code: ApiErrorCode | undefined) {
   return code === undefined || code === apiErrorCode.ask_failed || code === apiErrorCode.internal_error;
 }
 
+function keepFocusWhenStopGoes(stopButton: HTMLButtonElement) {
+  const form = stopButton.form;
+  return () => {
+    if (document.activeElement !== stopButton) return;
+    const question = form?.elements.namedItem('question');
+    if (question instanceof HTMLInputElement) question.focus();
+  };
+}
+
 interface AskAboutThisWeekPanelProps {
   venueId: string;
   weekStart: string;
@@ -52,11 +61,6 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
     form.setFocus('question');
   }
 
-  function keepFocusWhenStopGoes(stopButton: HTMLButtonElement) {
-    return () => {
-      if (document.activeElement === stopButton) form.setFocus('question');
-    };
-  }
 
   function onStop() {
     stop();
