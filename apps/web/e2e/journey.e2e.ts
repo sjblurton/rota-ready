@@ -16,6 +16,10 @@ const staffMembers = [
   { name: 'Alex Smith', role: 'Bar', email: 'alex@example.com', phone: '' },
 ];
 
+function spokenBy(askPanel: Locator) {
+  return askPanel.locator('[aria-live="polite"]');
+}
+
 async function textLeftInPlainEnglish(root: Locator): Promise<string[]> {
   return root.evaluate((element) => {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
@@ -695,11 +699,11 @@ test.describe.serial('MVP journey', () => {
     const answer = STUB_ANSWER_CHUNKS.join('');
     await panel.getByLabel('Your question').fill('Who has the most hours this week?');
     await panel.getByLabel('Your question').press('Enter');
-    await expect(panel.getByRole('status')).toHaveText('Answering…');
+    await expect(spokenBy(panel)).toHaveText('Answering…');
     await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'true');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
     await expect(panel.getByRole('region', { name: 'Answer' })).not.toContainText(STUB_ANSWER_CHUNKS.at(-1) ?? '');
-    await expect(panel.getByRole('status')).toHaveText(answer);
+    await expect(spokenBy(panel)).toHaveText(answer);
     await expect(panel.getByRole('region', { name: 'Answer' })).toHaveAttribute('aria-busy', 'false');
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(answer);
   });
@@ -713,7 +717,7 @@ test.describe.serial('MVP journey', () => {
     await expect(answer).toContainText(firstChunk);
     await expect(panel.getByRole('button', { name: 'Ask' })).toBeDisabled();
     await panel.getByRole('button', { name: 'Stop' }).click();
-    await expect(panel.getByRole('status')).toHaveText('Stopped');
+    await expect(spokenBy(panel)).toHaveText('Stopped');
     await expect(answer).toHaveAttribute('aria-busy', 'false');
     await expect(answer).toContainText(`${firstChunk}Stopped`);
     await expect(answer).not.toContainText(secondChunk);
@@ -746,7 +750,7 @@ test.describe.serial('MVP journey', () => {
     );
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
-    await expect(panel.getByRole('status')).toHaveText(
+    await expect(spokenBy(panel)).toHaveText(
       "Ask about this week isn't available right now. Please try again later.",
     );
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
@@ -761,7 +765,7 @@ test.describe.serial('MVP journey', () => {
     );
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
-    await expect(panel.getByRole('status')).toHaveText(waitMessage);
+    await expect(spokenBy(panel)).toHaveText(waitMessage);
     await expect(panel.getByRole('paragraph').filter({ hasText: waitMessage })).toBeVisible();
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await page.unroute('**/ask');
@@ -779,7 +783,7 @@ test.describe.serial('MVP journey', () => {
     );
     await panel.getByLabel('Your question').fill('Who works on Saturday?');
     await panel.getByRole('button', { name: 'Ask' }).click();
-    await expect(panel.getByRole('status')).toHaveText(
+    await expect(spokenBy(panel)).toHaveText(
       'The answer stopped because something went wrong. Please try asking again.',
     );
     await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(firstChunk);
@@ -792,7 +796,7 @@ test.describe.serial('MVP journey', () => {
     await panel.getByLabel('Your question').fill('Something else');
     await panel.getByRole('button', { name: 'Retry' }).click();
     expect((await askRequest).postDataJSON()).toEqual({ question: 'Who works on Saturday?' });
-    await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+    await expect(spokenBy(panel)).toHaveText(STUB_ANSWER_CHUNKS.join(''));
     await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
   });
 
@@ -808,7 +812,7 @@ test.describe.serial('MVP journey', () => {
       await page.keyboard.press('Tab');
       await expect(panel().getByRole('button', { name: 'Ask' })).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(panel().getByRole('status')).toHaveText('Answering…');
+      await expect(spokenBy(panel())).toHaveText('Answering…');
       await expect(panel().getByLabel('Your question')).toBeFocused();
     });
 
@@ -816,7 +820,7 @@ test.describe.serial('MVP journey', () => {
       await page.keyboard.press('Tab');
       await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(panel().getByRole('status')).toHaveText('Stopped');
+      await expect(spokenBy(panel())).toHaveText('Stopped');
       await expect(panel().getByLabel('Your question')).toBeFocused();
     });
 
@@ -831,7 +835,7 @@ test.describe.serial('MVP journey', () => {
       await page.keyboard.press('Tab');
       await expect(panel().getByRole('button', { name: 'Retry' })).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(panel().getByRole('status')).toHaveText('Answering…');
+      await expect(spokenBy(panel())).toHaveText('Answering…');
       await expect(panel().getByLabel('Your question')).toBeFocused();
     });
 
@@ -840,7 +844,7 @@ test.describe.serial('MVP journey', () => {
       await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
       await expect(panel().getByRole('region', { name: 'Answer' })).toContainText(STUB_ANSWER_CHUNKS.slice(0, 2).join(''));
       await expect(panel().getByRole('button', { name: 'Stop' })).toBeFocused();
-      await expect(panel().getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      await expect(spokenBy(panel())).toHaveText(STUB_ANSWER_CHUNKS.join(''));
       await expect(panel().getByLabel('Your question')).toBeFocused();
     });
   });
@@ -855,7 +859,7 @@ test.describe.serial('MVP journey', () => {
       const keyframeAnimations = await panel.evaluate(
         (element) => element.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
       );
-      await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      await expect(spokenBy(panel)).toHaveText(STUB_ANSWER_CHUNKS.join(''));
       expect(keyframeAnimations).toBe(0);
     } finally {
       await page.emulateMedia({ reducedMotion: null });
@@ -896,7 +900,7 @@ test.describe.serial('MVP journey', () => {
     test('shows the streaming panel as pseudo-text, apart from the answer', async () => {
       await panel().getByLabel(pseudo.rota.ask.question).fill('Who works on Saturday?');
       await panel().getByLabel(pseudo.rota.ask.question).press('Enter');
-      await expect(panel().getByRole('status')).toHaveText(pseudo.rota.ask.answering);
+      await expect(spokenBy(panel())).toHaveText(pseudo.rota.ask.answering);
       await expect(panel().getByRole('button', { name: pseudo.rota.ask.stop })).toBeVisible();
       await expect(panel().getByRole('region', { name: pseudo.rota.ask.answer })).toContainText(STUB_ANSWER_CHUNKS[0] ?? '');
       expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
@@ -904,32 +908,32 @@ test.describe.serial('MVP journey', () => {
 
     test('shows the stopped panel as pseudo-text, apart from the answer', async () => {
       await panel().getByRole('button', { name: pseudo.rota.ask.stop }).press('Enter');
-      await expect(panel().getByRole('status')).toHaveText(pseudo.rota.ask.stopped);
+      await expect(spokenBy(panel())).toHaveText(pseudo.rota.ask.stopped);
       expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the finished panel as pseudo-text, apart from the answer', async () => {
       await page.keyboard.press('Enter');
-      await expect(panel().getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+      await expect(spokenBy(panel())).toHaveText(STUB_ANSWER_CHUNKS.join(''));
       expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows an error partway through, with Retry, as pseudo-text', async () => {
       await askWithTheApiRefusing('ask_failed');
-      await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askFailed);
+      await expect(spokenBy(panel())).toHaveText(pseudo.errors.askFailed);
       await expect(panel().getByRole('button', { name: pseudo.rota.ask.retry })).toBeVisible();
       expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the rate-limited panel as pseudo-text', async () => {
       await askWithTheApiRefusing('ask_rate_limited');
-      await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askRateLimited);
+      await expect(spokenBy(panel())).toHaveText(pseudo.errors.askRateLimited);
       expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 
     test('shows the unavailable panel as pseudo-text', async () => {
       await askWithTheApiRefusing('ask_unavailable');
-      await expect(panel().getByRole('status')).toHaveText(pseudo.errors.askUnavailable);
+      await expect(spokenBy(panel())).toHaveText(pseudo.errors.askUnavailable);
       expect(await panelTextInPlainEnglishBesidesTheAnswer()).toEqual([]);
     });
 

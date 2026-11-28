@@ -123,9 +123,9 @@ export function AskAboutThisWeekPanel({ venueId, weekStart }: AskAboutThisWeekPa
             )}
           </div>
         )}
-        <p role="status" className="sr-only">
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement(t, state)}
-        </p>
+        </div>
       </CardContent>
     </Card>
   );
