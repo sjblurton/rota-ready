@@ -479,9 +479,121 @@ export function StaffSettingsD({ staffMembers }: Props) {
   );
 }
 
+function AccordionSection({ title, summary, open, onToggle, children }: { title: string; summary: React.ReactNode; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border">
+      <button type="button" aria-expanded={open} onClick={onToggle} className="flex w-full items-center gap-4 px-4 py-3 text-left hover:bg-muted/50">
+        <span className="w-28 shrink-0 font-semibold">{title}</span>
+        <span className="min-w-0 flex-1 text-sm text-muted-foreground">{summary}</span>
+        <span className="text-sm">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-4 border-t px-4 py-4">
+          {children}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={onToggle}>Save {title}</Button>
+            <Button size="sm" variant="outline" onClick={onToggle}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type SectionKey = 'details' | 'roles' | 'unavailable' | 'hours' | 'note';
+
+function StaffAccordion({ sm, settings, initial, onClose }: { sm: StaffMember; settings: StaffSettings; initial: SectionKey; onClose: () => void }) {
+  const [open, setOpen] = useState<SectionKey | null>(initial);
+  const toggle = (key: SectionKey) => () => setOpen(open === key ? null : key);
+  const unavailableParts = [...settings.weekly.map(formatWeekly), ...settings.dated.map(formatDated)];
+  return (
+    <div className="flex flex-col gap-2 py-2">
+      <div className="flex items-center justify-between">
+        <span className="text-lg font-semibold">{sm.name}</span>
+        <Button size="sm" variant="ghost" onClick={onClose}>Close</Button>
+      </div>
+      <AccordionSection title="Details" summary={`${sm.email}${sm.phone ? ` · ${sm.phone}` : ''}`} open={open === 'details'} onToggle={toggle('details')}>
+        <div className="flex flex-wrap gap-3">
+          <Input defaultValue={sm.name} className="w-48" />
+          <Input defaultValue={sm.email} className="w-64" />
+          <Input defaultValue={sm.phone ?? ''} placeholder="Phone" className="w-40" />
+        </div>
+      </AccordionSection>
+      <AccordionSection
+        title="Roles"
+        summary={<span className="flex flex-wrap gap-1">{settings.roles.map((r) => <Badge key={r} variant={r === settings.usualRole ? 'default' : 'secondary'}>{r}</Badge>)}</span>}
+        open={open === 'roles'}
+        onToggle={toggle('roles')}
+      >
+        <RolesPicker settings={settings} />
+      </AccordionSection>
+      <AccordionSection title="Unavailable" summary={unavailableParts.length ? unavailableParts.join(' · ') : 'Any time'} open={open === 'unavailable'} onToggle={toggle('unavailable')}>
+        <UnavailableEditor settings={settings} name={sm.name} />
+      </AccordionSection>
+      <AccordionSection title="Hours" summary={`${settings.targetHours ?? 'No'} target · ${settings.maximumHours ?? 'no'} maximum per Week`} open={open === 'hours'} onToggle={toggle('hours')}>
+        <HoursFields settings={settings} />
+      </AccordionSection>
+      <AccordionSection title="Note" summary={<span className="block truncate">{settings.note || 'No note'}</span>} open={open === 'note'} onToggle={toggle('note')}>
+        <NoteField settings={settings} />
+      </AccordionSection>
+    </div>
+  );
+}
+
+export function StaffSettingsE({ staffMembers }: Props) {
+  const [editing, setEditing] = useState<{ id: string; section: SectionKey } | null>(null);
+  const openAt = (id: string, section: SectionKey) => () => setEditing({ id, section });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle><h2>Staff</h2></CardTitle>
+        <CardDescription>Variant E: D’s table. Click a cell (or Edit) to open the row as accordions, with that section open. Each section saves on its own.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Roles</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Unavailable</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {staffMembers.map((sm, i) => {
+              const settings = settingsFor(i);
+              return editing?.id === sm.id ? (
+                <TableRow key={sm.id}>
+                  <TableCell colSpan={5} className="whitespace-normal">
+                    <StaffAccordion sm={sm} settings={settings} initial={editing.section} onClose={() => setEditing(null)} />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow key={sm.id}>
+                  <TableCell className="cursor-pointer font-medium" onClick={openAt(sm.id, 'details')}>{sm.name}<div className="text-xs font-normal text-muted-foreground">{sm.email}</div></TableCell>
+                  <TableCell className="cursor-pointer" onClick={openAt(sm.id, 'roles')}>
+                    <div className="flex flex-wrap gap-1">
+                      {settings.roles.map((r) => <Badge key={r} variant={r === settings.usualRole ? 'default' : 'secondary'}>{r}</Badge>)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="cursor-pointer text-sm" onClick={openAt(sm.id, 'hours')}>{settings.targetHours ?? '–'} target · {settings.maximumHours ?? '–'} max</TableCell>
+                  <TableCell className="cursor-pointer" onClick={openAt(sm.id, 'unavailable')}><UnavailableCell settings={settings} /></TableCell>
+                  <TableCell className="text-right"><Button size="sm" variant="outline" onClick={openAt(sm.id, 'details')}>Edit</Button></TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const staffSettingsVariants = [
   { key: 'A', name: 'Edit in the row' },
   { key: 'B', name: 'A page per Staff Member' },
   { key: 'C', name: 'Team grid' },
   { key: 'D', name: 'B’s table, A’s editing' },
+  { key: 'E', name: 'D with accordions' },
 ];
