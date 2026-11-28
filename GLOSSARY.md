@@ -33,7 +33,7 @@ What the Owner does when a Staff Member stops working at the Venue. The Owner ca
 _Avoid_: Delete, remove, deactivate
 
 **Role**:
-The job a Staff Member does, e.g. Bar, Floor, Kitchen. Not to be confused with Member Role.
+A job at a Venue, from the Venue's own list, e.g. Bar, Floor, Pastry, Sous Chef. A Shift is for one Role. A Staff Member can work one or more Roles, one of which is their usual Role. Not to be confused with Member Role.
 _Avoid_: Position, job title, Member Role
 
 **Member Role**:
