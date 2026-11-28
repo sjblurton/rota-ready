@@ -1,5 +1,11 @@
 export interface AskSettings {
   pingIntervalMs: number;
+  questionsPerTenMinutes: number;
+  questionsPerDay: number;
 }
 
-export const DEFAULT_ASK_PING_INTERVAL_MS = 15_000;
+export const defaultAskSettings: AskSettings = {
+  pingIntervalMs: 15_000,
+  questionsPerTenMinutes: 10,
+  questionsPerDay: 50,
+};

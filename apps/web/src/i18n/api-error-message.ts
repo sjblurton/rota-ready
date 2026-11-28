@@ -18,6 +18,7 @@ const messageKeys = {
   staff_member_limit_reached: 'errors.staffMemberLimitReached',
   ask_unavailable: 'errors.askUnavailable',
   ask_failed: 'errors.askFailed',
+  ask_rate_limited: 'errors.askRateLimited',
   internal_error: 'errors.internal',
 } as const satisfies Record<ApiErrorCode, ParseKeys>;
 

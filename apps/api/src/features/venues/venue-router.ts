@@ -27,8 +27,8 @@ interface VenueRouterDependencies {
 }
 
 export function venueRouter(dependencies: VenueRouterDependencies): Router {
-  const { db, clock, authConfig, staffLinkKey, answerModel } = dependencies;
-  const asks = createAskService({ db, answerModel });
+  const { db, clock, authConfig, staffLinkKey, answerModel, askSettings } = dependencies;
+  const asks = createAskService({ db, answerModel, clock, askSettings });
   const controller = venueController(createVenueService({ db }), asks.isAvailableFor);
   const router = Router();
   router.post('/', withUser(authConfig, db, controller.createVenue));

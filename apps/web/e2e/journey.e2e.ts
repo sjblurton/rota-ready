@@ -749,6 +749,20 @@ test.describe.serial('MVP journey', () => {
     await page.unroute('**/ask');
   });
 
+  test('asks the Owner to wait, with no Retry, after too many questions', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    const waitMessage = "You've asked a lot of questions recently. Please wait a while, then ask again.";
+    await page.route('**/ask', (route) =>
+      route.fulfill({ status: 429, json: { code: 'ask_rate_limited' } }),
+    );
+    await panel.getByLabel('Your question').fill('Who works on Saturday?');
+    await panel.getByRole('button', { name: 'Ask' }).click();
+    await expect(panel.getByRole('status')).toHaveText(waitMessage);
+    await expect(panel.getByRole('paragraph').filter({ hasText: waitMessage })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+    await page.unroute('**/ask');
+  });
+
   test('keeps the partial text and offers Retry when the answer fails partway through', async () => {
     const panel = page.getByRole('region', { name: 'Ask about this week' });
     const [firstChunk = ''] = STUB_ANSWER_CHUNKS;

@@ -10,6 +10,7 @@ import { createVenueService } from './venue-service.js';
 
 export interface VenueMemberLocals {
   venue: Venue;
+  userId: string;
 }
 
 export type VenueRequestHandler<Params = { venueId: string }> = RequestHandler<
@@ -33,6 +34,7 @@ export function requireVenueMember(config: AuthConfig, db: Db): VenueRequestHand
       : null;
     if (!membership) return sendError(res, apiErrorCode.not_found);
     res.locals.venue = membership.venue;
+    res.locals.userId = user.id;
     next();
   };
 }

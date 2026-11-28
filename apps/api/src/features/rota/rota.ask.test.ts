@@ -16,6 +16,7 @@ const OTHER_OWNER = {
   id: '7c0d9a54-1e2b-4f3a-8b6c-5d4e3f2a1b0c',
   email: 'other@example.com',
 };
+const CO_OWNER = { id: '4b8e2c1a-9d3f-4e5a-b6c7-1d2e3f4a5b6c', email: 'co-owner@example.com' };
 const WEEK_START = '2026-11-16';
 const SAM = { name: 'Sam Jones', role: 'Kitchen', email: 'sam@example.com', phone: '07700 900123' };
 const FRIDAY_NIGHT = {
@@ -300,6 +301,109 @@ describe('POST /api/venues/:venueId/rotas/:weekStart/ask', () => {
 
     it('aborts the model stream', () => {
       expect(modelRequestOf(app).signal.aborted).toBe(true);
+    });
+  });
+});
+
+describe('POST /api/venues/:venueId/rotas/:weekStart/ask, limited per User', () => {
+  let app: TestApp;
+  let response: Response;
+  let ownVenue: { id: string };
+
+  async function askAt(instant: string, times: number, as = OWNER) {
+    app.setClock(instant);
+    for (let asked = 0; asked < times; asked += 1) {
+      response = await app.request('POST', askPath(ownVenue), { as, body: { question: QUESTION } });
+      if (response.ok) await response.text();
+    }
+  }
+
+  beforeEach(async () => {
+    app = await startTestApp({ askLimits: { questionsPerTenMinutes: 10, questionsPerDay: 50 } });
+    await createUser(app.db, OWNER);
+    await createUser(app.db, CO_OWNER);
+    ownVenue = await createVenueFor(app.db, OWNER, { name: 'The Crown', timeZone: 'Europe/London' });
+    await app.db.venueMember.create({ data: { venueId: ownVenue.id, userId: CO_OWNER.id, role: 'owner' } });
+    await moveVenueToPreview(app.db, ownVenue);
+  });
+
+  afterEach(() => app.close());
+
+  describe('when the Owner has asked 10 questions in the last 10 minutes', () => {
+    beforeEach(async () => {
+      await askAt('2026-01-05T12:00:00.000Z', 10);
+    });
+
+    it('answers the 10th', () => {
+      expect(response.status).toBe(200);
+    });
+
+    describe('when they ask an 11th, 9 minutes 59 seconds after the first', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-05T12:09:59.000Z', 1);
+      });
+
+      it('responds with 429 and the ask_rate_limited code', async () => {
+        expect([response.status, await response.json()]).toEqual([429, { code: 'ask_rate_limited' }]);
+      });
+
+      it('asks the model nothing more', () => {
+        expect(app.answerModel.requests).toHaveLength(10);
+      });
+    });
+
+    describe('when they ask an 11th, exactly 10 minutes after the first', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-05T12:10:00.000Z', 1);
+      });
+
+      it('answers it', () => {
+        expect(response.status).toBe(200);
+      });
+    });
+
+    describe('when another Owner of the same Venue asks at the same moment', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-05T12:05:00.000Z', 1, CO_OWNER);
+      });
+
+      it("answers them, because the first Owner's limit isn't theirs", () => {
+        expect(response.status).toBe(200);
+      });
+    });
+  });
+
+  describe('when the Owner has asked 50 questions today, 10 at a time', () => {
+    beforeEach(async () => {
+      for (const instant of [
+        '2026-01-05T12:00:00.000Z',
+        '2026-01-05T12:11:00.000Z',
+        '2026-01-05T12:22:00.000Z',
+        '2026-01-05T12:33:00.000Z',
+        '2026-01-05T12:44:00.000Z',
+      ]) {
+        await askAt(instant, 10);
+      }
+    });
+
+    describe('when they ask a 51st, 11 minutes after the last 10', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-05T12:55:00.000Z', 1);
+      });
+
+      it('responds with 429 and the ask_rate_limited code', async () => {
+        expect([response.status, await response.json()]).toEqual([429, { code: 'ask_rate_limited' }]);
+      });
+    });
+
+    describe('when they ask a 51st, exactly a day after the first', () => {
+      beforeEach(async () => {
+        await askAt('2026-01-06T12:00:00.000Z', 1);
+      });
+
+      it('answers it', () => {
+        expect(response.status).toBe(200);
+      });
     });
   });
 });
