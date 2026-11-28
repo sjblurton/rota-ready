@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { addDays, daysBetween, formatLocalDate } from '@rota-ready/shared';
+import { addDays, ASK_QUESTION_MAX_LENGTH, daysBetween, formatLocalDate } from '@rota-ready/shared';
 import pg from 'pg';
 import { STUB_ANSWER_CHUNKS } from './anthropic-stub';
 
@@ -716,6 +716,65 @@ test.describe.serial('MVP journey', () => {
     await expect(panel.getByLabel('Your question')).toBeFocused();
     await expect(panel.getByRole('button', { name: 'Ask' })).toBeEnabled();
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0);
+  });
+
+  test('refuses an empty or too-long question with a translated message, sending nothing', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    let askRequests = 0;
+    await page.route('**/ask', (route) => {
+      askRequests += 1;
+      return route.continue();
+    });
+    await panel.getByLabel('Your question').fill('   ');
+    await panel.getByRole('button', { name: 'Ask' }).click();
+    await expect(panel.getByText('This field is required.')).toBeVisible();
+    await panel.getByLabel('Your question').fill('a'.repeat(ASK_QUESTION_MAX_LENGTH + 1));
+    await panel.getByRole('button', { name: 'Ask' }).click();
+    await expect(panel.getByText(`Use ${ASK_QUESTION_MAX_LENGTH} characters or fewer.`)).toBeVisible();
+    await page.unroute('**/ask');
+    expect(askRequests).toBe(0);
+  });
+
+  test('shows a translated message with no Retry when Ask about this week is unavailable', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    await page.route('**/ask', (route) =>
+      route.fulfill({ status: 503, json: { code: 'ask_unavailable' } }),
+    );
+    await panel.getByLabel('Your question').fill('Who works on Saturday?');
+    await panel.getByRole('button', { name: 'Ask' }).click();
+    await expect(panel.getByRole('status')).toHaveText(
+      "Ask about this week isn't available right now. Please try again later.",
+    );
+    await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+    await page.unroute('**/ask');
+  });
+
+  test('keeps the partial text and offers Retry when the answer fails partway through', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    const [firstChunk = ''] = STUB_ANSWER_CHUNKS;
+    await page.route('**/ask', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: `event: delta\ndata: ${JSON.stringify({ text: firstChunk })}\n\nevent: error\ndata: {"code":"ask_failed"}\n\n`,
+      }),
+    );
+    await panel.getByRole('button', { name: 'Ask' }).click();
+    await expect(panel.getByRole('status')).toHaveText(
+      'The answer stopped because something went wrong. Please try asking again.',
+    );
+    await expect(panel.getByRole('region', { name: 'Answer' })).toContainText(firstChunk);
+    await page.unroute('**/ask');
+  });
+
+  test('asks the same question again with Retry, and streams the whole answer', async () => {
+    const panel = page.getByRole('region', { name: 'Ask about this week' });
+    const askRequest = page.waitForRequest('**/ask');
+    await panel.getByLabel('Your question').fill('Something else');
+    await panel.getByRole('button', { name: 'Retry' }).click();
+    expect((await askRequest).postDataJSON()).toEqual({ question: 'Who works on Saturday?' });
+    await expect(panel.getByRole('status')).toHaveText(STUB_ANSWER_CHUNKS.join(''));
+    await expect(panel.getByRole('button', { name: 'Retry' })).toHaveCount(0);
   });
 
   test('keeps the next Week a Draft with a Publish button', async () => {
