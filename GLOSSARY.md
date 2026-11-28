@@ -76,7 +76,7 @@ When a Venue serves customers, set for each weekday as one or more opening perio
 _Avoid_: Trading hours, staffed hours
 
 **Special Day**:
-One date whose hours differ from the Venue's Opening Hours: either closed, like Christmas Day, or open with its own periods, like a late private party. It wins over the Opening Hours for that date.
+One date whose hours differ from the Venue's Opening Hours: either closed, like Christmas Day, or open with its own periods, like a late private party. It wins over the Opening Hours for that date. A Special Day can repeat every year: on the same Bank Holiday if it was made from one (so Easter Monday follows Easter), otherwise on the same date.
 _Avoid_: Exception, closure, holiday
 
 **Bank Holiday**:
